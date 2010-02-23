@@ -1,5 +1,23 @@
 cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",spread=0.3,gap.space = 0.2,psp=FALSE,scr.res=c(1280,1024),sort.individual=FALSE, jitter = FALSE){
 	
+	if( .Platform$OS.type == "unix" ){
+		if(!("JGR" %in% .packages(all.available=FALSE))){
+			cat("Please use the 'JGR' console for iplots. To download it visit\n 'http://www.rosuda.org/software/'")
+			return(invisible(TRUE))
+			}
+	}
+			
+	if(!( "iplots" %in% .packages(all.available = TRUE) ) ){
+		cat("Installing required package 'iplots'...")
+		install.packages('iplots')   
+		}
+	 	
+	
+	library(iplots)
+	#library(CarbonEL)
+	
+	
+	
 	V = data.frame(V)
 	m = nrow(V)
 	
@@ -43,7 +61,8 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 		n = length(ord)
 		
 		fi = which(names(V) == freqvar)
-		not.ord = which( !( 1:ncol(V) %in% c(ord,fi) ) )
+		#not.ord = which( !( 1:ncol(V) %in% c(ord,fi) ) )
+		not.ord = c(1:ncol(V))[-c(ord,fi)]
 		
 		VS = subtable(V,c(ord,not.ord),keep.zero=F,allfactor=F,freqvar=freqvar)
 		lvls = lapply(VS[,1:n],function(x){
@@ -54,7 +73,7 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 		if(is.null(ord)){ ord = 1:ncol(V)	}
 		
 		n = length(ord)
-		not.ord = which( !( 1:ncol(V) %in% ord ) )
+		not.ord = c(1:ncol(V))[-ord]
 		
 		VS = V[,c(ord,not.ord)]
 		lvls = lapply(VS[,1:n],function(x){
@@ -80,7 +99,7 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 	V4 = matrix(0,ncol=n,nrow=m)
 	
 	S = vector(mode="list",length=nK)
-	S = sapply(V[,indK],function(x) table(x))
+	S = sapply(V[,indK],function(x) table(x),simplify=FALSE)
 	V4 = V[,1:n]
 	V4[,indK] = sapply(V4[,indK], as.integer)
 	
@@ -96,34 +115,34 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 			curmax = sapply(S,max)
 			TT = sapply(V[,indK],function(x){
 					tapply(1:nrow(V),x,I)
-				})
+				},simplify=FALSE)
 			
 			
 			nlvl = sapply(V[,indK],nlevels)
 
 			if( gap.type == "equal.tot" ){
-					eta = sapply(S,function(x) x/sum(x))
-					sc = sapply(nlvl,function(x) c(0:(x-1)) *( 2*gap.space/( (x - 1)*(1 - gap.space))-1 )) # includes the integer value
+					eta = sapply(S,function(x) x/sum(x),simplify=FALSE)
+					sc = sapply(nlvl,function(x) c(0:(x-1)) *( 2*gap.space/( (x - 1)*(1 - gap.space))-1 ),simplify=FALSE) # includes the integer value
 					eta2 = sapply(eta,function(x){
 							nj = length(x)
 							return(cumsum(c(0,x[1:(nj-1)])+ c(0,x[2:(nj)])))
-						})
-					shift = mapply(function(x,y) x + y,	eta2,  sc)
+						}, simplify=FALSE)
+					shift = mapply(function(x,y) x + y,	eta2,  sc, SIMPLIFY = FALSE)
 				}
 			if( gap.type == "equal.gaps" ){
-					eta = sapply(S,function(x) x/sum(x))
-					sc = sapply(nlvl,function(x) c(0:(x-1)) *( 2*gap.space/( (nmax - 1)*(1 - gap.space))-1))
+					eta = sapply(S,function(x) x/sum(x),simplify=FALSE)
+					sc = sapply(nlvl,function(x) c(0:(x-1)) *( 2*gap.space/( (nmax - 1)*(1 - gap.space))-1),simplify=FALSE)
 					eta2 = sapply(eta,function(x){
 							nj = length(x)
 							return(cumsum(c(0,x[1:(nj-1)])+ c(0,x[2:(nj)])))
-						})
-					shift = mapply(function(x,y) x + y,	eta2,  sc)
+						},simplify=FALSE)
+					shift = mapply(function(x,y) x + y,	eta2,  sc,SIMPLIFY=FALSE)
 			}
 			if(gap.type == "spread"){
-					eta = sapply(S,function(x) x/max(x)*spread/2)
+					eta = sapply(S,function(x) x/max(x)*spread/2,simplify=FALSE)
 					shift = lapply(nlvl,function(x) rep(0,x))
 			}
-						
+		
 			seqs = lapply(1:nK,function(y){
 					unlist(
 						sapply(c(1:nlvl[y]),function(x){
@@ -131,10 +150,9 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 						})
 					)
 				})
-			
 			ind = lapply(TT,function(x) unlist(x))
+
 			ord.seqs = mapply(function(x,y) return(x[order(y)]),seqs,ind)
-			
 			
 			V3[,indK] = ord.seqs
 			V2 = V3+V4

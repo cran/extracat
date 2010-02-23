@@ -8,7 +8,8 @@ data.frame reduction
 \description{
 Reduces a dataframe into a frequency table with prespecified entries.
 }
-\usage{subtable(dset, cols, keep.zero = TRUE, allfactor = TRUE, freqvar = NULL)}
+\usage{subtable(dset, cols, keep.zero = TRUE, 
+            allfactor = TRUE, freqvar = NULL)}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{dset}{
@@ -38,7 +39,7 @@ A \code{data.frame}.
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted Jan 2010
+  Journal of Statistical Software, submitted March 2010
 }
 \author{
 Alexander Pilhoefer\cr

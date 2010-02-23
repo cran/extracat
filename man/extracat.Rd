@@ -17,8 +17,8 @@ The interactive version of the latter (\link[extracat]{irmb}) is based on \pkg{i
 \tabular{ll}{
 Package: \tab extracat\cr
 Type: \tab Package\cr
-Version: \tab 1.0-0\cr
-Date: \tab 2010-01-18\cr
+Version: \tab 1.0-1\cr
+Date: \tab 2010-02-23\cr
 License: \tab -\cr
 LazyLoad: \tab yes\cr
 }
@@ -33,11 +33,11 @@ Germany
 Maintainer: Alexander Pilhoefer \email{alexander.pilhoefer@math.uni-augsburg.de}
 }
 \references{
-Alexander Pilhoefer  \emph{Analysen von kategoriellen Daten}\cr Diplomarbeit 2009\cr
+Alexander Pilhoefer  \emph{Analysen von kategoriellen Daten}\cr Diploma Thesis 2009\cr
 \cr
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted Jan 2010
+  Journal of Statistical Software, submitted March 2010
 
 }
 

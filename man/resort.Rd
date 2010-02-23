@@ -8,7 +8,8 @@ Rearrangement of cpcp plots
 \description{
 Rearranging of the cpcp plot after a new selection.
 }
-\usage{resort(V = iset(which = iset.cur()), sel = iset.selected(), listen = FALSE)}
+\usage{resort(V = iset(which = iset.cur()),
+        sel = iset.selected(), listen = FALSE)}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{V}{
@@ -32,7 +33,7 @@ No return value.
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted Jan 2010
+  Journal of Statistical Software, submitted March 2010
 }
 \author{
 Alexander Pilhoefer\cr
@@ -51,10 +52,12 @@ Germany
 \link[extracat]{cpcp}
 }
 \examples{
+\dontrun{
     cpcp(V = housing, ord = c(4,3,1,2))
     # selection via console
     s = iset()
     iset.select(what = which(ivar.data(s$Type) == "Terrace") )
     resort()
+}
 }
 

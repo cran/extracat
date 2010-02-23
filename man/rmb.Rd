@@ -11,13 +11,15 @@
   The width of the barcharts for the target variable can be constricted to the length of the horizontal bars.
  Additionally the \code{rmb} function allows to draw spineplots instead of the barcharts within each combination. On that score it can be seen as a generalization of Spineplots.
 }
-\usage{rmb(f, dset, hsplit = NULL, spine = FALSE,  hlcat = 1,  eqwidth = FALSE,
-                tfreq = "Id", max.scale = 1,  use.na = FALSE, expected = NULL,
-                mod.type = "poisson", resid.type = "pearson",
-                use.expected.values = FALSE, resid.max = NULL, cut.rv = TRUE, cut.rs = 5,                
-                base = 0.2, mult = 1.5, colv = NULL, lab = TRUE, yaxis = TRUE, 
-                label = NULL, min.alpha = 0.1, base.alpha = 0.75, boxes = TRUE, 
-                lab.tv = FALSE, varnames = TRUE, abbr = FALSE, lab.cex = 1.2,\dots)}
+\usage{rmb(f, dset, hsplit = NULL, spine = FALSE,  hlcat = 1,
+            eqwidth = FALSE, tfreq = "Id", max.scale = 1,
+            use.na = FALSE, expected = NULL, mod.type = "poisson",
+            resid.type = "pearson", use.expected.values = FALSE,
+            resid.max = NULL, cut.rv = TRUE, cut.rs = 5,base = 0.2,
+            mult = 1.5, colv = NULL, lab = TRUE, yaxis = TRUE,
+            label = NULL, min.alpha = 0.1, base.alpha = 0.75,
+            boxes = TRUE, lab.tv = FALSE, varnames = TRUE,
+            abbr = FALSE, lab.cex = 1.2,\dots)}
 \arguments{
   \item{f}{The \code{\link[stats]{formula}} specifying the variables in their given order with the last variable being the target variable. The left hand is either empty or denotes the frequency variable.}
   \item{dset}{The dataset in form of a frequency table (see \code{\link[stats]{ftable}} or \code{\link[extracat]{subtable}} for more information) with a column named \code{"Freq"} or in raw format (that is the rows represent the cases and the columns represent the variables). }
@@ -59,7 +61,7 @@
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted Jan 2010
+  Journal of Statistical Software, submitted March 2010
 }
 \author{
 Alexander Pilhoefer\cr
@@ -88,7 +90,8 @@ Germany
         hlcat = 1, mult = 2, hsplit = c(TRUE,FALSE,TRUE,TRUE), 
         tfreq = "sqrt", abbr = TRUE)
     
-    # a generalized spineplot with all category highlighted in changed order
+    # a generalized spineplot with all categories highlighted 
+    # in a changed order
     rmb(f = ~Type+Infl+Cont+Sat, dset = housing, spine = TRUE,
         hlcat = c(3,1,2), mult = 2, hsplit = c(TRUE,FALSE,TRUE,TRUE),
         tfreq = "sqrt", abbr = TRUE)

@@ -93,7 +93,9 @@ rmb = function(f, dset, hsplit = NULL, spine = FALSE,  hlcat = 1,  eqwidth = FAL
 	dset = subtable(dset,ind,keep.zero=F)
 
 	if(length(hlcat) > 1 & !spine){
-		levels(dset[,nv])[which(! 1:nv %in% hlcat )] = NA
+		#levels(dset[,nv])[which(! 1:nv %in% hlcat )] = NA 
+		levels(dset[,nv])[-hlcat] = NA
+		
 		dset[,nv] = factor(dset[,nv],levels=levels(dset[,nv])[rank(hlcat)])
 		if(lab.tv){
 			clabs[[length(clabs)]] = levels(dset[,nv])	
@@ -189,13 +191,17 @@ rmb = function(f, dset, hsplit = NULL, spine = FALSE,  hlcat = 1,  eqwidth = FAL
 			single.terms = do.call("paste",c(as.list( nameslist ),sep="+"))
 			interaction.terms = do.call("paste",c(lapply(expected,function(x) do.call("paste",c(as.list(nameslist[x]),sep="*"))),sep="+"))
 			full.terms = do.call("paste",c(as.list(nameslist),sep="*"))
+			
 			#single.terms = do.call("paste",c(as.list(names(dset)[1:(nv-1)]),sep="+"))
 			#full.terms = do.call("paste",c(as.list(names(dset)[1:(nv-1)]),sep="*"))
 			#interaction.terms = do.call("paste",c(lapply(expected,function(x) do.call("paste",c(as.list(names(dset)[x]),sep="*"))),sep="+"))
 			mod.formula = as.formula(paste(fterms[nv0],"~",single.terms,"+",interaction.terms,sep=""))
 			modS.formula = as.formula(paste(fterms[nv0],"~",full.terms,sep=""))	
-			modS = polr( formula = as.formula(modS.formula),data = dset, weights = "Freq", method ="logistic")
-			mod = polr( formula = as.formula(mod.formula),data = dset, weights = "Freq", method ="logistic")
+			print(head(dset))
+			print(mod.formula)
+			print(modS.formula)
+			modS = polr( formula = as.formula(modS.formula),data = dset, weights = dset$Freq, method ="logistic")
+			mod = polr( formula = as.formula(mod.formula),data = dset, weights = dset$Freq, method ="logistic")
 			pred = predict(mod,newdata = subtable(dset,c(1:(nv-1)),keep.zero=F),type="probs")
 			fit.values = as.vector(t(pred))
 			tt1r = ftable(tapply(fit.values,as.list(dset[,1:nv]),sum),col.vars=which(hsplit))

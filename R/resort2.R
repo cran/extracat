@@ -57,7 +57,7 @@ for( i in 1:n ){
 }
 iset.updateVars()
 if(listen){
-listen()
+listen(init = FALSE)
 }
 
 }

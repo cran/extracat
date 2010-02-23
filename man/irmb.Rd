@@ -52,7 +52,7 @@
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted Jan 2010
+  Journal of Statistical Software, submitted March 2010
 }
 \author{
 Alexander Pilhoefer\cr
@@ -61,7 +61,11 @@ University of Augsburg\cr
 Germany
 }
 \note{
-  This function is based on \pkg{iWidgets} and therefore needs JGR to run. \pkg{iWidgets} will be installed automatically from rforge.net on ots first run.
+  This function is based on \pkg{iWidgets} and therefore needs the \pkg{JGR} console to run. 
+  For \pkg{iWidgets} please visit \url{http://www.rforge.net} to download the \pkg{iWidgets} source file or install it from the console using:\cr
+  \code{install.packages("iWidgets",,'http://rforge.net/',type='source')}\cr
+  For \pkg{JGR} please visit \url{http://www.rosuda.org/software} and download the JGR launcher which will start the console automatically and install all other required packages on its first run.
+  
 }
 \seealso{
   
@@ -70,10 +74,12 @@ Germany
 \dontrun{
     data(housing)
     # example 1
-    irmb(~Type+Infl+Cont+Sat,dset=housing,expected = TRUE, eqwidth=FALSE,base=0.2,mult=2,lab.tv=TRUE,abbr=TRUE)
+    irmb(~Type+Infl+Cont+Sat,dset=housing,expected = TRUE,
+        eqwidth=FALSE,base=0.2,mult=2,lab.tv=TRUE,abbr=TRUE)
     
     # example 2
-    irmb(~Type+Infl+Cont+Sat,dset=housing,expected = FALSE, eqwidth = TRUE,base=0.2,mult=2,lab.tv=FALSE,abbr=TRUE)
+    irmb(~Type+Infl+Cont+Sat,dset=housing,expected = FALSE,
+        eqwidth = TRUE,base=0.2,mult=2,lab.tv=FALSE,abbr=TRUE)
 }
  }
 

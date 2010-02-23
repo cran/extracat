@@ -10,10 +10,10 @@ This function provides a parallel coordinates plot for categorical as well as co
 It applies sorted numeric point sequences to the categories which indicate the relative frequencies and allow a sensible interactive highlighting.
 There are options to change the rule for the gaps between these sequences and to apply an additional ordering algorithm.
 }
-\usage{cpcp(V, ord = NULL, freqvar = NULL, numerics = NULL, gap.type = "equal.tot",
-        na.rule = "omit", spread = 0.3, gap.space = 0.2, psp = FALSE, 
-        scr.res = c(1280, 1024), sort.individual = FALSE, jitter = FALSE)}
-%- maybe also 'usage' for other objects documented here.
+\usage{cpcp(V, ord = NULL, freqvar = NULL, numerics = NULL,
+        gap.type = "equal.tot", na.rule = "omit", spread = 0.3,
+        gap.space = 0.2, psp = FALSE, scr.res = c(1280, 1024),
+        sort.individual = FALSE, jitter = FALSE)}
 \arguments{
   \item{V}{
 data frame containing the variables for the plot. A special choice and order can be made by setting the second argument \code{ord}.If \code{V} is a frequency table (see e.g. \link[stats]{ftable}) the frequency variable has to be named "Freq".
@@ -68,7 +68,7 @@ No return value.
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted Jan 2010
+  Journal of Statistical Software, submitted March 2010
 }
 \author{
 Alexander Pilhoefer\cr
@@ -77,7 +77,8 @@ University of Augsburg\cr
 Germany
 }
 \note{
-%%  ~~further notes~~
+This function is based on the \pkg{iplots} package which will be installed automatically on the first run. For unix systems it is also necessary to run it from the \pkg{JGR} console.
+To receive \pkg{JGR} please visit \url{http://www.rosuda.org/software} and download the JGR launcher which will start the console automatically and install all other required packages on its first run.
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
@@ -88,7 +89,9 @@ Germany
 \link[extracat]{resort}
 }
 \examples{
+\dontrun{
 cpcp(V = housing)
+}
 }
 \keyword{ categorical }
 \keyword{ parallel coordinates }

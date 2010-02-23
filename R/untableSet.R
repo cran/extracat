@@ -17,7 +17,7 @@ function(dset, freqvar = NULL){
 	X = do.call("rbind",X)
 	vn = names(dset)[ind]
 	names(X)=vn
-	X = rbind(X,as.matrix(dset[which( !(c(1:m) %in% c(zero,zind)) ),ind]))
+	X = rbind(X,as.matrix(dset[c(1:m)[-c(zero,zind)],ind]))
 	return(suppressWarnings(data.frame(X)))
 }
 

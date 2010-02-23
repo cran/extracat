@@ -496,12 +496,17 @@ if(init | env$spinechange){
                mult = 1.5, colv = NULL, yaxis = TRUE, min.alpha = 0.1,
                base.alpha = 0.75, boxes = TRUE, lab.tv = FALSE, varnames = TRUE,
                abbr = FALSE, lab.cex = 1.2,...){
+
+	if(!("iWidgets" %in% .packages(all.available=TRUE) ) ){
+		cat("The required package iWidgets is not available.\n Please use \n install.packages('iWidgets',,'http://rforge.net/',type='source') \n for installation.")
+		return(invisible(TRUE))
+		}
+	if(!("JGR" %in% .packages(all.available=FALSE) ) ){
+		cat("iWidgets requires 'JGR' in order to run correctly.\n Please visit \n http://www.rosuda.org/software/ \n to download it.")
+		return(invisible(TRUE))
+		}
+	library(iWidgets)
 	
-	tryCatch(library(iWidgets),
-	error = function(){
-		install.packages("iWidgets",,'http://rforge.net/',type='source')
-		library(iWidgets)
-		},finally = invisible(0))
 	e1 = new.env()
 	w = iwindow()
 	# ----- save global parameters to e1 ----- #
