@@ -10,10 +10,9 @@ This function provides a parallel coordinates plot for categorical as well as co
 It applies sorted numeric point sequences to the categories which indicate the relative frequencies and allow a sensible interactive highlighting.
 There are options to change the rule for the gaps between these sequences and to apply an additional ordering algorithm.
 }
-\usage{cpcp(V, ord = NULL, freqvar = NULL, numerics = NULL,
-        gap.type = "equal.tot", na.rule = "omit", spread = 0.3,
-        gap.space = 0.2, psp = FALSE, scr.res = c(1280, 1024),
-        sort.individual = FALSE, jitter = FALSE)}
+\usage{cpcp(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",
+na.rule = "omit", spread=0.3,gap.space = 0.2, sort.individual=FALSE, 
+jitter = FALSE, plot = TRUE, return.df = !plot,\dots)}
 \arguments{
   \item{V}{
 data frame containing the variables for the plot. A special choice and order can be made by setting the second argument \code{ord}.If \code{V} is a frequency table (see e.g. \link[stats]{ftable}) the frequency variable has to be named "Freq".
@@ -48,22 +47,21 @@ In the latter case the \code{spread} value denotes the maximal spread width arou
   \item{gap.space}{
 The space parameter for each gap. Should lie in \eqn{[0,1)}.
 }
-\item{psp}{
-If \code{TRUE} parallel spineplots will be drawn below the plot.
-}
-\item{scr.res}{
-The screen resolution used for the plot size.
-}
+
 \item{sort.individual}{
 If \code{TRUE} all polygones with the same categories in two neighboring variables will be drawn together in the right variable.
 }
 \item{jitter}{logical: whether or not to jitter integer variables which are treated as a numeric variable.}
+
+\item{plot}{ Whether or not to draw the plot. If \code{FALSE} only the iset is computed.}
+\item{return.df}{A logical indicating whether or not to return the iset.}
+\item{\dots}{ Further arguments.}
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-No return value.
+\code{invisible(TRUE)} or, if \code{return.df == TRUE}, the iset which was computed.
 }
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:

@@ -6,13 +6,14 @@
 data.frame reduction
 }
 \description{
-Reduces a dataframe into a frequency table with prespecified entries.
+Reduces a dataframe into a frequency table with prespecified entries. Uses a modified version of the \link[plyr]{count} function which also accepts weights.
+Zero-entries can be included or excluded and the variables can be coerced into factors if necessary.
 }
-\usage{subtable(dset, cols, keep.zero = TRUE, 
-            allfactor = TRUE, freqvar = NULL)}
-%- maybe also 'usage' for other objects documented here.
+\usage{subtable(data, cols, freqvar = NULL, 
+		keep.zero = FALSE, allfactor = FALSE)}
+
 \arguments{
-  \item{dset}{
+  \item{data}{
 The \code{data.frame} to reduce.
 }
   \item{cols}{
@@ -31,10 +32,10 @@ A logical indicating whether to convert all variables into factor variables. Int
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+This function uses a modified version of \link[plyr]{count} in order to provide the arguments \code{keep.zero} and \code{allfactor} and to be able to handle both raw datasets and datasets with a frequency variable.
 }
 \value{
-A \code{data.frame}.
+A \code{data.frame} including a \code{"Freq"} variable.
 }
 \references{
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:

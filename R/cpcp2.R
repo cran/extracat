@@ -1,21 +1,23 @@
-cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",spread=0.3,gap.space = 0.2,psp=FALSE,scr.res=c(1280,1024),sort.individual=FALSE, jitter = FALSE){
-	
-	if( .Platform$OS.type == "unix" ){
+cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",
+spread=0.3,gap.space = 0.2
+,sort.individual=FALSE, jitter = FALSE,
+plot = TRUE, return.df = !plot, ... ){
+	ieXt = FALSE
+	scr.res=c(1280,1024)
+	if( plot & .Platform$OS.type == "unix" ){
 		if(!("JGR" %in% .packages(all.available=FALSE))){
 			cat("Please use the 'JGR' console for iplots. To download it visit\n 'http://www.rosuda.org/software/'")
 			return(invisible(TRUE))
 			}
 	}
 			
-	if(!( "iplots" %in% .packages(all.available = TRUE) ) ){
+	if(plot & !( "iplots" %in% .packages(all.available = TRUE) ) ){
 		cat("Installing required package 'iplots'...")
 		install.packages('iplots')   
 		}
-	 	
-	
-	library(iplots)
-	#library(CarbonEL)
-	
+	if(plot){ 	
+			require(iplots)
+	}
 	
 	
 	V = data.frame(V)
@@ -25,12 +27,13 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 		stopifnot(is.null(freqvar))
 		for(j in numerics){
 			if(is.integer(V[,j]) & jitter){
-				V[,j] = as.numeric(V[,j]) + runif(m,-1,1)
+				V[,j] = as.numeric(V[,j]) + runif(m,-0.5,0.5) # +- 1?
 			}else{
 				V[,j] = as.numeric(V[,j])
 			}
 		}
 	}
+
 	stopifnot(gap.type %in% c("equal.gaps","equal.tot","spread"))
 	stopifnot(spread <= 1)
 	stopifnot(gap.space < 1)
@@ -100,6 +103,7 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 	
 	S = vector(mode="list",length=nK)
 	S = sapply(V[,indK],function(x) table(x),simplify=FALSE)
+
 	V4 = V[,1:n]
 	V4[,indK] = sapply(V4[,indK], as.integer)
 	
@@ -119,7 +123,7 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 			
 			
 			nlvl = sapply(V[,indK],nlevels)
-
+	
 			if( gap.type == "equal.tot" ){
 					eta = sapply(S,function(x) x/sum(x),simplify=FALSE)
 					sc = sapply(nlvl,function(x) c(0:(x-1)) *( 2*gap.space/( (x - 1)*(1 - gap.space))-1 ),simplify=FALSE) # includes the integer value
@@ -142,21 +146,24 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 					eta = sapply(S,function(x) x/max(x)*spread/2,simplify=FALSE)
 					shift = lapply(nlvl,function(x) rep(0,x))
 			}
-		
+			
 			seqs = lapply(1:nK,function(y){
+
 					unlist(
 						sapply(c(1:nlvl[y]),function(x){
 							return( seq(shift[[y]][x]-eta[[y]][x],shift[[y]][x]+eta[[y]][x],2*c(eta[[y]]/S[[y]])[x])[1:S[[y]][x]] )
 						})
 					)
 				})
+
 			ind = lapply(TT,function(x) unlist(x))
 
 			ord.seqs = mapply(function(x,y) return(x[order(y)]),seqs,ind)
-			
+
+
 			V3[,indK] = ord.seqs
 			V2 = V3+V4
-			
+		
 			.GlobalEnv$sort.individual = FALSE
 			if( sort.individual ){
 				e1 = new.env()
@@ -173,7 +180,7 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 			V2 = V3+V4
 			.GlobalEnv$sort.individual = TRUE
 			}
-			
+	
 			#.GlobalEnv$sort.individual = FALSE
 			#if( sort.individual ){
 			#	e1 = new.env()
@@ -197,25 +204,21 @@ cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.
 			cpcp=data.frame(V,V2,V3,V4)
 
 			names(cpcp)=c(names(V),paste("C",vn,sep="."),paste("S",vn,sep="."),paste("I",vn,sep="."))	
-		
+		if(plot){
 			s = iset.new("icpcp",cpcp)
 			ipcp(s[,(1:n) + ncol(V) ])
 			# setting the size and location as the upper half of the screen
 			iplot.location(x=10, y=10, relative=FALSE, plot=iplot.cur())
 			iplot.size(width=(scr.res[1])*(n-1)/n, height=scr.res[2]/2.2, plot=iplot.cur())
 		
-			if( psp ){ # plot parallel spineplots below
-				for( k in 1:n ){
-					if(k %in% indK){
-					ibar(s[[k]],isSpine=T)
-					iplot.rotate(1)
-					}else{
-					ibox( as.numeric( ivar.data(s[[k]]) ) )	
-					}
-					iplot.location(x=10 + (k-1)*(scr.res[1])/n - (k-1)*10, y=scr.res[2]/2+10, relative=FALSE, plot=iplot.cur())
-					iplot.size(width=(scr.res[1])/nK-10, height=scr.res[2]/2.1 -10, plot=iplot.cur())
-				}
-			}
-	
+			
+		}
+		#itext <- function(x, y=NULL, labels=seq(along=x), ax=NULL, ay=NULL, ..., plot=iplot.cur())
+			
+		if(return.df){
+			return(cpcp)	
+		}else{
+			return(invisible(TRUE))	
+		}
 
 }

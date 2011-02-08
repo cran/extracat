@@ -1,3 +1,9 @@
 export(rmb, subtable, spread, untableSet, cpcp, resort, listen, irmb)
-import(reshape,grid)
+import(reshape2,grid, colorspace, plyr)
+S3method(rmb,formula)
+S3method(rmb,table)
+S3method(rmb,ftable)
 
+S3method(irmb,formula)
+S3method(irmb,table)
+S3method(irmb,ftable)

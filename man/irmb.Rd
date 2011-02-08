@@ -1,50 +1,57 @@
 \name{irmb}
 \Rdversion{1.1}
 \alias{irmb}
+\alias{irmb.formula}
+\alias{irmb.table}
+\alias{irmb.ftable}
+
 \concept{Interactive Multiple Barchart for relative frequencies and generalized Spineplots}
 \title{
   Interactive Multiple Barchart for relative frequencies and generalized Spineplots
 }
 \description{
-  The \code{irmb} function is an interactive version of the basic \link{rmb} function. It provides sliders for x- and y-scales, variable inclusion/exclusion, axis changes, switching between barcharts and spineplots, model selection for residual shadings as well as a highlighting-like choice of the categories in the spineplot.
-  It depends on \pkg{iWidgets} which only works with \pkg{JGR}.}
-\usage{irmb(f, dset, Z=100, use.na = FALSE,
- expected = TRUE, resid.type = "pearson",
- use.expected.values = FALSE, max.resid.scale = NULL,
- cut.rv = TRUE, cut.rs = 5, base = 0.2, mult = 1.5, 
- colv = NULL, yaxis = TRUE, min.alpha = 0.1, 
- base.alpha = 0.75, boxes = TRUE, lab.tv = FALSE,
- varnames = TRUE, abbr = FALSE, lab.cex = 1.2,\dots)}
+  The \code{irmb} function is an interactive version of the basic \link{rmb} function. It provides sliders for x- and y-scales, variable inclusion/exclusion, axis changes, switching between barcharts, spineplots and mosaic plots as well as model selection for residual shadings and a few more options.
+  It depends on the \pkg{iWidgets} package and therefore only works when called from the \pkg{JGR} console.}
+\usage{
+
+\method{irmb}{formula}(formula, data, gap.prop = 0.2,
+               gap.mult = 1.5, col = "hcl", col.opt =list(), Z=100, abbrev = FALSE,
+               use.na = FALSE, expected = TRUE,  resid.type = "pearson", 
+               max.resid.scale = NULL, cut.rs = 7, yaxis = TRUE, min.alpha = 0.1,
+               boxes = TRUE, lab.tv = FALSE, varnames = TRUE, lab.cex = 1.2,\dots)
+\method{irmb}{ftable}(x , gap.prop = 0.2, gap.mult = 1.5, col = "hcl", col.opt=list(),
+			Z=100, abbrev = FALSE, use.na = FALSE, expected = TRUE,
+			resid.type = "pearson", max.resid.scale = NULL, cut.rs = 7,
+			yaxis = TRUE, min.alpha = 0.1, boxes = TRUE, lab.tv = FALSE,
+			varnames = TRUE, lab.cex = 1.2, \dots)
+              }
 
 \arguments{
-  \item{f}{The \code{\link[stats]{formula}} specifying the variables in their given order with the last variable being the target variable. The left hand is either empty or denotes the frequency variable.}
-  \item{dset}{The dataset in form of a frequency table (see \code{\link[stats]{ftable}} or \code{\link[extracat]{subtable}} for more information) with a column named \code{"Freq"} or in raw format (that is the rows represent the cases and the columns represent the variables). }
-  \item{Z}{The number of intervals for the sliders.}
+\item{x}{A table either of class \code{table} or of class \code{ftable}. The arguments formula and data will be omitted.}
+  \item{formula}{Either a \code{\link[stats]{formula}} a \code{\link[stats]{formula}} or an \code{\link[stats]{formula}}. If \code{x} is a formula it also specifies the order of the variables in the plot. The las variable will be the target variable. The left hand side of the formula is either empty or denotes a frequency variable.}
+  \item{data}{The dataset in form of a frequency table (see \code{\link[stats]{ftable}} or \code{\link[extracat]{subtable}} or a \code{data.frame}. Ignored if \code{x} is a table. }
+   \item{gap.prop}{The maximum proportion of the total plot width which is used for the gaps.}
+  \item{gap.mult}{The incremental multiplier for the gaps of different dimensions. The gaps corresponding to any one variable are \code{gap.mult} times larger than those corresponding to the next variable on the same axis.}
+  \item{col}{Either a vector defining the colors of the bars or a name specifying a palette: \code{"hsv"} and \code{"rgb"} for hsv-based rainbow colors, \code{"hcl"} for hcl-based rainbow colors (default), \code{"div"} or \code{"diverge"} for hcl-based diverging colors and finally \code{"seq"} or \code{"sequential"}
+  for hcl-based sequential colors.Additional arguments can be specified via the \code{col.opt} argument according to the underlying functions in the colorspace package, e.g. \link[colorspace]{rainbow_hcl}. For the hsv-based colors see \link[grDevices]{rainbow}. Specifying a color or palette has no effect if an \code{expected} model is defined.}
+  \item{col.opt}{Further options for the color palettes. See e.g. \link[colorspace]{rainbow_hcl} or \link[grDevices]{rainbow}.}
+    \item{Z}{The number of intervals for the sliders.}
   \item{use.na}{Logical, specifying whether or not to drop cases with missing entries. If not, a category \code{"N/A"} will be created in each variable where missings occur.}
-  \item{expected}{Should model residuals be used to define the colors of the rectangles or bars?}
-  \item{resid.type}{ \code{"pearson"}, \code{"deviance"}, \code{"working"}, \code{"partial"}  or  \code{"response"}. The underlying model is a \link[stats]{glm} poisson model. }
-  \item{use.expected.values}{Logical specifying whether or not to use the frequencies expected from the model instead of the observed ones in the dataset.}
+  \item{expected}{If \code{TRUE} residual shadings according to loglinear models will be available.}
+  \item{resid.type}{ \code{"pearson"}, \code{"deviance"}, \code{"working"}, \code{"partial"}  or  \code{"response"}. The underlying model is a \link[stats]{glm} poisson model. The mosaicplot option will always use Pearson residuals. }
   \item{max.resid.scale}{If undefined the scale of the residuals will update with the model.}
-  \item{cut.rv}{A logical. If \code{FALSE} the residual shading alpha values will be chosen exactly and otherwise depending on the specified scale intervals.  }
   \item{cut.rs}{The number of cuttingpoints for the residual scale.}
-  \item{base}{The maximal proportion of the total plot width which is used for the gaps.}
-  \item{mult}{The incremental multiplier for the gaps of different dimensions. }
-  \item{colv}{A vector defining the colors of the bars or \code{NULL} for \link[grDevices]{rainbow} colors. Has no effect if \code{expected = TRUE}.}
   \item{yaxis}{If \code{TRUE} a vertical axis will be drawn at both sides of the plot. This is recommended when using the y-axis slider.}
   \item{min.alpha}{In case of \code{eqwidth = T} alpha blending with respect to the corresponding weight is applied to the background color of the bars. In order to save very sparse combinations from disappearing there is a minimum alpha value. }
-  \item{base.alpha}{A basic alpha value which will be applied to the bar colors. Does also work with residual shadings but not with colors chosen individually by setting \code{colv}}
-  \item{boxes}{Should the labels be surrounded by boxes?}
+    \item{boxes}{Should the labels be surrounded by boxes?}
   \item{lab.tv}{Should the target variable be included in the labeling?}
   \item{varnames}{Should the variable names be shown as labels?}
-  \item{abbr}{If \code{TRUE} the labels will automatically be abbreviated (3 characters) using the \link[base]{abbreviate} function.}
+  \item{abbrev}{If \code{TRUE} the labels will automatically be abbreviated (3 characters) using the \link[base]{abbreviate} function.}
   \item{lab.cex}{The fontsize multplier.}
   \item{\dots}{Further arguments. Usually not necessary.}
 }
 \details{
-  The \code{hlcat} editable field allows to choose the categories for the spineplot mode. For example, \code{3,1,4} will put the third category on the bottom and then stack the first and fourth category. Category 2 will be left out.
-  The model selection field has to contain the interaction terms to fit the \link{glm} poisson model. The single terms will be included automatically.
-  The \code{hsplit} checkboxes can be used to switch variables from one axis to the other but it has no effect if the corresponding variable is the last one.
-    
+
   }
 \value{
   No return value. 
@@ -61,10 +68,10 @@ University of Augsburg\cr
 Germany
 }
 \note{
-  This function is based on \pkg{iWidgets} and therefore needs the \pkg{JGR} console to run. 
+  This function is based on \pkg{iWidgets} and therefore needs the \pkg{JGR} console to run. It is not sufficient to load the \pkg{JGR} package.
   For \pkg{iWidgets} please visit \url{http://www.rforge.net} to download the \pkg{iWidgets} source file or install it from the console using:\cr
   \code{install.packages("iWidgets",,'http://rforge.net/',type='source')}\cr
-  For \pkg{JGR} please visit \url{http://www.rosuda.org/software} and download the JGR launcher which will start the console automatically and install all other required packages on its first run.
+  For \pkg{JGR} please visit \url{http://www.rosuda.org/software} and download the JGR launcher which will start the console automatically and install all other required packages on first run.
   
 }
 \seealso{
@@ -74,12 +81,11 @@ Germany
 \dontrun{
     data(housing)
     # example 1
-    irmb(~Type+Infl+Cont+Sat,dset=housing,expected = TRUE,
-        eqwidth=FALSE,base=0.2,mult=2,lab.tv=TRUE,abbr=TRUE)
+    irmb(~Type+Infl+Cont+Sat,data=housing,abbrev=4)
     
     # example 2
-    irmb(~Type+Infl+Cont+Sat,dset=housing,expected = FALSE,
-        eqwidth = TRUE,base=0.2,mult=2,lab.tv=FALSE,abbr=TRUE)
+    irmb(~Type+Infl+Cont+Sat,data=housing,expected = FALSE,
+    	gap.mult=2,abbrev=4)
 }
  }
 
