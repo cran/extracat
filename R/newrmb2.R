@@ -261,7 +261,7 @@ rmb.ftable = function(x, col.vars = NULL, spine = FALSE,  cat.ord = NULL,  eqwid
 			#full.terms = do.call("paste",c(as.list(names(dset)[1:(nv-1)]),sep="*"))
 			#interaction.terms = do.call("paste",c(lapply(expected,function(x) do.call("paste",c(as.list(names(dset)[x]),sep="*"))),sep="+"))
 			mod.formula = as.formula(paste(fterms[nv0],"~",single.terms,"+",interaction.terms,sep=""))
-			print(mod.formula)
+			#print(mod.formula)
 			modS.formula = as.formula(paste(fterms[nv0],"~",full.terms,sep=""))	
 			modS = polr( formula = as.formula(modS.formula),data = dset, weights = dset$Freq, method ="logistic")
 			mod = polr( formula = as.formula(mod.formula),data = dset, weights = dset$Freq, method ="logistic")

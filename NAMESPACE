@@ -1,4 +1,5 @@
-export(rmb, subtable, spread, untableSet, cpcp, resort, listen, irmb)
+useDynLib(extracat, .registration = TRUE)
+export(rmb, subtable, spread, untableSet, cpcp, resort, listen, irmb, optile, bloma, fluctile, cfluctile)
 import(reshape2,grid, colorspace, plyr)
 S3method(rmb,formula)
 S3method(rmb,table)
@@ -7,3 +8,10 @@ S3method(rmb,ftable)
 S3method(irmb,formula)
 S3method(irmb,table)
 S3method(irmb,ftable)
+
+
+S3method(optile,matrix)
+S3method(optile,table)
+S3method(optile,default)
+S3method(optile,ftable)
+S3method(optile,array)

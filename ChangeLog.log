@@ -1,0 +1,6 @@
+2011-08-22  Alexander Pilhoefer  <alexander.pilhoefer@math.uni-augsburg.de>
+
+* added new functions optile, fluctile, cfluctile to the package: these were part of the Google summer of Code project (Gsoc11)
+
+
+* minor changes to rmb and subtable: more imortant changes coming soon

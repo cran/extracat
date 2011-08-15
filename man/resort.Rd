@@ -1,5 +1,4 @@
 \name{resort}
-\Rdversion{1.1}
 \alias{resort}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{

@@ -39,10 +39,21 @@ plot = TRUE, return.df = !plot, ... ){
 	stopifnot(gap.space < 1)
 	stopifnot(dim(V) > 1)
 
+	if( "Freq" %in% names(V) & is.null(freqvar) ){ freqvar = "Freq" }
+		
+	is.ft = !is.null(freqvar)
+	
+	fi <- which(names(V) == freqvar)
+	
 	if(na.rule == "omit"){
 		V = na.omit(V)	
 	}else{ # how handle NAs in numeric variables ??
-		V = sapply(V,function(x){
+		if(!is.null(freqvar)){
+			Vt <- V[,-fi]
+		}else{
+			Vt <- V	
+		}
+		V = sapply(Vt,function(x){
 				if(!class(x) == "numeric"){
 				w = x
 				w[is.na(x)] = "N/A"
@@ -51,11 +62,10 @@ plot = TRUE, return.df = !plot, ... ){
 					return(x)	
 				}
 			})
+		rm(Vt)
 	}
 	
-	if( "Freq" %in% names(V) & is.null(freqvar) ){ freqvar = "Freq" }
-		
-	is.ft = !is.null(freqvar)
+	
 	
 
 	if(is.ft){
@@ -64,10 +74,11 @@ plot = TRUE, return.df = !plot, ... ){
 		n = length(ord)
 		
 		fi = which(names(V) == freqvar)
+		V <- V[V[,fi]>0,]
 		#not.ord = which( !( 1:ncol(V) %in% c(ord,fi) ) )
 		not.ord = c(1:ncol(V))[-c(ord,fi)]
 		
-		VS = subtable(V,c(ord,not.ord),keep.zero=F,allfactor=F,freqvar=freqvar)
+		VS = subtable(V,c(ord,not.ord),keep.zero=FALSE,allfactor=FALSE,freqvar=freqvar)
 		lvls = lapply(VS[,1:n],function(x){
 				 if(class(x) != "numeric") levels(as.factor(x)) 
 				})

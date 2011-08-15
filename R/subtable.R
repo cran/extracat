@@ -75,10 +75,11 @@
 #	}
 #}
 subtable <- function(data, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FALSE){
+	data=as.data.frame(data)
 	names(data)[which(names(data)==freqvar)] = "Freq"
 	
 	if(allfactor){
-		int = which(sapply(data[,cols],is.integer))
+		int = which(sapply(data[,cols], function(v) is.integer(v)|is.numeric(v)))
 		for( i in int ){
 			data[,cols[i]] = as.factor(data[,cols[i]])
 		}
@@ -91,12 +92,13 @@ subtable <- function(data, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FAL
 		}else{
 			ss = count2(data, cols)
 		}
+		ss <- ss[ss$Freq > 0,]
 	}else{
 		if("Freq" %in% names(data)){
 			fid = which(names(data)=="Freq")
 			ss = as.data.frame(xtabs(Freq~.,data=data[,c(cols,fid)]))
 		}else{
-			ss = as.data.frame(table(data[,c(cols,fid)]))
+			ss = as.data.frame(table(data[,c(cols)]))
 		}
 	}
 #	if(allfactor){
@@ -132,3 +134,7 @@ if(!is.null(weights)){
     unrowname(data.frame(labels, Freq))
 }
 }
+
+
+
+

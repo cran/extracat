@@ -1,5 +1,4 @@
 \name{rmb}
-\Rdversion{1.1}
 \alias{rmb}
 \alias{rmb.formula}
 \alias{rmb.table}

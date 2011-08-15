@@ -1,6 +1,5 @@
 \name{carcustomers}
 \alias{carcustomers}
-\Rdversion{1.1}
 
 \docType{data}
 \title{

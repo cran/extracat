@@ -1,5 +1,4 @@
 \name{spread}
-\Rdversion{1.1}
 \alias{spread}
 \title{
   Matrix Expansion

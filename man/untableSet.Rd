@@ -1,5 +1,4 @@
 \name{untableSet}
-\Rdversion{1.1}
 \alias{untableSet}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
@@ -8,10 +7,10 @@ data.frame conversion
 \description{
 Converts a frequency table into a raw data.frame.
 }
-\usage{untableSet(dset, freqvar = NULL)}
+\usage{untableSet(data, freqvar = NULL)}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{dset}{
+  \item{data}{
 The \code{data.frame} including a frequency variable "Freq".
 }
 

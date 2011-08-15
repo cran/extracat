@@ -1,5 +1,4 @@
 \name{cpcp}
-\Rdversion{1.1}
 \alias{cpcp}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{

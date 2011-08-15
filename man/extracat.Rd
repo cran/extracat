@@ -1,5 +1,4 @@
 \name{extracat}
-\Rdversion{1.1}
 \alias{extracat}
 
 \docType{package}

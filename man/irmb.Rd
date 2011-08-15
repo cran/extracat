@@ -1,5 +1,4 @@
 \name{irmb}
-\Rdversion{1.1}
 \alias{irmb}
 \alias{irmb.formula}
 \alias{irmb.table}

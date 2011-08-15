@@ -1,5 +1,4 @@
 \name{subtable}
-\Rdversion{1.1}
 \alias{subtable}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
