@@ -3,6 +3,7 @@
 \alias{rmb.formula}
 \alias{rmb.table}
 \alias{rmb.ftable}
+\alias{rmb.glm}
 \concept{Multiple Barchart for relative frequencies and generalized Spineplots}
 \title{
   Multiple Barchart for relative frequencies and generalized Spineplots
@@ -14,49 +15,63 @@
  Additionally the \code{rmb} function allows to draw spineplots instead of the barcharts within each explanatory combination. On that score it can be seen as a generalization of Spineplots.
 }
 \usage{
-\method{rmb}{formula}(formula, data, col.vars = NULL, spine = FALSE,  cat.ord = NULL,  eqwidth = FALSE,
-                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL,
-                mod.type = "poisson", resid.type = "pearson",
-                use.expected.values = FALSE, resid.max = NULL, cut.rs = 5,                
-                gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), yaxis = TRUE, label = TRUE,
-                min.alpha = 0.1, boxes = TRUE, lab.tv = FALSE, varnames = TRUE, abbrev = FALSE, lab.cex = 1.2,\dots)
-\method{rmb}{ftable}(x, col.vars = NULL, spine = FALSE,  cat.ord = NULL,  eqwidth = FALSE,
-                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL,
-                mod.type = "poisson", resid.type = "pearson",
-                use.expected.values = FALSE, resid.max = NULL, cut.rs = 5,                
-                gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), yaxis = TRUE, label = TRUE,
-                min.alpha = 0.1, boxes = TRUE, lab.tv = FALSE, varnames = TRUE, abbrev = FALSE, lab.cex = 1.2,\dots)
+\method{rmb}{formula}(formula, data, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
+                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE, label.opt = list(),\dots)
+\method{rmb}{ftable}(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
+                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),\dots)
 }
 \arguments{
- \item{x}{A table either of class \code{table} or of class \code{ftable}. The latter also implicitly defines the the order in which the variables will be added to the plot. The arguments formula and data will be omitted.}
+ \item{x}{ Either a table or a model of class \code{"glm"} and family \code{"poisson"} or \code{"binomial"}.
+ A table must be either of class \code{table} or of class \code{ftable}. The latter also implicitly defines the the order in which the variables will be added to the plot. The arguments formula and data will be omitted. Please note that the model based version is still beta and will be improved in a future release.
+ }
   \item{formula}{The \code{\link[stats]{formula}} specifying the variables in their given order with the last variable being the target variable. The left hand is either empty or denotes the frequency variable.}
   \item{data}{The dataset in form of a frequency table (see \code{\link[stats]{ftable}} or \code{\link[extracat]{subtable}} for more information) with a column named \code{"Freq"} or in raw format (that is the rows represent the cases and the columns represent the variables). }
   \item{col.vars}{Logical vector with split directions where \code{TRUE} stands for horizontal splitting. The last (target) variable is always arranged on the x-axis. }
   \item{spine}{If \code{TRUE} a spineplot will be drawn instead of each barchart. This is recommended for binary target variables.}
-  \item{cat.ord}{A vector specifying the categories of the target variable which will be visualized in the specified order. The default is to use all categories.}
+ \item{circular}{ If \code{TRUE} a piechart will be drawn instead of each barchart. \code{spine} is set to \code{FALSE}.}
   \item{eqwidth}{If \code{TRUE} the bar length of the multiple barchart in the background no longer restricts the width of the barcharts/spineplots for the relative frequencies of the target variable.}
-  \item{freq.trans}{This parameter allows to transform the absolute frequencies used for the underlying multiple barchart. Possible values are \code{"log"}, \code{"sqrt"} or \code{list("krt",k)}. The latter stands for the k-th root transformation.}
+   \item{cat.ord}{A vector specifying the categories of the target variable which will be visualized in the specified order. The default is to use all categories.}
+   \item{freq.trans}{This parameter allows to transform the absolute frequencies used for the underlying multiple barchart. Possible values are \code{"log"}, \code{"sqrt"} or \code{list("krt",k)}. The latter stands for the k-th root transformation.}
   \item{max.scale}{The maximum value of the probability (y-axis) scale for each combination. Unsurprisingly the default is 1. The axis will be drawn if \code{yaxis} is \code{TRUE}.}
   \item{use.na}{If \code{TRUE} missing values will be changed to a level \code{"N/A"} and else (which is the default) the function \link[stats]{na.omit} will be called to reduce the dataset to complete cases only.}
-  \item{expected}{A list of integer vectors denoting the interaction terms in the poisson or proportional odds model. If undefinded no residual shadings will be used. Can also be set to \code{TRUE} which stands for the default independence model: the null model in the sense of logistic regression  models. In the Poisson case the log-linear equivalent is to use a saturated model for the explanatory variables with no interaction term including the target variable.}
-  \item{mod.type}{Either \code{"poisson"} or \code{"polr"}. See \link[stats]{glm} and \link[MASS]{polr}.}
-  \item{resid.type}{ \code{"pearson"}, \code{"deviance"}, \code{working}, \code{partial}  or  \code{"response"}. For \code{polr} models only the latter is available. }
-  \item{use.expected.values}{A logical specifying whether or not to use the frequencies predicted by the model instead of the observed frequencies.}
-  \item{resid.max}{The maximum scale value for the residuals. If undefined it will be chosen automatically.}
-   \item{cut.rs}{The number of cuttingpoints for the residual scale.}
+  \item{expected}{ There are three possibilities how to specify this parameter:\cr
+  
+  1. A list of integer vectors denoting the interaction terms in the poisson or proportional odds model, e.g. \code{list( c(1,2,3), c(1,4) )} for all interactions between variables 1,2 and 3 as well as between 1 and 4.\cr
+  2. A logical indicating whether or not to use a model (logit independence model).\cr
+  3. A vector with expected values, e.g. from a model. If \code{residuals} remains undefined the response residuals will be plotted.\cr
+  \cr
+  
+  If undefinded or set to \code{FALSE} only the observed values will be plotted.}
+ \item{residuals}{ If \code{expected} is a vector with expected values it is also possible to specify residuals. This is used internally by \code{rmb.glm}.}
+ \item{ model.opt }{A list with optional parameters for model specifications. Possible parameters are:
+ 	\tabular{rlll}{
+         \code{use.ecpected.values}   \tab A logical specifying whether or not to use the frequencies predicted by the model instead of the observed frequencies.\cr
+      	 \code{mod.type} \tab Either \code{"poisson"} or \code{"polr"}. See \link[stats]{glm} and \link[MASS]{polr}.	\cr
+         \code{resid.type} \tab \code{"pearson"}, \code{"deviance"}, \code{working}, \code{partial}  or  \code{"response"}. For \code{polr} models only the latter is available.		\cr
+         \code{resid.display} \tab One of \code{"values", "color"} or \code{"both"}. \code{"values"} will result in bars or wedges for both expected and observed frequencies. Hence the raw residuals are shown in the graphic. \code{"color"} will set the \code{col} argument aside and use colors on a red-blue-scale to represent (pearson) residuals. \code{"both"} does both.		\cr
+         \code{max.rat} \tab 	If a model is specified and \code{resid.display = "both"} the x-scales will not be reduced to less than \code{1/max.rat}: The x-scales are reduced whenever an observed frequency exceeds the maximal scale.	\cr
+        }
+}
+
   \item{gap.prop}{The maximum proportion of the total plot width which is used for the gaps.}
   \item{gap.mult}{The incremental multiplier for the gaps of different dimensions. The gaps corresponding to any one variable are \code{gap.mult} times larger than those corresponding to the next variable on the same axis.}
   \item{col}{Either a vector defining the colors of the bars or a name specifying a palette: \code{"hsv"} and \code{"rgb"} for hsv-based rainbow colors, \code{"hcl"} for hcl-based rainbow colors (default), \code{"div"} or \code{"diverge"} for hcl-based diverging colors and finally \code{"seq"} or \code{"sequential"}
   for hcl-based sequential colors.Additional arguments can be specified via the \code{col.opt} argument according to the underlying functions in the colorspace package, e.g. \link[colorspace]{rainbow_hcl}. For the hsv-based colors see \link[grDevices]{rainbow}. Specifying a color or palette has no effect if an \code{expected} model is defined.}
   \item{col.opt}{Further options for the color palettes. See e.g. \link[colorspace]{rainbow_hcl} or \link[grDevices]{rainbow}.}
-   \item{yaxis}{If \code{TRUE} a vertical axis will be drawn at both sides of the plot. This is recommended when changing the \code{max.scale} argument.}
+
   \item{label}{Either a logical specifying whether or not to draw labels or a numeric vector defining which variables shall be labelled. }
-  \item{min.alpha}{In case of \code{eqwidth = T} alpha blending with respect to the corresponding weight is applied to the background color of the bars. In order to save very sparse combinations from disappearing there is a minimum alpha value. }
-  \item{boxes}{Should the labels be surrounded by boxes?}
-  \item{lab.tv}{Should the target variable be included in the labeling?}
-  \item{varnames}{Should the variable names be shown as labels?}
-   \item{abbrev}{An integer value specifying the number of characters to which the labels will automatically be abbreviated. The logical \code{TRUE} leads to 3-character-abbreviations.}
-   \item{lab.cex}{The fontsize multplier.}
+ \item{ label.opt }{A list with optional parameters for label specifications. Possible parameters are:
+ 	\tabular{rlll}{
+         \code{yaxis}   \tab If \code{TRUE} a vertical axis will be drawn at both sides of the plot. This is recommended when changing the \code{max.scale} argument.\cr
+      	 \code{boxes} \tab Should the labels be surrounded by boxes?	\cr
+         \code{lab.tv} \tab Should the target variable be included in the labeling?		\cr
+         \code{varnames} \tab Should the variable names be shown as labels?	\cr
+         \code{abbrev} \tab 	An integer value specifying the number of characters to which the labels will automatically be abbreviated. The logical \code{TRUE} leads to 3-character-abbreviations. \cr
+         	 \code{lab.cex} \tab The fontsize multplier.	\cr
+        }
+}
    \item{\dots}{further arguments. Usually not necessary.}
 }
 \details{
@@ -86,39 +101,80 @@ Germany
     data(housing)
     # simple example
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, gap.mult = 2,
-        col.vars = c(FALSE,TRUE,TRUE,FALSE), abbrev = 3)
+        col.vars = c(FALSE,TRUE,TRUE,FALSE), label.opt = list(abbrev = 3))
     
     # with sqrt-transformation and horizontal splits only
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, gap.mult = 2,
-        col.vars = c(TRUE,TRUE,TRUE,TRUE), freq.trans = "sqrt",  abbrev = TRUE)
+        col.vars = c(TRUE,TRUE,TRUE,TRUE), freq.trans = "sqrt",   label.opt = list(abbrev = 3) )
     
     # a generalized spineplot with the first category highlighted
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, spine = TRUE, 
         cat.ord = 1, mult = 2, col.vars = c(1,3,4), 
-        freq.trans = list("krt",3), abbrev = 2)
+        freq.trans = list("sqrt",3),  label.opt = list(abbrev = 2))
     
     # a generalized spineplot with all categories highlighted 
     # in a changed order
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, spine = TRUE,
         cat.ord = c(3,1,2), gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE),
-        freq.trans = "sqrt", abbrev = TRUE)
+        freq.trans = "sqrt",  label.opt = list(abbrev = 3))
     
+    # the barchart version only for categories 1 and 3
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing, 
+        cat.ord = c(1,3), gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE),
+        freq.trans = "sqrt",  label.opt = list(abbrev = 3))
+        
+        
     # with equal widths
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, eqwidth = TRUE,
-        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), lab.tv = TRUE,
-        abbrev = 2)
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+         label.opt = list(abbrev = 2, lab.tv = TRUE))
+    
+    # ----- models and residuals ----- #
+    # using the logistic model: Sat by Type only
+    
+    #   residual shadings and expected values
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), expected = list(c(1,2,3),c(1,4)),
+        model.opt = list(use.expected.values = TRUE, resid.display = "color") )
+       
+    #   residual values without shadings
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), expected = list(c(1,2,3),c(1,4)),
+        model.opt = list( resid.display = "values") )
+    
+    #   residual shadings and expected values
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), expected = list(c(1,2,3),c(1,4)),
+        model.opt = list(use.expected.values = TRUE, resid.display = "color") )
+   
+    #   barcharts with residual shadings and values
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), expected = list(c(1,2,3),c(1,4)) )
         
-    # with equal widths, residual shadings and expected values
-    rmb(formula = ~Type+Infl+Cont+Sat, data = housing, eqwidth = TRUE,
-        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), lab.tv = TRUE,
-        abbrev = 2, expected = list(c(1,2),c(2,3),c(3,4)),
-        use.expected.values = TRUE)
+    #   spineplots with residual shadings and values 
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing, spine = TRUE,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), expected = list(c(1,2,3),c(1,4)) )
         
-     # using an ftable to create the plot
+    #   piecharts with residual shadings and values
+    rmb(formula = ~Type+Infl+Cont+Sat, data = housing, circular = TRUE,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), expected = list(c(1,2,3),c(1,4)) )
+        
+     # ----- using an ftable to create the plot ----- #
      tt = xtabs(Freq~Type+Cont+Infl+Sat, data = housing)
      ft = ftable(tt, col.vars= c(1,4))
       rmb(tt)
       rmb(ft)
 
+    # ----- using a glm model ----- #
+    mod1 <- glm(Freq ~ Type*Infl*Cont + Type*Sat, data = housing, family = poisson)
+    rmb(mod1, circular = TRUE,
+        gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
+        label.opt = list(abbrev = 3), model.opt = list(use.expected.values = TRUE) )
 }
 

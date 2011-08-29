@@ -72,8 +72,10 @@ cfluctile(M2)
 M2 <- optile(M, iter = 100, presort = TRUE)
 cfluctile(M2)
 
+\dontrun{
 M2 <- optile(M, fun = "hamm", iter = 20)
 cfluctile(M2)
+}
 
 M2 <- optile(M, fun = "casort")
 cfluctile(M2)

@@ -792,7 +792,7 @@ csvd <- function(data, dims, perm.cat, ...){
 }
 
 
-rmca2 <- function( data, dims, perm.cat, ... ){
+rmca <- function( data, dims, perm.cat, ... ){
 
 	data <- as.data.frame(data)
 	A <- xtabs(Freq~.,data = data)
@@ -803,22 +803,22 @@ if(nd > 2){
 	coords <- list()
 ind <- 1:nd
 
-if( "multicore" %in% .packages(all.available = TRUE) ){
-	require("multicore")
-	coords <- mclapply(ind, function(i){
+#if(.Platform$OS.type == "unix" && "multicore" %in% .packages(all.available = TRUE) ){
+#	require("multicore")
+#	coords <- mclapply(ind, function(i){
 		
-	mz <- apply(A, -i, sum)
-	mz <- mz/N
+#	mz <- apply(A, -i, sum)
+#	mz <- mz/N
 
-	M <- matrix( apply(A, i, function(s){
-		(s/sum(s) - mz)
-		}), ncol= dims[i])
+#	M <- matrix( apply(A, i, function(s){
+#		(s/sum(s) - mz)
+#		}), ncol= dims[i])
 
-	S <- svd(M[which(rowSums(M) > 0),])
-	return(S$v[,1])
-})	
+#	S <- svd(M[which(rowSums(M) > 0),])
+#	return(S$v[,1])
+#})	
 
-}else{
+#}else{
 	coords <- lapply(ind, function(i){
 		
 	mz <- apply(A, -i, sum)
@@ -831,7 +831,7 @@ if( "multicore" %in% .packages(all.available = TRUE) ){
 	S <- svd(M[which(rowSums(M) > 0),])
 	return(S$v[,1])
 	})
-}
+#}
 
 		
 		
