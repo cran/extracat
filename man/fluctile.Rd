@@ -8,30 +8,49 @@ fluctuation diagrams
 Create a fluctuation diagram from a multidimensional table.
 }
 \usage{
-fluctile(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3, border = NULL, label = TRUE,...  )
+fluctile(tab, dir = "b", just = "c", hsplit = FALSE, shape ="r", gap.prop = 0.1,  border = NULL, label = TRUE, lab.opt = list(abbrev = 3, lab.cex = 1.2), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = NULL,...  )
 }
 
 \arguments{
   \item{tab}{
 The table which is to be plotted.
 }
-  \item{gap.prop}{
-proportion of the gaps between the rows/columns within each block.
+  \item{dir}{
+The bar/rectangle direction: \code{"v"} and \code{"h"} stand for vertical or horizontal bars. \code{"b"} stands for \code{"both"} and leads to standard fluctuation diagrams with quadratic rectangles. Use \code{"n"} for a same-binsize-plot
+}
+  \item{just}{
+A shortcut version of the argument used in grid for the anchorpoint of the rectangles: \code{"rb"} is equivalent to \code{c("right", "bottom")}, \code{"t"} is equivalent to \code{"ct"} or \code{c("centre", "top")} and so on. See examles.
 }
   \item{hsplit}{
 A logical for alternating columns and rows or a vector of logicals with TRUE for each variable on the x-axis.
 }
-  \item{env}{
-Not necessary.
+  \item{shape}{
+  Instead of rectangles (\code{"r"}) it is possible to use circles (\code{"c"}), diamonds (\code{"d"}) or octagons (\code{"o"}). The arguments \code{dir} and \code{just} work for rectangular shapes only.  
+  }
+  \item{gap.prop}{
+proportion of the gaps between the rows/columns within each block.
 }
+
   \item{abbrev}{
 abbreviate the labels to a given number of characters.
 }
   \item{border}{
-The proportion of the borders. The labels will be plotted in this region.
+The proportion of the space used for the labels.
 }
   \item{label}{
 Whether or not to plot labels.
+}
+  \item{lab.opt}{
+A list with options for the labels. Currently \code{lab.cex} and \code{abbrev} work.
+}
+  \item{add}{
+Whether to create a new plot or add it to an existing one.
+}
+  \item{tile.col}{
+The color of the tiles.
+}
+  \item{bg.col}{
+The background color in each cell.
 }
   \item{\dots}{
 dots
@@ -58,19 +77,35 @@ This was part of the Google Summer of Code 2011.
 }
 
 \examples{
-M <- bloma(4,4,1.3)
+M <- arsim(1000, c(12,12), 3)
 fluctile(M)
 
 M2 <- optile(M)
+
+# the standard fluctuation diagram with centralized rectangles
 fluctile(M2)
 
-data(CPScluster)
-cpsX = subtable(CPScluster,c(26,34,38,39),allfactor=TRUE)
+# the standard fluctuation diagram with centralized octagons
+fluctile(M2, shape = "o")
 
-ssC <- optile(cpsX,presort=FALSE, fun = "csvd", return.data=TRUE, method=NULL)
-fluctile(xtabs(Freq~.,data=ssC[,-4]))
+#another option such as it is used in iplots or MONDRIAN 
+# is to plot the rectangles in the bottom left corner
+fluctile(M2, just ="lb")
 
+# a multiple barchart
+fluctile(M2, just ="b", dir = "h")
 
+# or with vertical bars
+fluctile(M2, just ="l", dir = "v")
+
+# a same-binsize-plot
+fluctile(M2, dir = "n")
+
+fluctile(xtabs(Freq~Type+Infl+Cont+Sat,data=housing),dir="h",just="b", 
+lab.opt=list(lab.cex=1))
+
+A <- arsim(2000, c(6,6,4,4), 3, shuffle = FALSE, noise = 0.05)
+fluctile(A)
 
 }
 

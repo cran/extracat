@@ -56,9 +56,7 @@ If \code{TRUE} all polygones with the same categories in two neighboring variabl
 \item{return.df}{A logical indicating whether or not to return the iset.}
 \item{\dots}{ Further arguments.}
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+
 \value{
 \code{invisible(TRUE)} or, if \code{return.df == TRUE}, the iset which was computed.
 }
@@ -78,7 +76,6 @@ This function is based on the \pkg{iplots} package which will be installed autom
 To receive \pkg{JGR} please visit \url{http://www.rosuda.org/software} and download the JGR launcher which will start the console automatically and install all other required packages on its first run.
 }
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \link[iplots]{ipcp}
@@ -88,6 +85,13 @@ To receive \pkg{JGR} please visit \url{http://www.rosuda.org/software} and downl
 \examples{
 \dontrun{
 cpcp(V = housing)
+
+A <- arsim(1000,c(4,8,12,16),4, noise = 0.05)
+cpcp(A, sort.individual = TRUE)
+
+A2 <- optile(A)
+cpcp(A2, sort.individual = TRUE)
+
 }
 }
 \keyword{ categorical }

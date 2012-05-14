@@ -7,17 +7,16 @@ Graphical extensions for catagorical data
 }
 \description{
 Provides interactive parallel coordinates plots based on package \code{iplots} for categorical and continuous data
-as well as a grid-based special version of multiple barcharts which shows the relative frequencies of a target variable an the corresponding weights in a MB-like graphical layout.
-The second plot can also be used as a generalization of spineplots.
-The main functions are \link[extracat]{cpcp} and \link[extracat]{rmb}.
-The interactive version of the latter (\link[extracat]{irmb}) is based on \pkg{iWidgets} and thus also on \pkg{JGR}.
+as well as a grid-based special version of multiple barcharts, \link[extracat]{rmb} which shows the relative frequencies of a target variable an the corresponding weights in a MB-like graphical layout.
+Functions related to the Google Summer of Code 2011 are also included:
+\link[extracat]{optile} resorts the categories of variables in order to sort of diagonalize the tables and graphical representations, which makes them easier to interpret. \link[extracat]{fluctile} provides fluctuation diagrams for the visualisation.
 }
 \details{
 \tabular{ll}{
 Package: \tab extracat\cr
 Type: \tab Package\cr
-Version: \tab 1.0-1\cr
-Date: \tab 2010-02-23\cr
+Version: \tab 1.5-0\cr
+Date: \tab 2012-04-25\cr
 License: \tab -\cr
 LazyLoad: \tab yes\cr
 }
@@ -36,7 +35,7 @@ Alexander Pilhoefer  \emph{Analysen von kategoriellen Daten}\cr Diploma Thesis 2
 \cr
   Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
        R-package extracat}\cr
-  Journal of Statistical Software, submitted March 2010
+  Journal of Statistical Software, accepted 2011
 
 }
 
@@ -45,8 +44,4 @@ Alexander Pilhoefer  \emph{Analysen von kategoriellen Daten}\cr Diploma Thesis 2
 \keyword{ multiple barcharts }
 \keyword{ mosaicplots }
 \keyword{ interactive }
-\seealso{
-}
-\examples{
 
-}

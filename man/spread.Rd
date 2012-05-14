@@ -12,9 +12,7 @@ Replaces each element of a matrix with a submatrix (containing this element) wit
   \item{ncol}{The number of column repetitions.}
   \item{nrow}{The number of row repetitions.}
   }
-\details{
-    
-  }
+
 \value{
   A matrix.
 }
@@ -32,9 +30,7 @@ Germany
 \note{
 This function will be advanced in the future to support more than two dimensions.
 }
-\seealso{
-  
-}
+
 \examples{
  M = matrix(1:12, ncol=4)
  spread(M, ncol = 5, nrow = 7)

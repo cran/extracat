@@ -1,5 +1,6 @@
 \name{optile}
 \alias{optile}
+\alias{optile.list}
 
 \title{
 optimization of category orders for nominal categorical datasets and tables
@@ -14,7 +15,13 @@ The interface is extendible using ones own functions should they fulfill the req
 optile(x, fun = "class", presort = FALSE, foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
  past = NULL, scale = FALSE, freqvar = NULL,
- return.data = TRUE, return.type = "data.frame", vs = 0, \dots)
+ return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL,\dots)
+ 
+ \method{optile}{list}(x, fun = "class", presort = FALSE, foreign = NULL,
+ args = list(), perm.cat = TRUE, method = NULL, iter = 1,
+ past = NULL, scale = FALSE, freqvar = NULL,
+ return.data = TRUE, return.type = "table", vs = 0, tree = NULL,
+  k = NULL, h = NULL, \dots)
 }
 
 \arguments{
@@ -62,13 +69,18 @@ The class of the object which will be returned. Defaults to the input type.
 }
   \item{vs}{
 An optional version number. \code{"hamming"} is currently equivalent to \code{"class"} and \code{vs =1}}
+  \item{tree}{
+A list whose entries are either a tree object like they are obtained from \link[stats]{hclust} or the string \code{"hc"}. If the ith entry is a tree object, the ith variable should to be the result from cutting the tree into \code{dim(x)[i]} clusters via \link[extracat]{subtree}. \code{"hc"} will compute a hierarchical clustering for the rows and columns with arguments specified in \code{args}.
+}
+  \item{k}{
+A vector of integers specifying the numbers of clusters into which the tree objects shall be cut. See \link[stats]{hclust}. }
+  \item{h}{
+Instead of a number of clusters \code{k} the height at which the dendrogram shall be cut can be specified. See \link[stats]{hclust}.}
   \item{\dots}{
 dots
 }
 }
 \details{
-
-
 How to add a custom optimization function:
 
 It is possible to use custom functions for the optile interface as long as they meet the following requirements:
@@ -113,6 +125,10 @@ Resort the categories of variable d by the first coordinate vector of an SVD of 
 Repeat this procedure for all variables in turn until a stopping criterion is met.
 Idea: for any variable h != d we have h1 < h2 < ... < hx due to the cumulative sums. Hence the current order of the categories will (tend to) be the same as in the coordinates of the svd which means that the svd computes coordinates for variable d with respect to the current category orders of the other variables. The algorithm uses \code{casort} for an initial solution to start from.
 
+
+\code{"distcor"}:
+Two-way tables or matrices can also be optimized by means of the distance correlation. See \link[extracat]{dcor}.
+
 \code{"preclass"}:
 This function is used for the presorting and is written in C (\code{foreign =".Call"}).
 It iteratively sorts the categories of one variable at a time. Therefore it computes the average over the remaining dimensions and scales the profiles of each category as well as the average profile. It then computes the classification criterion between each category profile and the average profile which results in one value per category. The categories are then sorted by this criterion.
@@ -122,8 +138,7 @@ The procedure is very quick and yields good results in most cases. It strongly d
 \value{
 The function returns the data. The return type is by default the same as the input type but can be redefined via \code{return.type}.
 }
-\references{
-}
+
 \author{
 Alexander Pilhoefer\cr
 Department for Computer Oriented Statistics and Data Analysis\cr
@@ -134,15 +149,13 @@ Germany
 This was part of the Google Summer of Code 2011.
 }
 
-\seealso{
- \link[seriation]{seriate}
-}
+
 \examples{
 \dontrun{
 ############ ------------ EXAMPLE I ------------ ############
 # ----- Cluster results from the Current Population Survey ----- #
 data(CPScluster)
-cpsX = subtable(CPScluster,c(26,34,38,39),allfactor=T)
+cpsX = subtable(CPScluster,c(5, 12, 26, 34, 38, 39), allfactor=TRUE)
 
 # joint and stepwise classification criterion. both use a very quick algorithm.
 ss <- optile(cpsX,presort=TRUE, return.data=TRUE, method="joint")
@@ -159,10 +172,9 @@ cpcp(ss)
 fluctile(xtabs(Freq~.,data=ss2[,-4]))
 cpcp(ss2)
 
-# The multivariate algorithm is currently a lot slower and recommended for smaller examples.
-# An optimized algorithm is still under construction.
-# system.time(ss3 <- optile(cpsX,presort=TRUE, return.data=TRUE, method=NULL))
-# cpcp(ss3)
+# The multivariate algorithm
+ss3 <- optile(cpsX,presort=TRUE, return.data=TRUE, method=NULL)
+cpcp(ss3)
 
 # cpcp for casort algorithm
 ssca <- optile(cpsX,presort=FALSE, fun = "casort", return.data=TRUE, method="joint")
@@ -287,7 +299,35 @@ for(k in 3:8){
 }
 Sys.time()-st
 plot(x = 3:8, y = fk, type="l", lwd=2)
+
+############ ------------ EXAMPLE VI ------------ ############
+# ------------------------- hierarchical clustering ------------------------- #
+
+# A list with hierarchical clustering objects:
+require(amap)
+
+hc1 <- hcluster(t(plants[,-1]), method="manhattan", link = "ward")
+hc2 <- hcluster(t(plants[,-1]), method="manhattan", link = "complete")
+
+hclist <- list(hc1, hc2)
+tfluctile( optile(hclist, k= c(8,8) ) )
+
+# or a table with corresponding tree objects:
+
+tt <- table( subtree(hc1, 12)$data, subtree(hc2, 8)$data )
+
+tfluctile(optile(tt, tree = list(hc1, hc2)))
+
+# only one tree object, the other variable is free:
+
+tt <- table( subtree(hc1, 8)$data, kk <- kmeans(t(plants[,-1]),centers=8)$cluster )
+
+tfluctile(optile(tt, tree = list(hc1, NA)))
+
 }
+
+
+
 
 }
 

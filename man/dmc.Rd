@@ -22,10 +22,7 @@ five insurance variables from the dmc 2009 dataset, which have a ordinal structu
 \details{
 The Data Mining Cup (dmc) is a competition for students.
 }
-\source{
-}
-\references{
-}
+
 \examples{
 data(dmc)
 }

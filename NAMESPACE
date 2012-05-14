@@ -1,16 +1,17 @@
 useDynLib(extracat, .registration = TRUE)
-export(rmb, subtable, spread, untableSet, cpcp, resort, listen, irmb, optile, bloma, fluctile, cfluctile)
-import(reshape2,grid, colorspace, plyr)
+export(tfluctile, rmb, subtable, spread, untableSet, cpcp, resort, listen, optile, fluctile, cfluctile, subtree, tfluctile, fluctile3d, arsim, rmbmat, 
+innerval, quickfechner, hexpie, regmax, regmin,  classcrit, hammcrit, ihcrit,iccrit, shcrit, sccrit, boxplot2g, dcor, kendalls)
+import(reshape,grid, colorspace, ggplot2, plyr)
+importFrom(scales, alpha)
+importFrom(hexbin, hexbin)
+
 S3method(rmb,formula)
 S3method(rmb,table)
 S3method(rmb,ftable)
 S3method(rmb,glm)
 
-S3method(irmb,formula)
-S3method(irmb,table)
-S3method(irmb,ftable)
 
-
+S3method(optile,list)
 S3method(optile,matrix)
 S3method(optile,table)
 S3method(optile,default)

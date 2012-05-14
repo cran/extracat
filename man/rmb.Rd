@@ -15,12 +15,15 @@
  Additionally the \code{rmb} function allows to draw spineplots instead of the barcharts within each explanatory combination. On that score it can be seen as a generalization of Spineplots.
 }
 \usage{
-\method{rmb}{formula}(formula, data, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
-                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE, label.opt = list(),\dots)
-\method{rmb}{ftable}(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
-                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),\dots)
+\method{rmb}{formula}(formula, data, col.vars = NULL, spine = FALSE, circular = FALSE,
+ eqwidth = FALSE, cat.ord = NULL,   cut = NULL, innerval = 1,   freq.trans = NULL, 
+ num.mode = FALSE, max.scale = 1,  use.na = FALSE,  expected = NULL, residuals = NULL, 
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,
+  label.opt = list(),\dots)
+\method{rmb}{ftable}(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, 
+cat.ord = NULL,  freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL,
+ residuals = NULL, model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(),
+  label = TRUE,label.opt = list(),\dots)
 }
 \arguments{
  \item{x}{ Either a table or a model of class \code{"glm"} and family \code{"poisson"} or \code{"binomial"}.
@@ -33,8 +36,12 @@
  \item{circular}{ If \code{TRUE} a piechart will be drawn instead of each barchart. \code{spine} is set to \code{FALSE}.}
   \item{eqwidth}{If \code{TRUE} the bar length of the multiple barchart in the background no longer restricts the width of the barcharts/spineplots for the relative frequencies of the target variable.}
    \item{cat.ord}{A vector specifying the categories of the target variable which will be visualized in the specified order. The default is to use all categories.}
-   \item{freq.trans}{This parameter allows to transform the absolute frequencies used for the underlying multiple barchart. Possible values are \code{"log"}, \code{"sqrt"} or \code{list("krt",k)}. The latter stands for the k-th root transformation.}
+    \item{cut}{Numeric variables will be cut into this number of intervals. May also be a vector with specifications for each variable.}
+        \item{innerval}{The function \link[extracat]{innerval} is used to reduce numeric variables to an interval which is symmetric around the median  contains the specified proportion of observations (or as close to this as possible).}
+   \item{freq.trans}{This parameter allows to transform the absolute frequencies used for the underlying multiple barchart. Possible values are \code{"log"}, \code{"sqrt"} or \code{list("sqrt",k)}. The latter stands for the k-th root transformation.}
+   \item{num.mode}{ In the numeric mode the gaps are removed and axes typical for numeric variables are drawn. Ignored for factor variables.}
   \item{max.scale}{The maximum value of the probability (y-axis) scale for each combination. Unsurprisingly the default is 1. The axis will be drawn if \code{yaxis} is \code{TRUE}.}
+      
   \item{use.na}{If \code{TRUE} missing values will be changed to a level \code{"N/A"} and else (which is the default) the function \link[stats]{na.omit} will be called to reduce the dataset to complete cases only.}
   \item{expected}{ There are three possibilities how to specify this parameter:\cr
   
@@ -59,7 +66,15 @@
   \item{gap.mult}{The incremental multiplier for the gaps of different dimensions. The gaps corresponding to any one variable are \code{gap.mult} times larger than those corresponding to the next variable on the same axis.}
   \item{col}{Either a vector defining the colors of the bars or a name specifying a palette: \code{"hsv"} and \code{"rgb"} for hsv-based rainbow colors, \code{"hcl"} for hcl-based rainbow colors (default), \code{"div"} or \code{"diverge"} for hcl-based diverging colors and finally \code{"seq"} or \code{"sequential"}
   for hcl-based sequential colors.Additional arguments can be specified via the \code{col.opt} argument according to the underlying functions in the colorspace package, e.g. \link[colorspace]{rainbow_hcl}. For the hsv-based colors see \link[grDevices]{rainbow}. Specifying a color or palette has no effect if an \code{expected} model is defined.}
-  \item{col.opt}{Further options for the color palettes. See e.g. \link[colorspace]{rainbow_hcl} or \link[grDevices]{rainbow}.}
+  \item{col.opt}{Further options for the color palettes. See e.g. \link[colorspace]{rainbow_hcl} or \link[grDevices]{rainbow}.
+  Other parameters are:
+  \tabular{rlll}{
+  \code{col2}\tab for the color of the background/weight bars, \cr
+  \code{line.col}\tab for the color of all lines (bars, rectangles), \cr
+  \code{bg}\tab for the background color of the whole graphic, \cr
+  \code{bgs}\tab for the background color of each tile \cr
+  }
+  }
 
   \item{label}{Either a logical specifying whether or not to draw labels or a numeric vector defining which variables shall be labelled. }
  \item{ label.opt }{A list with optional parameters for label specifications. Possible parameters are:
@@ -91,9 +106,7 @@ Department for Computer Oriented Statistics and Data Analysis\cr
 University of Augsburg\cr
 Germany
 }
-\note{
 
-}
 \seealso{
   \code{\link[vcd]{mosaic}} for an implementation of mosaicplots.
 }
@@ -105,7 +118,8 @@ Germany
     
     # with sqrt-transformation and horizontal splits only
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, gap.mult = 2,
-        col.vars = c(TRUE,TRUE,TRUE,TRUE), freq.trans = "sqrt",   label.opt = list(abbrev = 3) )
+        col.vars = c(TRUE,TRUE,TRUE,TRUE), freq.trans = "sqrt",
+           label.opt = list(abbrev = 3) )
     
     # a generalized spineplot with the first category highlighted
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, spine = TRUE, 
@@ -176,5 +190,30 @@ Germany
     rmb(mod1, circular = TRUE,
         gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE), 
         label.opt = list(abbrev = 3), model.opt = list(use.expected.values = TRUE) )
+        
+        
+      # ----- the numeric mode and cuts ----- #   
+     data(olives)
+     # only three cuts to show how it works
+     rmb(~palmitoleic+stearic+Region, data = olives, cut = 3)
+     
+     require(ggplot2)
+     data(diamonds)
+     diamonds$lprice <- log(diamonds$price)
+     # a minority of extreme observations mess the display up:
+     rmb(~depth+table+lprice, data = diamonds, eqwidth = TRUE, spine = TRUE, 
+     cut = c(36,36,5), col = "seq", num.mode = TRUE)
+     
+     # we can zoom in via innerval:
+      rmb(~depth+table+lprice, data = diamonds,  circular = TRUE, 
+      cut = c(36,36,5), col = "div", innerval = 0.95, 
+      num.mode = TRUE, freq.trans ="log")
+      
+           # price, carat and color
+        diamonds$lprice <- log(diamonds$price)
+        diamonds$lcarat <- log(diamonds$carat)     
+      rmb(~lcarat+lprice+color, data = diamonds,
+      cut = c(24,24,0), col = "rgb", num.mode = TRUE,
+       freq.trans="sqrt", eqwidth=TRUE, max.scale=0.5)
 }
 

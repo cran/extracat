@@ -7,18 +7,30 @@ cluster fluctuation for 2-way tables after optile
 Plots a fluctuation diagram of a 2-way table and adds red rectangles for clusters. Uses Kendalls tau for the cluster identification.
 }
 \usage{
-cfluctile(x, tau0 = NULL, col = "red", gap.prop = 0.2, floor = 0, rev.y = FALSE, ...)
+cfluctile(x, tau0 = NULL, method = "Kendall", col = "red", lwd =
+                 2, lty = 1, gap.prop = 0.2, floor = 0, rev.y = FALSE,
+                 add = FALSE, shape = "r", just = "c", dir = "b", ...)
 }
 \arguments{
   \item{x}{
-a 2-way table
+A 2-way table
 }
   \item{tau0}{
-the minimum value of kendalls tau as a stop criterion for each split.
+The minimum value of Kendalls tau or Cohens Kappa as a stop criterion for each split.
+}
+\item{method}{
+Either \code{"Kendall"} for Kendalls Tau or \code{"Cohen"} for Cohens Kappa.
 }
   \item{col}{
 color of the rectangles which highlight the clusters
 }
+\item{lwd}{
+	The line width.
+}
+\item{lty}{
+The line type.
+}
+
   \item{gap.prop}{
 proportion of the gaps between rows/columns.
 }
@@ -27,6 +39,18 @@ floor censored zooming: all cases will be plotted but only those with a frequenc
 }
   \item{rev.y}{
 revert the y axis.
+}
+\item{add}{
+	Whether to make a new plot or to add to an existing one.
+}
+\item{shape}{
+	The shape of the objects. See \link[extracat]{fluctile}.
+}
+\item{just}{
+	See \link[extracat]{fluctile}.
+}
+\item{dir}{
+	See \link[extracat]{fluctile}.
 }
   \item{\dots}{
 dots}
@@ -62,7 +86,7 @@ This was part of the Google Summer of Code 2011.
 }
 
 \examples{
-M <- as.table(bloma(4,3,1.5))
+M <- arsim(1000,c(10,10),3)
 M2 <- optile(M)
 cfluctile(M2)
 
@@ -86,7 +110,7 @@ cfluctile(M2)
 M2 <- optile(M, fun = "preclass", foreign = ".Call")
 cfluctile(M2)
 
-M <- as.table(bloma(4,3,1.5))
+M <- arsim(1000,c(10,10),3)
 MX <- optile(M, iter = 100)
 MX <- ceiling(M/3) + MX
 cfluctile(MX)

@@ -63,15 +63,11 @@ This dataset is taken from the website of the Department of Statistics, Universi
     
  }
 }
-\details{
-%%  ~~ If necessary, more details than the __description__ above ~~
-}
+
 \source{
 \url{http://www.stat.uni-muenchen.de/service/datenarchiv/auto/auto_e.html}
 }
-\references{
-%%  ~~ possibly secondary sources and usages ~~
-}
+
 \examples{
 data(Autos)
 ## maybe str(Autos) ; plot(Autos) ...

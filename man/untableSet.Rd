@@ -20,9 +20,7 @@ The \code{data.frame} including a frequency variable "Freq".
     it will be defined as frequency variable if \code{freqvar} is unspecified.
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+
 \value{
 A \code{data.frame}.
 }
@@ -37,20 +35,13 @@ Department for Computer Oriented Statistics and Data Analysis\cr
 University of Augsburg\cr
 Germany
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
+
 \examples{
 hs2 = untableSet(housing)
 summary(hs2)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
+
 \keyword{ frequency table }
 

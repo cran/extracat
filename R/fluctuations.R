@@ -1,11 +1,36 @@
 
 
-fluctile <- function(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3, border = NULL, label = TRUE,...  ){
-	
+fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.prop = 0.1, border = NULL, label = TRUE, lab.opt = list(abbrev = 3, lab.cex = 1.2), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = NULL, ...  ){
+	#tab <- t(tab)
 	dm <- dim(tab)
 	maxv <- max(tab)
 	nd <- length(dm)
 	
+    if( dir %in% c("vh","hv","b","both")){
+        dir <- "b"
+    }
+    if( dir %in% c("h","horizontal")){
+        dir <- "h"
+    }
+    if( dir %in% c("v","vertical")){
+        dir <- "v"
+    }
+    if(nchar(just)[1] == 2){
+        just <- c(substr(just[1],1,1),substr(just[1],2,2))
+    }
+    just <- sapply(just, function(j){
+        switch(j, t="top", b = "bottom", c = "center", r = "right", l = "left", NULL)
+    })
+    if("abbrev" %in% names(lab.opt)){
+        abbrev <- lab.opt$abbrev
+    }else{
+        abbrev <- 3
+    }
+    if("lab.cex" %in% names(lab.opt)){
+        lab.cex <- lab.opt$lab.cex
+    }else{
+        lab.cex = 1.2
+    }
 	data <- as.data.frame(as.table(tab))
 	
 	
@@ -30,14 +55,18 @@ fluctile <- function(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3,
 	
 	wph <- dm[2]/dm[1]
 #dev.new( width = 1000*(1-gap.prop)*wph + gap.prop*1000, height = 1000 )
-	dev.new()
-	
+	if(!add){
+		#dev.new()
+		grid.newpage()
+	}
 	vp0 = viewport(x = border[1]*nx/(nx+1) + (1-border[1])/2 , y = border[2]/(ny+1) + (1-border[2])/2, width = 1-border[1], height = 1-border[2],name="base")
 	if(length(dm)==2){
 		
 		pushViewport(vp0)
-		grid.rect(gp = gpar(fill=rgb(0,0,0,alpha=0.1),col=NA))
-		
+		if(!add){
+		#grid.newpage()
+			grid.rect(gp = gpar(fill=rgb(0,0,0,alpha=0.1),col=NA))
+		}
 # handle the last 2 dimensions
 		if( hsp[1] ){
 			if( hsp[2] ){
@@ -51,7 +80,7 @@ fluctile <- function(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3,
 				dim(tab) <- c( prod(dim(tab)), 1)	
 			}
 		}
-		gridfluc(tab,gap.prop, maxv=maxv)
+		gridfluc(tab,dir,just,shape,gap.prop, maxv=maxv, bg = bg.col, col = tile.col)
 		popViewport()
 		
 # add labels
@@ -73,12 +102,12 @@ fluctile <- function(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3,
 			
 			vpR <- viewport(x = border[1]/4, y = 0.5, width = border[1]/2, height = 1-border[2],name="rowlabs")
 			pushViewport(vpR)
-			grid.text(rn, x = 0.5, y = yc, gp = gpar(cex=1.2), rot = 65)
+			grid.text(rn, x = 0.5, y = yc, gp = gpar(cex=lab.cex), rot = 65)
 			popViewport()
 			
 			vpC <- viewport(x = border[1]/2 + (1-border[2])/2, y = 1-border[2]/4, width = 1-border[1], height = border[2]/2,name="collabs")
 			pushViewport(vpC)
-			grid.text(cn, x = xc, y = 0.5,rot = 25, gp = gpar(cex=1.2))
+			grid.text(cn, x = xc, y = 0.5,rot = 25, gp = gpar(cex=lab.cex))
 			
 			popViewport()
 		}
@@ -114,7 +143,7 @@ fluctile <- function(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3,
 			   
 #TODO: do something similar for the labels
 			   
-			   gridfluc(x,gp, maxv=maxv)
+			   gridfluc(x,dir,just,shape,gp, maxv=maxv, bg = bg.col, col = tile.col)
 			   }, x = e1$tablist, y = e1$namlist, hs = e1$hslist, gp = e1$gplist)	
 		
 		upViewport()
@@ -149,6 +178,9 @@ fluctile <- function(tab, gap.prop = 0.1, hsplit = TRUE, env = NULL, abbrev = 3,
 			pushViewport(currvp)
 			
 			labs <- rep(levels(data[, ind[i]]), rpt[i])
+            if(abbrev != FALSE){
+                labs <- sapply(labs, function(l) abbreviate(l,abbrev))
+            }
 			nl <- length(labs)
 			
 # the gaps for the new dimension
@@ -305,14 +337,23 @@ fluctree <- function(dims,parent, hsplit, gap.prop, env, ...){
 	
 }
 
-gridfluc <- function(tab, gap.prop = 0.1, maxv = NULL,vp = NULL, ...){
+gridfluc <- function(tab,dir = "b", just = "c", shape = "r", gap.prop = 0.1, maxv = NULL,vp = NULL, col = NULL, bg = NULL, ...){
+	
+	if( is.null(bg) ){
+		bg <- "lightgrey"
+	}
+	if( is.null(col) ){
+		col <- hsv(0,0,0,alpha=0.7)
+	}
 	
 	n <- nrow(tab)
 	m <- ncol(tab)
 	w <- (1-gap.prop)/m
 	h <- (1-gap.prop)/n
+#centered x- and y-coords:
 	x <-  w/2  
 	y <- h/2 
+
 	if(n > 1){
 		y <- y + 0:(n-1)*(h+gap.prop/(n-1))	
 	} 
@@ -322,26 +363,75 @@ gridfluc <- function(tab, gap.prop = 0.1, maxv = NULL,vp = NULL, ...){
 	if(is.null(maxv)){
 		maxv <- max(tab)	
 	}
-	tab <- sqrt(tab/maxv)
 	
-	draw2( h, w,  t(replicate(n,x)) , replicate(m,y), border = NA,bg="lightgrey",vp=vp)
-	ht <- as.matrix(h*tab)
-	wt <- as.matrix(w*tab)
 	
-	draw2(ht, wt,  t(replicate(n,x)), replicate(m,y),border = NA,bg=rgb(0,0,0,alpha=0.7), vp=vp)
+	draw2( h, w,  t(replicate(n,x)) , replicate(m,y), border = NA,bg=bg,vp=vp, just = "centre")
+	
+    if("right" %in% just){
+        x <- x+w/2
+    }
+    if("left" %in% just){
+        x <- x-w/2
+    }
+    if("top" %in% just){
+        y <- y+h/2
+    }
+    if("bottom" %in% just){
+        y <- y-h/2
+    }
+    if(dir == "b"){
+        tab <- sqrt(tab/maxv)
+        ht <- as.matrix(h*tab)
+        wt <- as.matrix(w*tab)
+	}
+    if(dir == "h"){
+        tab <- tab/maxv
+        wt <- as.matrix(w*tab^0)
+        ht <- as.matrix(h*tab)
+    }
+    if(dir == "v"){
+        tab <- tab/maxv
+        ht <- as.matrix(h*tab^0)
+        wt <- as.matrix(w*tab)
+    }
+if(dir == "n"){
+    tab <- tab/maxv
+    ht <- matrix(0,ncol=ncol(tab), nrow=nrow(tab))
+    wt <- ht
+    ht[tab > 0] <- h
+    wt[tab > 0] <- w
+}
+	if(shape == "r"){
+		draw2(ht, wt,  t(replicate(n,x)), replicate(m,y), border = NA,bg=col, vp=vp, just = just)
+	}else{
+		if(shape == "c"){
+			angles <- seq(0,360,0.5)/180*pi
+		}
+		if(shape == "o"){
+			angles <- seq(22.5,360,45)/180*pi
+		}
+		if(shape == "d"){
+			angles <- seq(0,360,90)/180*pi
+		}
+		corners <-  cbind( cos(angles), sin(angles))
+		mapply(function(x,y,h,w){
+			   grid.polygon(x = x+corners[,1]*w/2, y = y+corners[,2]*h/2, gp = gpar(fill= col, col = NA))
+			   }, x = t(replicate(n,x)), y = replicate(m,y), h = ht, w = wt)
+	
+	}
+	
 }
 
 
 draw2 <- function (H, W, X, Y, alpha = 1, border = "black", bg = "white", 
-vp = NULL) 
+vp = NULL, just = "centre") 
 {
-    grid.rect(x = unit(X, "npc"), y = unit(Y, "npc"), width = unit(W, 
-																   "npc"), height = unit(H, "npc"), just = "centre", 
-			  default.units = "npc", name = NULL, gp = gpar(col = border, 
-															fill = bg, alpha = alpha), draw = TRUE, vp = vp)
+grid.rect(x = unit(X, "npc"), y = unit(Y, "npc"), width = unit(W, 
+"npc"), height = unit(H, "npc"), just = just, default.units = "npc", 
+name = NULL, gp = gpar(col = border, fill = bg, alpha = alpha), 
+draw = TRUE, vp = vp)
 }
-
-addrect = function( vp ,breaks, col = "red", gap.prop = 0, rev.y = FALSE){
+addrect = function( vp ,breaks, col = "red", lwd = 2, lty = 1, gap.prop = 0, rev.y = FALSE){
 	yc <- breaks[[1]]
 	xc <- breaks[[2]]
 	
@@ -368,12 +458,12 @@ addrect = function( vp ,breaks, col = "red", gap.prop = 0, rev.y = FALSE){
 	dxc <- diff(xc)
 	if(rev.y){
 		mapply( function(x,y,w,h){
-			   grid.rect(x,y,w,h,gp=gpar(fill=NA,col=col,lwd=2),just=c("left","top"))
+			   grid.rect(x,y,w,h,gp=gpar(fill=NA,col=col,lwd=lwd, lty = lty),just=c("left","top"))
 			   }, x = as.list( xc[-nxc] ), y = as.list( 1-yc[-nyc] ),w = as.list(dxc),h = as.list(dyc))
 		
 	}else{
 		mapply( function(x,y,w,h){
-			   grid.rect(x,y,w,h,gp=gpar(fill=NA,col=col,lwd=2),just=c("left","bottom"))
+			   grid.rect(x,y,w,h,gp=gpar(fill=NA,col=col,lwd=lwd, lty = lty),just=c("left","bottom"))
 			   }, x = as.list( xc[-nxc] ), y = as.list( yc[-nyc] ),w = as.list(dxc),h = as.list(dyc))
 	}
 	
@@ -381,171 +471,184 @@ addrect = function( vp ,breaks, col = "red", gap.prop = 0, rev.y = FALSE){
 	return(invisible(TRUE))
 	
 }
-kendalls <- function(M){
-	cs <- colSums(M)
-	rs <- rowSums(M)
-	css <- rev(cumsum(rev(cs)))
-	rss <- rev(cumsum(rev(rs)))
-	n <- nrow(M)
-	m <- ncol(M)
-	N <- sum(M)
-	x <- sum(cs*(css-cs)[1:m])
-	y <- sum(rs*(rss-rs)[1:n])
-	
-	
-	storage.mode(M) <- "integer"
-	M2 <- M[,m:1]
-	
-	dims <- as.integer(c(n,m,1))
-	crt1 <- .Call("simplecrit",M,dims,as.integer(1))
-	crt2 <- .Call("simplecrit",M2,dims,as.integer(1))
-	
-	tau <- (crt2-crt1)/sqrt(x)/sqrt(y)
-	scrt <- crt1/x/y*N^2
-#return(c(tau,crt1,scrt,n,m,N))
-	return(tau)
-}
 
 
 
-
-#optileplot = function(x, tau0 = NULL, col ="red",iter = 100, gap.prop = 0.2,presort=TRUE, floor = 0, critfun = "class", rev.y = TRUE,...){
-#	stopifnot(inherits(x,"table"))
-#	stopifnot( length(dim(x)) == 2 )
-#	x = optile(x,iter=iter,presort=presort, critfun=critfun)
-#	n = nrow(x)
-#	m = ncol(x)
-#	storage.mode(x) = "integer"
-#	if(is.null(tau0)){
-#		tau0 = kendalls(x)
-#	}
-#	if( floor > 0 ){
-#		x2 = apply(x,1:2, function(z){
-#				   ifelse(z < floor, 0, z)
-#				   })
-#		storage.mode(x2)="integer"
-#		cuts = .Call("getclust",x2,as.integer(dim(x)),tau0)
-#	}else{
-#		cuts = .Call("getclust",x,as.integer(dim(x)),tau0)
-#	}
-#	
-#	r = length(cuts)/2
-#	if(rev.y){
-#		x = x[nrow(x):1,]	
-#	}
-#	breaks = list(c(1,cuts[1:r]+1),c(1,cuts[(r+1):(r+r)]+1))
-#		
-#	bs = fluctile(x, gap.prop=gap.prop)
-#	addrect(bs,breaks,col, gap.prop, rev.y = rev.y)
-#	return(invisible(TRUE))
-#}
-
-#optileplot = function(x, tau0 = NULL, col ="red", gap.prop = 0.2, floor = 0, rev.y = TRUE,fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-#    freqvar = NULL, return.data = TRUE, return.type = "matrix", vs = 0,...){
-#	stopifnot(inherits(x,"table") | inherits(x,"matrix") )
-#	stopifnot( length(dim(x)) == 2 )
-#	x = optileXYZ(x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, past = past, scale = scale, 
-#    freqvar = freqvar, return.data = return.data, return.type = "matrix", vs = vs)
-#	n = nrow(x)
-#	m = ncol(x)
-#	print("x opt = ")
-#	print(x)
-#	storage.mode(x) = "integer"
-#	if(is.null(tau0)){
-#		tau0 = kendalls(x)
-#	}
-#	if( floor > 0 ){
-#		x2 = apply(x,1:2, function(z){
-#				   ifelse(z < floor, 0, z)
-#				   })
-#		storage.mode(x2)="integer"
-#		cuts = .Call("getclust",x2,as.integer(dim(x)),tau0)
-#	}else{
-#		cuts = .Call("getclust",x,as.integer(dim(x)),tau0)
-#	}
-#	
-#	r = length(cuts)/2
-#	if(rev.y){
-#		x = x[nrow(x):1,]	
-#	}
-#	breaks = list(c(1,cuts[1:r]+1),c(1,cuts[(r+1):(r+r)]+1))
-#		
-#	bs = fluctile(x, gap.prop=gap.prop)
-#	addrect(bs,breaks,col, gap.prop, rev.y = rev.y)
-#	return(invisible(TRUE))
-#}
-
-cfluctile <- function(x, tau0 = NULL, col ="red", gap.prop = 0.2, floor = 0, rev.y = FALSE,...){
+cfluctile <- function(x, tau0 = NULL, method="Kendall", col ="red", lwd = 2, lty = 1, gap.prop = 0.2, 
+floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", ...){
 	stopifnot(inherits(x,"table") | inherits(x,"matrix") )
 	stopifnot( length(dim(x)) == 2 )
+    
+    if(kendalls(x) < 0){
+        x <- x[,ncol(x):1]
+        print("Reversed column category order...")
+    }
+
+	if( method %in% c("Kendall","kendall","tau",1) ){
+		method <- as.integer(1)	
+	}
+	if( method %in% c("kappa","Cohen",2) ){
+		method <- as.integer(2)	
+	}
 	
 	n <- nrow(x)
 	m <- ncol(x)
 	storage.mode(x) <- "integer"
 	if(is.null(tau0)){
-		tau0 <- kendalls(x)
+		if(method == 1){
+			tau0 <- kendalls(x)
+		}else{
+			tau0 <- 0	
+		}
 	}
 	if( floor > 0 ){
 		x2 <- apply(x,1:2, function(z){
 				   ifelse(z < floor, 0, z)
 				   })
 		storage.mode(x2) <- "integer"
-		cuts <- .Call("getclust",x2,as.integer(dim(x)),tau0)
+		cuts <- .Call("getclust",x2,as.integer(dim(x)),tau0,method)
 	}else{
-		cuts <- .Call("getclust",x,as.integer(dim(x)),tau0)
+		cuts <- .Call("getclust",x,as.integer(dim(x)),tau0,method)
 	}
-	
+
 	r <- length(cuts)/2
 	if(rev.y){
 		x <- as.table(x[nrow(x):1,]	)
 	}
-	breaks <- list(c(1,cuts[(r+1):(r+r)]+1),c(1,cuts[1:r]+1))
-	
-	bs <- fluctile(x, gap.prop=gap.prop)
-	addrect(bs,breaks,col, gap.prop, rev.y = !rev.y)
+	breaks <- list(c(1,cuts[1:r]+1),c(1,cuts[(r+1):(r+r)]+1))
+	if(!add){
+		bs <- fluctile(x, gap.prop=gap.prop, shape = shape, just = just, dir = dir)
+	}else{
+		bs <- fluctile(x, gap.prop=gap.prop, bg.col=rgb(0,0,0,alpha=0),tile.col = rgb(0,0,0,alpha=0), add = TRUE, shape = shape, just = just, dir = dir)	
+	}
+	addrect(bs,breaks,col, gap.prop, rev.y = !rev.y, lwd = lwd, lty = lty)
 	return(invisible(TRUE))
 }
 
 
 
-bloma <- function(k, ncr = 12, ar = 1){
-	Mlist = list()
-	N=0
-	M=0
-	for(i in 1:k){
-		n <- max(2,rpois(1,ncr))
-		m <- max(2,rpois(1,ar*ncr))
-		Mlist[[i]] <- extracat:::smat2(n,m,rpois(1,500))
-		N <- N+n
-		M <- M+m
+fluctile3d = function(x, shape = "cube", col = "darkgrey", alpha = 0.8,...){
+	if(!"rgl" %in% .packages(all.available = TRUE)){
+		cat("Please install the package 'rgl' to run this function")
+		return(invisible(TRUE))
 	}
-	S <- matrix(0,ncol=M,nrow=N)
-	xind <- 1:M
-	yind <- 1:N
+	check <- tryCatch(require(rgl), error = function(e) FALSE)
+	if(!check){ 
+		cat("Problems with package 'rgl' occured...")
+		return(invisible(TRUE))
+	}
+	if(shape %in% c("o","oct","octahedron")){
+        shape <- "octagon"
+	}
+    if(!is.data.frame(x)){
+		x2 <- subtable(as.data.frame(as.table(x)),1:3)	
+		dim <- dim(x)
+	}else{
+		x2 <- subtable(x,1:3)
+		dim <- sapply(x,nlevels)[1:3]	
+	}
+	maxfreq <- max(x2$Freq)
+	lvls <- lapply(x2, levels)
+	x2 <- sapply(x2, as.integer)
 	
-	for(i in 1:k){
-		MS <- Mlist[[i]]
-		
-		
-		xi <- sample(xind, size = ncol(MS))	
-		yi <- sample(yind, size = nrow(MS))
-		S[yi,xi] <- MS
-		xind <- xind[-which(xind %in% xi)]
-		yind <- yind[-which(yind %in% yi)]		
-	}
-	return(S)
+	#MX <- identityMatrix()
+	MX <- matrix(0,ncol=4,nrow=4)
+	diag(MX) <- 1
+	open3d()
+#	lines3d(x = c(0.5,dim[1]+0.5), y = c(0.5,0.5), z =  c(0.5,0.5))
+#	lines3d(x = c(0.5,0.5), y = c(0.5,dim[2]+0.5), z =  c(0.5,0.5))
+#	lines3d(x = c(0.5,0.5), y = c(0.5,0.5), z =  c(0.5,dim[3]+0.5))
+#	lines3d(x = c(dim[1]+0.5,0.5), y = c(dim[2]+0.5,dim[2]+0.5), z =  c(dim[3]+0.5,dim[3]+0.5))
+#	lines3d(x = c(dim[1]+0.5,dim[1]+0.5), y = c(dim[2]+0.5,0.5), z =  c(dim[3]+0.5,dim[3]+0.5))
+#	lines3d(x = c(dim[1]+0.5,dim[1]+0.5), y = c(dim[2]+0.5,dim[2]+0.5), z =  c(dim[3]+0.5,0.5))
+	wire3d( translate3d( cube3d( trans = scaleMatrix(dim[1]/2,dim[2]/2,dim[3]/2)), (dim[1]+1)/2,(dim[2]+1)/2,(dim[3]+1)/2)) 
+	dot3d( translate3d( cube3d( trans = scaleMatrix(dim[1]/2,dim[2]/2,dim[3]/2)), (dim[1]+1)/2,(dim[2]+1)/2,(dim[3]+1)/2))
+	
+	
+	text3d( x = 1:dim[1], y = rep(0, dim[1]), z = rep(0, dim[1]), texts = lvls[[1]])
+	text3d( x = rep(0, dim[2]), y = 1:dim[2], z = rep(0, dim[2]), texts = lvls[[2]])
+	text3d( x = rep(0, dim[3]), y = rep(0, dim[3]), z = 1:dim[3], texts = lvls[[3]])
+	
+	text3d( x = 1:dim[1], y = rep(dim[2]+1, dim[1]), z = rep(dim[3]+1, dim[1]), texts = lvls[[1]])
+	text3d( x = rep(dim[1]+1, dim[2]), y = 1:dim[2], z = rep(dim[3]+1, dim[2]), texts = lvls[[2]])
+	text3d( x = rep(dim[1]+1, dim[3]), y = rep(dim[2]+1, dim[3]), z = 1:dim[3], texts = lvls[[3]])
+	
+	apply(x2,1,function(z){
+		s <- ((z[4]/maxfreq)^(1/3))/2
+		  if(shape == "cube"){
+			shade3d( translate3d( cube3d(col=col, trans = scaleMatrix(s,s,s)), z[1], z[2], z[3]), alpha = alpha )	
+		  }
+		  if(shape == "octagon"){
+			 shade3d( translate3d( octahedron3d(col=col, trans = scaleMatrix(s,s,s)), z[1], z[2], z[3]), alpha = alpha )	
+		  }
+
+	})
+	
+	
+	return(invisible(TRUE))
+	
 }
-
-
+cfluctile3d = function(x, xc = NULL, yc = NULL, zc = NULL, shape ="cube", col = c("darkgrey","red"), alpha = c(0.8,0.2),...){
+															
+if(shape %in% c("o","oct","octahedron")){
+	shape <- "octagon"
+}
+	if(is.null(xc)){
+		xc <- attr(x,"xc")
+		if(is.null(xc)){
+			xc <- as.integer(attr(x,"grps")[[1]])
+		}	
+	}
+	if(is.null(yc)){
+		yc <- attr(x,"yc")	
+		if(is.null(yc)){
+			yc <- as.integer(attr(x,"grps")[[2]])
+		}
+	}
+	if(is.null(zc)){
+		zc <- attr(x,"zc")
+		if(is.null(zc)){
+			zc <- as.integer(attr(x,"grps")[[3]])
+		}	
+	}
+	stopifnot( all( c(is.null(xc),is.null(yc),is.null(zc)) == FALSE))
 	
-scaledclass <- function(M, vs = 1, ... ){
-	dims <- as.integer(c(dim(M),1))
-	stopifnot( length(dims) == 3 )
+	colA <- col[1]
+	colB <- ifelse(length(col) > 1, col[2], "red")
+	alphaA <- alpha[1]
+	alphaB <- ifelse(length(alpha) > 1, alpha[2], 0.2)
 	
-	MI <- outer(rowSums(M),colSums(M))/sum(M)
-	storage.mode(M) <- "integer"
-	storage.mode(MI) <- "integer"
-	crt <- .Call("simplecrit",M, dims, as.integer(vs))	
-	crt0 <- .Call("simplecrit",MI, dims, as.integer(vs))
-	return(crt/crt0)
+	if(!is.data.frame(x)){
+		dim <- dim(x)
+		x <- subtable(as.data.frame(as.table(x)),1:3,allfactor=TRUE)	
+		
+	}else{
+		dim <- sapply(x,nlevels)[1:3]
+		x <- subtable(x,1:3,allfactor=TRUE)
+			
+	}
+	ncl <- nlevels(as.factor(xc))
+	xc <- lapply(1:ncl, function(v){
+			which(xc == v)
+		})
+	yc <- lapply(1:ncl, function(v){
+			which(yc == v)
+		})
+	zc <- lapply(1:ncl, function(v){
+			which(zc == v)
+		})
+		
+	stopifnot(length(xc) == length(yc) & length(yc) == length(zc))
+	fluctile3d(x, col = colA, shape = shape, alpha = alphaA)
+	mapply(function(s1,s2,s3){
+		r1 <- diff(range(s1))+1
+		c1 <- mean(range(s1))
+		r2 <- diff(range(s2))+1
+		c2 <- mean(range(s2))
+		r3 <- diff(range(s3))+1
+		c3 <- mean(range(s3))
+		  shade3d( translate3d( cube3d(col=colB, trans = scaleMatrix(r1/1.98,r2/1.98,r3/1.98)), c1, c2, c3), alpha = alphaB )	
+		
+	}, s1 = xc, s2 = yc, s3 = zc)
+		return(invisible(TRUE))
 }

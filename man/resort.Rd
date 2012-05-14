@@ -40,11 +40,7 @@ Department for Computer Oriented Statistics and Data Analysis\cr
 University of Augsburg\cr
 Germany
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \link[extracat]{listen}

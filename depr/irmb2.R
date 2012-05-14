@@ -326,7 +326,7 @@ if(init | env$modchange){
 					if(!("alpha" %in% labels(col.opt))){
 						col.opt$alpha = eval(col.def$alpha)
 					}
-					colv = rainbow(num.col,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, gamma = 1, alpha = col.opt$alpha)
+					colv = rainbow(num.col,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end,  alpha = col.opt$alpha)
 					}
 				if( col == "hcl" ){
 					col.def = formals(rainbow_hcl)
@@ -653,7 +653,7 @@ irmb.ftable = function(x , gap.prop = 0.2,
 		return(invisible(TRUE))
 		}
 	if(!("JGR" %in% .packages(all.available=FALSE) ) ){
-		cat("iWidgets requires 'JGR' in order to run correctly.\n Please visit \n http://www.rosuda.org/software/ \n to download it.")
+		cat("iWidgets should be run fro within 'JGR' in order to run correctly.\n Please visit \n http://www.rosuda.org/software/ \n to download it.")
 		return(invisible(TRUE))
 		}
 	require(iWidgets)

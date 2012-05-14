@@ -156,7 +156,7 @@ rmb.glm = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth 
 
 
 rmb.formula = function(formula, data, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
-                freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
+             cut = NULL, innerval = 1,   freq.trans = NULL, num.mode = FALSE, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
  model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),...){
 	
 # use.expected.values = FALSE, mod.type = "poisson", resid.type = "pearson",
@@ -164,6 +164,14 @@ rmb.formula = function(formula, data, col.vars = NULL, spine = FALSE, circular =
 # boxes = TRUE, lab.tv = FALSE, varnames = TRUE, abbrev = FALSE, lab.cex = 1.2, yaxis = TRUE
 
 min.alpha <- 0.1
+
+if(!is.null(expected)){
+	if(is.logical(expected)){
+		if(expected == FALSE){
+			expected <- NULL	
+		}
+	}
+}
 
 # ----- get model parameters from model.opt or use defaults ------ #
 if( "use.expected.values" %in% names(model.opt) ){
@@ -202,11 +210,44 @@ if( "cut.rs" %in% names(model.opt) ){
 	cut.rs <- 5
 }
 
+
+if( "bg" %in% names(col.opt) ){
+	bg <- col.opt$bg
+}else{
+	bg <- NA #hsv(0,0,0, alpha=0.02)#hcl(240,10,85)
+}
+
+if( "col2" %in% names(col.opt) ){
+col2 <- col.opt$col2
+}else{
+col2 <- alpha("grey",0.25)
+}
+
+
+if( "bgs" %in% names(col.opt) ){
+	bgs <- col.opt$bgs
+}else{
+	bgs <- hsv(0,0,0, alpha=0.02)
+}
+if( "alpha.r" %in% names(col.opt) ){
+	stopifnot( col.opt$alpha.r <= 1 & col.opt$alpha.r > 0 )
+	alpha.r <- -log(col.opt$alpha.r)
+}else{
+	alpha.r <- -log(0.2)
+}
+
+if( "line.col" %in% names(col.opt) ){
+	line.col <- col.opt$line.col
+}else{
+	line.col <- ifelse( !spine & !circular, "darkgrey", NA)
+}
+
+
 # ----- get label parameters from label.opt or use defaults ------ #
 if( "yaxis" %in% names(label.opt) ){
 	yaxis <- label.opt$yaxis
 }else{
-	yaxis <- TRUE
+	yaxis <- TRUE & !num.mode
 }
 if( "boxes" %in% names(label.opt) ){
 	boxes <- label.opt$boxes
@@ -256,9 +297,9 @@ if( "lab.cex" %in% names(label.opt) ){
 		stopifnot(is.logical(abbrev)|is.numeric(abbrev))
 		stopifnot(is.logical(label)|is.numeric(label))
 		
-		if( !("base.alpha" %in% ls()) ){
-			base.alpha <- 1	
-		}
+		#if( !("base.alpha" %in% ls()) ){
+		#	base.alpha <- 1	
+		#}
 	
 	
 		
@@ -266,9 +307,78 @@ if( "lab.cex" %in% names(label.opt) ){
 	fterms <- attr(terms(f),"term.labels")
 	nv <- length(fterms)
 	
+# ----- cutting numeric variables ----- #
+
+int.vars <- sapply(fterms, function(z){ 
+
+v <- data[,match(z,names(data))]
+if(is.numeric(z)){
+	all( (v%%1)==0 )
+}else{
+	FALSE	
+}
+})
+
+if(length(cut) > 1){
+	int.vars[cut>0] <- FALSE	
+}
+
+
+num.vars <- sapply(fterms, function(z) is.numeric(data[,match(z,names(data))]))
+
+if(is.null(cut)){
+	cut <- rep(12,nv)	
+}	
+if(length(cut) == 1){
+	cut <- rep(cut, nv)	
+}
+cuttf <- (cut > 0) & ( !int.vars   & num.vars )
+
+for(i in fterms[cuttf]){
+	j <- which(names(data) == i)
+	if(innerval < 1){
+		iv <- innerval(dset[,j],p=innerval)
+		too.low <- which(dset[,j] < iv[1])
+		too.high <- which(dset[,j] > iv[2])
+		#data[c(too.high,too.low),j] 	<- NA
+		dset[c(too.high,too.low),j] 	<- NA
+	}
+	dset[,j] <- cut(dset[,j], breaks = cut[match(i, fterms)], right = FALSE)	
+	levels(dset[,j]) <- paste(colsplit(levels(dset[,j]),",",1:2)[,1],")", sep="")
+}
+#if(innerval < 1 & any(num.vars)){
+	#kill <- sapply(dset[,match(fterms,names(data))], is.na)
+	#kill <- apply(kill,1,any)
+	#if(any(kill)){
+	#	dset <- dset[-which(kill),]
+		# dims of data and dset are now potentially different!
+	#}
+#}
+if(!use.na){
+	kill <- sapply(dset[,match(fterms,names(data))], is.na)
+	kill <- apply(kill,1,any)
+		#dset <- na.omit(dset)
+		if(any(kill)){
+			dset <- dset[-which(kill),]
+		}
+	}else{
+		for( i in 1:(ncol(dset)-1) ){
+			ind <- is.na(dset[,i])
+			if(any(ind)){
+				levels(dset[,i]) <- c(levels(dset[,i]),"N/A")	
+				dset[which(ind),i] <- "N/A"
+			}	
+		}	
+	}
+	
+	
+	
 	if(is.numeric(col.vars)){
 			col.vars <- seq_along(	fterms ) %in% col.vars
 		}
+#row.vars <- seq_along(fterms)[-c(col.vars)]
+
+	
 	
 	if( !is.null(expected) ){
 		both <- resid.display %in% sapply(1:4, function(z) abbreviate("both",z))
@@ -303,6 +413,10 @@ if( "lab.cex" %in% names(label.opt) ){
 	stopifnot(is.logical(col.vars) & length(col.vars) == nv)
 	
 	ind <-  match(fterms,names(dset))
+	#if(num.mode){
+	#	dset.num <- as.data.frame(data)[,ind]	
+	#}
+
 # 	>>> a dummy-variable is used to handle the case of no row-variables
 	if( sum(!col.vars) < 1 ){
 		dset <- data.frame(probability = rep("prob",nrow(dset)),dset)
@@ -362,6 +476,9 @@ if( "lab.cex" %in% names(label.opt) ){
 		names(dset)[which( suppressWarnings(names(dset) == terms(f)[[2]]))] <- "Freq"
 	}
 	dset <- subtable(dset,ind,keep.zero=FALSE,allfactor=TRUE)
+	
+
+	
 	
 	# ----- predefined expected values ----- #
 
@@ -429,13 +546,32 @@ if( is.numeric(expected) ){
 
 # ----- a few more auxiliary variables ----- #	
 
-	row.gap.prop <- ifelse(nr > 1, gap.prop * min(1,nrv/ncv), 0) 
-	col.gap.prop <- ifelse(nc > ntc, gap.prop * min(1,ncv/nrv), 0) 
-	
 	rind <- which( (!col.vars)*label > 0)
 	cind <- which(col.vars*label > 0)
 	nrl <- length(rind)*lab
 	ncl <- length(cind)*lab
+
+num.mode.x <- num.mode
+num.mode.y <- num.mode
+col.gap.prop <- ifelse(nc > ntc, gap.prop * min(1,ncv/nrv), 0) 
+row.gap.prop <- ifelse(nr > 1, gap.prop * min(1,nrv/ncv), 0) 	
+	
+	if( is.factor(data[, ind[cind[length(cind)]]  ])){
+		num.mode.x <- FALSE	
+	}
+	if( is.factor(data[, ind[rind[length(rind)]]  ]) ){
+		num.mode.y <- FALSE	
+	}
+	
+	if(num.mode.x & num.mode.y){
+		gap.prop <- 0.001
+	}
+if(num.mode.y){
+	row.gap.prop <- 0.001
+}
+if(num.mode.x){
+	col.gap.prop <- 0.001
+}
 
 # ----- model computation in expected mode ----- #	
 	if(!is.null(expected) ){
@@ -581,10 +717,12 @@ if( is.list(freq.trans) ){
 # ----- computation of rectangle widths, heights and x/y coordinates in matrix form ----- #	
 
 	W <- matrix(1,ncol=nc,nrow=nr)
-	S <- space(nlvl,col.vars,gap.prop=gap.prop,gap.mult=gap.mult,last.col.zero = T,last.row.zero = F)
+	S <- space(nlvl,col.vars,gap.prop=gap.prop,gap.mult=gap.mult,last.col.zero = TRUE,last.row.zero = FALSE)
+# better usage of space here for the num.mode?
 
 	x <- ( seq(0,1-1/nc,1/nc)   )*(1-col.gap.prop)
-	if(nc > nlevels(dset[,nv])){
+	
+	if(nc*(nlevels(dset[,nv])^(spine|circular)) > nlevels(dset[,nv])){
 		x <- x + c(0,cumsum(S[[1]]))*col.gap.prop/sum(S[[1]])
 	}
 	if( suppressWarnings(any(S[[2]])) ){
@@ -598,7 +736,6 @@ if( is.list(freq.trans) ){
 	Y <- Y0
 	X2 <- X[,seq(1,nc,ntc)]
 	Y2 <- Y[,seq(1,nc,ntc)]
-
 
 	H2 <- matrix(1,ncol=nc/ntc,nrow=nr)
 	tt3 <- ftable(tapply(dset$Freq,as.list(dset[,1:(nv-1)]),sum),col.vars=which(col.vars[1:(nv-1)]))
@@ -626,20 +763,28 @@ if( is.list(freq.trans) ){
 	#if(exists("rmb.id",.GlobalEnv)){
 		#popViewport()
 		#grid.rect(gp=gpar(fill="white"))
-	
+	if(circular) yaxis <- FALSE
 	#}else{
 	#	.GlobalEnv$rmb.id <- rpois(1,lambda=10000)	
 	#}
-	vp0 <- viewport(x = 0.5, y = 0.5, w = 1- 2*s0 , h = 1 - 2*s0, just = "centre", name = "vp0")
+	vp0 <- viewport(x = 0.5, y = 0.5, width = 1- 2*s0 , height = 1 - 2*s0, just = "centre", name = "vp0")
 	pushViewport(vp0)
-	vp1 <- viewport(x = 1-yaxis*s1 - s3*(!is.null(expected) ) , y = 0, w = 1- nrl*s2 - yaxis*2*s1 - s3*(!is.null(expected)), h = 1-ncl*s2, just = c("right", "bottom"), name = "vp1")
+	vp1 <- viewport(x = 1-yaxis*s1 - s3*(!is.null(expected) ) , y = 0, width = 1- nrl*s2 - yaxis*2*s1 - s3*(!is.null(expected)), height = 1-ncl*s2, just = c("right", "bottom"), name = "vp1")
 	pushViewport(vp1)
+	grid.rect(gp=gpar(fill=bg,col=NA))
 	# alpha values on a log-scale
 	#alpha <- spread(W2,ncol=ntc)*base.alpha
 	
 	#alpha <- spread(exp(2*(W2-1)),ncol=ntc)*base.alpha
-	alpha <- exp(2*(W2-1))
-	alpha[alpha < min.alpha] <- min.alpha
+	
+	if(!("alpha" %in% labels(col.opt))){
+		alpha <- exp(alpha.r*(W2-1))
+	}else{
+		alpha <- matrix(col.opt$alpha, ncol=ncol(W2), nrow=nrow(W2))				
+	}
+					
+	
+	#alpha[alpha < min.alpha] <- min.alpha
 	if(!is.null(expected)){
 		alpha[alpha < 1] <- 1	
 	}
@@ -649,11 +794,11 @@ if( is.list(freq.trans) ){
 
 			if(is.null(expected) | res.val.only ){
 				
-				
-				
 				#has any color rule been defined?
 				if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge") %in% col)){
-				num.col <- ntc0^(spine | !eqwidth | (eqwidth & circular))
+				#num.col <- ntc0^(spine | !eqwidth | (eqwidth & circular))
+				num.col <- ntc0
+				
 				if( col %in% c("hsv","rgb") ){
 					col.def <- formals(rainbow)
 					if(!("s" %in% labels(col.opt))){
@@ -722,27 +867,47 @@ if( is.list(freq.trans) ){
 					colv <- diverge_hcl(num.col,h = col.opt$h, c = col.opt$c, l = col.opt$l, power = col.opt$power)
 					
 				}
-					#if((!spine) & eqwidth){
-					#	colv <- rep(rainbow(1,alpha=col$alpha),ntc)
-					#}
+			
 				}else{
+					if( length(col < ntc0) ){
+						col <- rep(col,ntc0)
+					}
+					col <- sapply(col, function(z){
+						if(is.integer(z)){
+							return(scales::alpha(z,1))	
+						}else{
+							return(z)
+						}	
+					})
 					colv <- col[1:ntc0]	
+					num.col <- ntc0^(spine | !eqwidth | (eqwidth & circular))
 				}					
 				col.Mat <- spread( t(rep(colv , nc/ntc)),nrow=nr)
-				
+
 				if(eqwidth & !res.val.only){
 					
 					dm <- dim(col.Mat)
-					alpha <- spread(alpha, ncol = num.col)
+					alpha <- spread(alpha, ncol = dm[2]/ncol(alpha))#num.col #ntc0
+					
 					col.Mat <- mapply( function(x,y){
 						z <- col2rgb(x)/255
-						rgb( red = z[[1]], green = z[[2]], blue = z[[3]], alpha = y )
+						if(nchar(x) == 9){
+							alpha0 <- c(substr(x,8,8),substr(x,9,9))
+							alpha0 <- match(alpha0,c(0:9,LETTERS[1:6]))-1
+							if(!any(is.na(alpha0))){
+								alpha0 <- (alpha0[1]*15 + alpha0[2])/240	
+							}else{
+								simpleWarning("could not identify the colors alpha value")
+								alpha0 <- 1	
+							}	
+						}else{
+							alpha0 <- 1	
+						}
+						rgb( red = z[[1]], green = z[[2]], blue = z[[3]], alpha = y*alpha0 )
 					}, x = col.Mat, y = alpha)
 					
 					dim(col.Mat) <- dm
-					col.Mat <- spread(col.Mat, ncol = ntc0/num.col)
 				}			
-				
 				col.Mat2 <- col.Mat
 				
 			}else{
@@ -779,7 +944,7 @@ if( is.list(freq.trans) ){
 							#rgb(sign(x) < 0,0,sign(x) > 0,alpha = exp(2*(qx-1))*base.alpha ) #qx # cut.rs/2
 							qx <- qx - qx %% 1/(cut.rs-1)
 							alf <- (exp(qx - 1)-exp(-1))/(1-exp(-1))
-							return( rgb(sign(x) < 0,0,sign(x) > 0,alpha = alf*base.alpha ) )#qx # cut.rs/2
+								 return( rgb(sign(x) < 0,0,sign(x) > 0,alpha = alf ) )#qx # cut.rs/2 # base.alp
 						}
 					
 					})
@@ -835,11 +1000,12 @@ if( circular ){
 		X3 = X2 + 1/ncol(W)/2*(1-col.gap.prop)
 		Y3 = Y2 + 1/nrow(W)/2*(1-row.gap.prop)
 		
-		W2sqrt = tt3^(1/2) / max(  tt3^(1/2) )
-		W3 = spread(W2sqrt,ncol=ntc)
+		#W2sqrt = tt3^(1/2) / max(  tt3^(1/2) )
+		#W3 = spread(W2sqrt,ncol=ntc)
 		
-		
-		
+		arat <- ncol(W3)/nrow(W3)
+	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = NA)
+	
 	
 	if( disp.res ){ 
 		H0 <- apply(H0,1:2, function(z) max(0.001,z))
@@ -849,22 +1015,24 @@ if( circular ){
 			warning(cat("residual with ratio", max(ratMat[H0 > 0.001],na.rm=TRUE), " > ",max.rat," occurred!"))	
 		}
 		ratMat <- apply(ratMat,1:2, function(z) min(max.rat, z))
-		
+		sc <- dim(W3)
 		if(eqwidth){
-			R1 = matrix(1,ncol = ncol(W3)*ntc0, nrow = nrow(W3))/ncol(W3)/2*(1-gap.prop) # 0?
+			R1 = matrix(1,ncol = ncol(W3)*ntc0, nrow = nrow(W3)/2*(1-gap.prop)) # 0?, ncol
 			mv <- 1
 		}else{
-			R1 = spread(W3/ncol(W3)/2*(1-gap.prop),ncol=ntc0)
-			mv <- 1/ncol(W3)/2*(1-gap.prop)
+			R1 = spread(W3/2*(1-gap.prop),ncol=ntc0)# /ncol(W3)
+			
+			#maximal value/ratio?
+			mv <- 1/2*(1-gap.prop)#/max(sc) #ncol
 		}
 			
 			R2 <- R1 * ratMat
-			rscf <- max(R2[ratMat <= max.rat], na.rm = TRUE) * (ncol(W3)*2/(1-gap.prop))
+			rscf <- max(R2[ratMat <= max.rat], na.rm = TRUE) * 2/(1-gap.prop)# * max(sc) #ncol(W3)
 			if(rscf < 1){
 				rscf <- 1	
 			}
 			
-			R2[is.na(R2)] <- 1/ncol(W3)/2*(1-gap.prop)
+			R2[is.na(R2)] <- 1/2*(1-gap.prop)/max(sc)#ncol
 			R2 <- R2/rscf
 			R1 <- R1/rscf
 			
@@ -880,30 +1048,30 @@ if( circular ){
 			#exp
 			mapply( function(p1,p2,rad,bg,x,y){
 				cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
-					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)),y = y+c(0, rad*sin(cc*2*pi)),
-					gp=gpar(fill=bg, lwd=1.5)
+					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),#ncol, nrow
+					gp=gpar(fill=bg, lwd=1.5, col = line.col)
 					)}, p1 = P1, p2=P2, rad = R1[,xind], bg = col.Mat[,xind], x = X3, y = Y3 )
 				
 			# obs
 			mapply( function(p1,p2,rad,bg,x,y){
 					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
-					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)),y = y+c(0, rad*sin(cc*2*pi)),
-						gp=gpar(fill=bg)
+					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
+						gp=gpar(fill=bg, col = line.col)
 					)}, p1 = P1, p2=P2, rad = R2[,xind], bg = col.Mat2[,xind], x = X3, y = Y3 )
 			
 			if( both ){
 			#exp	
 			mapply( function(p1,p2,rad,bg,x,y){
 					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
-					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)),y = y+c(0, rad*sin(cc*2*pi)),
-						gp=gpar(fill=bg, lwd=1.5)
+					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
+						gp=gpar(fill=bg, lwd=1.5, col = line.col)
 					)}, p1 = P1, p2=P2, rad = R1[,xind], bg = col.Mat3[,xind], x = X3, y = Y3 )
 				
 			# obs
 			mapply( function(p1,p2,rad,bg,x,y){
 					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
-					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)),y = y+c(0, rad*sin(cc*2*pi)),
-						gp=gpar(fill=bg)
+					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
+						gp=gpar(fill=bg,col=line.col)
 					)}, p1 = P1, p2=P2, rad = R2[,xind], bg = col.Mat4[,xind], x = X3, y = Y3 )
 				
 			}	
@@ -911,20 +1079,36 @@ if( circular ){
 				P1 = P2
 			}
 		}else{
-			H0 <- apply(H0,1:2, function(z) max(0.0001,z))
+			#H0 <- apply(H0,1:2, function(z) max(0.0001,z))
 			for( i in 1:length(cat.ord) ){
 				xind = seq( cat.ord[i], nc*ntc0, ntc0 )
 				P2 = P1 + H0[,xind]
 				if( eqwidth ){	
-					R = H2/nrow(H2)*(1-gap.prop)/2
+					R = H2*(1-gap.prop)/2 #nrow
+					sc <- dim(H2)
 				}else{
-					R = W3/ncol(W3)/2*(1-gap.prop)
+					R = W3/2*(1-gap.prop) #ncol
+					sc <- dim(W3)
 				}
+			
 				mapply( function(p1,p2,rad,bg,x,y){
-					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
-					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)),y = y+c(0, rad*sin(cc*2*pi)),
-						gp=gpar(fill=bg, lwd=1.5))
-					}, p1 = P1, p2=P2, rad = R, bg = col.Mat[,xind], x = X3, y = Y3 )
+					p1 <- min(p1,1)
+					p2 <- min(p2,1)
+					p1 <- floor(10000*p1)/10000
+					p2 <- floor(10000*p2)/10000
+					if(p1 == p2){
+						invisible(TRUE)
+					}else{
+						cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
+						if( abs(p2-p1) == 1 ){
+							grid.polygon(x = x+c(rad*cos(cc*2*pi)/sc[2]),y = y+c( rad*sin(cc*2*pi)/sc[1]),
+							gp=gpar(fill=bg, lwd=1.2,col=line.col))
+						}else{
+							grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
+							gp=gpar(fill=bg, lwd=1.2,col=line.col))
+						}	
+					}
+				}, p1 = P1, p2=P2, rad = R, bg = col.Mat[,xind], x = X3, y = Y3 )
 				P1 = P2
 			}
 		}
@@ -954,8 +1138,8 @@ if( circular ){
 			#R1 <- R1/rscf
 
 
-	draw(H2/nrow(H2)*(1-row.gap.prop),( W2trans/ncol(W2trans)*(1-col.gap.prop) + (round(W2trans,digits=7) > 0)*width.cor )/rscf,X2,Y2,alpha = 0.25, bg = "grey")
-	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 0.1, bg = "grey")
+	draw(H2/nrow(H2)*(1-row.gap.prop),( W2trans/ncol(W2trans)*(1-col.gap.prop) + (round(W2trans,digits=7) > 0)*width.cor )/rscf,X2,Y2,alpha = 1, bg = col2, border = ifelse(eqwidth, NA, line.col))
+	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 0.2, bg = bgs, border = line.col)
 
 	if( spine ){
 		for( i in 1:length(cat.ord) ){
@@ -983,7 +1167,7 @@ if( circular ){
 						draw(H/nrow(H)*(1-row.gap.prop),W3res/rscf,X3,Y,alpha = 1, bg = col.Mat4[,xind], border = NA)
 				}	
 			}
-			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop)/rscf,X3,Y,alpha = 1, bg = NA, lwd = 1.5)
+			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop)/rscf,X3,Y,alpha = 1, bg = NA, lwd = 1.5, border = line.col)
 			
 		}
 		Y <- Y0
@@ -1008,10 +1192,10 @@ if( circular ){
 						# obs
 						draw(H00/nrow(H00)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = col.Mat4, border = NA)
 				}
-				draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = NA, lwd =1.5)	
+				draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = NA, lwd =1.5, border = line.col)	
 		}else{
-			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = col.Mat)	
-		}
+			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = col.Mat, border = line.col)	
+		}#border = line.col ???
 	}
 }
 		
@@ -1022,12 +1206,12 @@ if( circular ){
 		sapply(y,function(z){
 			grid.yaxis(at =seq(z,z+1/length(y)*(1-row.gap.prop),1/length(y)*(1-row.gap.prop)/5), label = round(seq(0,max.scale,max.scale/5)/rscf,digits = 3), main = TRUE,
 			edits = NULL, name = NULL,
-			gp = gpar(), draw = TRUE, vp = NULL)
+			gp = gpar(fontsize = 10*lab.cex), draw = TRUE, vp = NULL)
 		})
 		sapply(y,function(z){
 			grid.yaxis(at =seq(z,z+1/length(y)*(1-row.gap.prop),1/length(y)*(1-row.gap.prop)/5), label = round(seq(0,max.scale,max.scale/5)/rscf,digits = 3), main = FALSE,
 			edits = NULL, name = NULL,
-			gp = gpar(), draw = TRUE, vp = NULL)
+			gp = gpar(fontsize=10*lab.cex), draw = TRUE, vp = NULL)
 		})
 	}
 	
@@ -1043,13 +1227,28 @@ if( circular ){
 			if(any(col.vars*label)){
 	# ----- labeling the x-axis ----- #	
 
-	vpX <- viewport(x = 1-yaxis*s1 - s3*(!is.null(expected)), y = 1-ncl*s2, w = 1-nrl*s2 - yaxis*2*s1 - s3*(!is.null(expected)), h = ncl*s2, just = c("right", "bottom"), name = "vpX")
+	vpX <- viewport(x = 1-yaxis*s1 - s3*(!is.null(expected)), y = 1-ncl*s2, width = 1-nrl*s2 - yaxis*2*s1 - s3*(!is.null(expected)), height = ncl*s2, just = c("right", "bottom"), name = "vpX")
 	pushViewport(vpX)
 	cur <- 1
 	zc <- cumprod(col.nlvl)[ which(label[which(col.vars)]) ]
     for(i in 1:ncl){
-		vpXX <- viewport(x = 1, y = 1 - i*1/ncl, w = 1, h = 1/ncl, just = c("right", "bottom"), name = "vpXX")
+		vpXX <- viewport(x = 1, y = 1 - i*1/ncl, width = 1, height = 1/ncl, just = c("right", "bottom"), name = "vpXX")
 		pushViewport(vpXX)
+		
+		if( (i > ncl-1) & num.mode.x ){
+			min.tick <- floor(1000*min(data[,ind[ cind[i]] ],na.rm=T ))/1000
+			max.tick <- floor(1000*max(data[,ind[ cind[i]] ],na.rm=T ))/1000
+			
+			#vpXXb <- viewport(x = 0.5, y = 0, width = 1, height = 0.1, just = "centre", name = "vpXXb")
+		#pushViewport(vpXXb)
+			my.grid.axis(x0=0,y0=0.1,len=1,ticks= signif(seq(min.tick,max.tick,(max.tick - min.tick)/cut[cind[i]]),5), rot=0)
+			
+			#grid.xaxis(at = seq(0,1,1/cut[cind[i]]), label = round(seq(min.tick,max.tick,(max.tick - min.tick)/cut[cind[i]]),digits = 3), main = FALSE,
+			#edits = NULL, name = NULL,
+			#gp = gpar(), draw = TRUE, vp = NULL)
+			#popViewport()
+			grid.text(  names(dset)[cind[i]],x = 0.5 , y = 5/6, just = "centre",gp=gpar(fontface = "bold",cex=1.1*lab.cex))	
+		}else{
 			if( varnames ){
 				grid.text(  names(dset)[cind[i]],x = 0.5 , y = 5/6, just = "centre",gp=gpar(fontface = "bold",cex=1.1*lab.cex))	
 			}
@@ -1060,6 +1259,7 @@ if( circular ){
 				grid.rect(  y = 1/3 , x = X[1,seq(1,nc,nc/z)] , just = c("left","centre"), width = X[1,seq(nc/z,nc,nc/z)] - X[1,seq(1,nc,nc/z)] +1/nc*(1-col.gap.prop), height = 1/2, gp = gpar(fill="transparent"))
 			}
 			cur <- z
+		}
 		popViewport()
 	}
 		
@@ -1067,14 +1267,31 @@ if( circular ){
 	}
 		if(any( (!col.vars)*label)){
 # ----- labeling the y-axis ----- #			
-	vpY <- viewport(x = nrl*s2, y = 0, w = nrl*s2, h = 1-ncl*s2, just = c("right", "bottom"), name = "vpY")
+	vpY <- viewport(x = nrl*s2, y = 0, width = nrl*s2, height = 1-ncl*s2, just = c("right", "bottom"), name = "vpY")
 	pushViewport(vpY)
 	cur <- 1
 	zr <- cumprod(row.nlvl)[ which(label[which(!col.vars)]) ]
+	
 	for(i in 1:nrl){
 		
-		vpYY <- viewport(x = 0 + (i-1)*1/nrl, y = 0, w = 1/nrl, h = 1, just = c("left", "bottom"), name = "vpYY")
+		vpYY <- viewport(x = 0 + (i-1)*1/nrl, y = 0, width = 1/nrl, height = 1, just = c("left", "bottom"), name = "vpYY")
 		pushViewport(vpYY)
+		if( (i > nrl-1) & num.mode.y ){
+			min.tick <- floor(1000*min(data[,ind[ rind[i]] ],na.rm=T ))/1000
+			max.tick <- floor(1000*max(data[,ind[ rind[i]] ],na.rm=T ))/1000
+			
+			#vpYYb <- viewport(x = 1, y = 0.5, width = 0.1, height = 1, just = "centre", name = "vpYYb")
+		#pushViewport(vpYYb)
+			
+			#grid.yaxis(at = seq(0,1,1/cut[rind[i]]), label = round(seq(min.tick,max.tick,(max.tick - min.tick)/cut[rind[i]]),digits = 3), main = TRUE,
+			#edits = NULL, name = NULL,
+			#gp = gpar(), draw = TRUE, vp = NULL)
+			my.grid.axis(x0=0.9,y0=0,len=1,ticks=signif(seq(min.tick,max.tick,(max.tick - min.tick)/cut[rind[i]]),5), rot=90)
+			
+			#popViewport()
+				grid.text(  names(dset)[rind[i]],x = 1/6 , y = 0.5, just = "centre",rot=90,gp=gpar(fontface = "bold",cex=1.1*lab.cex))	
+		}else{
+		
 			if( varnames & (nr > 1) ){
 				grid.text(  names(dset)[rind[i]],x = 1/6 , y = 0.5, just = "centre",rot=90,gp=gpar(fontface = "bold",cex=1.1*lab.cex))	
 			}			
@@ -1086,6 +1303,7 @@ if( circular ){
 			}
 					
 			cur <- z
+		}
 		popViewport()
 	}
 	upViewport()
@@ -1094,7 +1312,7 @@ if( circular ){
 	# ----- scale for expected mode ----- #
 	if(!is.null(expected) & !res.val.only){
 
-		vpS <- viewport(x = 1, y = 0 , w = s3, h = 0.8, just = c("right","bottom"), name = "vpS")
+		vpS <- viewport(x = 1, y = 0 , width = s3, height = 0.8, just = c("right","bottom"), name = "vpS")
 		pushViewport(vpS)
 		
 		#alpha values for the residuals on a log-scale
@@ -1115,14 +1333,14 @@ if( circular ){
 			
 		}else{
 			alfav <- (exp(seq(0,-1,-1/(cut.rs-1)))-exp(-1))/(1-exp(-1))
-			colv <- rgb(rep(c(1,0),each=cut.rs),0,rep(c(0,1),each=cut.rs),alpha = c(alfav,rev(alfav))*base.alpha)
+			colv <- rgb(rep(c(1,0),each=cut.rs),0,rep(c(0,1),each=cut.rs),alpha = c(alfav,rev(alfav)))#*base.alpha
 			grid.rect(  x = 0.1 , y = seq(0,1-1/2/cut.rs,1/2/cut.rs) , just = c("left","bottom"), height = 1/2/cut.rs, width = 0.3 , gp = gpar(fill=colv))
 			grid.text( label=round(seq(-resid.max,resid.max,resid.max/min(10,cut.rs)),digits=2), y = seq(0,1,1/2/min(10,cut.rs)), x = 0.45, just = c("left","centre"),rot=0,gp=gpar(cex=lab.cex))
 		}
 		#grid.rect(  x = 0.1 , y = 0, just = c("left","bottom"), height = 1, width = 0.3 , gp = gpar(fill=hsv(0,0,0,alpha=0.1)))
 			
 		upViewport()	
-		vpS2 <- viewport(x = 1, y = 0.8  , w = 0.1, h = 0.2 , just = c("right","bottom"), name = "vpS2")
+		vpS2 <- viewport(x = 1, y = 0.8  , width = 0.1, height = 0.2 , just = c("right","bottom"), name = "vpS2")
 		pushViewport(vpS2)
 		
 		grid.text( label=resid.type, y = 0.5, x = 0.2, just = "centre",rot=90,gp=gpar(cex=lab.cex*1.2))
@@ -1212,5 +1430,68 @@ spread <- function(M,ncol = 1,nrow = 1){
 		#dim(M3) <- dim(M2)
 	}
 	return(M3)
+}
+
+
+prettyscale = function(breaks){
+	#a <- min(breaks)
+	#b <- max(breaks)
+	#n <- length(breaks)
+	
+	#ep <- floor(log(abs(breaks))/log(10))
+	ep <- sapply(breaks, function(z){
+		if( abs(z) < 1 ){
+			floor( log(abs(1/z))/log(10) )	
+		}else{
+			floor( log(abs(z))/log(10) )	
+		}	
+	})
+	ep[abs(breaks)<1] <- - ep[abs(breaks)<1]
+	esigns = c("+","-")[(sign(ep)<0)+1]
+	breaks2 <- breaks
+	small <- which(abs(ep) < 3)
+	big <- which(abs(ep) > 2)
+	a <- format(round(breaks2[small], 2),nsmall=2)
+	b <- paste(round(breaks2[big]/(10^ep[big]), digits=1),paste("e",esigns[big],format(paste(0,abs(ep)[big],sep="")),sep=""),sep="")
+	
+	breaks2[big] <- b
+	breaks2[small] <- a
+	return(breaks2)	
+}
+
+my.grid.axis = function(x0,y0,rot, ticks, len = 1, ltm = 1/30, clockwise = FALSE, lab.cex = 0.8, keep=7, col.axis = 1){
+		
+	grid.lines(x=c(x0, x0+len*cos(rot/180*pi)), y = c(y0, y0+len*sin(rot/180*pi)),gp=gpar(col=col.axis))
+	n <- length(ticks)-1
+	
+	sgn <- ifelse(clockwise,-1,1)
+	
+	x.ticks.1 <- x0+seq(0,1,1/n)*len*cos(rot/180*pi)
+	y.ticks.1 <- y0+seq(0,1,1/n)*len*sin(rot/180*pi)
+	
+	x.ticks.2 <- x.ticks.1 + sgn*ltm*len*cos(rot/180*pi+pi/2)
+	y.ticks.2 <- y.ticks.1 + sgn*ltm*len*sin(rot/180*pi+pi/2)
+	
+	mapply( function(x0,y0,x1,y1){
+		grid.lines(c(x0,x1),c(y0,y1),gp=gpar(col=col.axis))
+		},x0 = x.ticks.1, x1 = x.ticks.2, y0= y.ticks.1, y1 = y.ticks.2)
+		if(rot <= 135 & rot > 45) just = ifelse(clockwise,"left","right")
+		if(rot <= 225 & rot > 135) just = ifelse(clockwise,"bottom","top")
+		if(rot <= 315 & rot > 225) just = ifelse(clockwise,"right","left")
+		if(rot <= 45 | rot > 315) just = ifelse(clockwise,"left","right")#top/bottom
+	
+#	ii <- round( (n-1)/4 )
+#	if(ii > 0){
+#		ids <- which( floor(1:(n-2)+ii/2) %% ii != 0)
+#		ticks[ids+1] = ""	
+#	}
+	
+#	tmp <- n / c(5,6)
+#	tick.step <- trunc(tmp)[which.min( tmp - trunc(tmp)  )]
+if(n > keep){
+	keep <- round(seq(1,n,n/(keep-1)))
+	ticks[-c(1,n+1,keep)] = ""
+}		
+	grid.text(ticks, x.ticks.2, y.ticks.2, just = just, rot = 320, gp=gpar(fontsize=lab.cex*10,col=col.axis))
 }
 

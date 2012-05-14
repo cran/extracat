@@ -47,15 +47,8 @@ Department for Computer Oriented Statistics and Data Analysis\cr
 University of Augsburg\cr
 Germany
 }
-\note{
-%%  ~~further notes~~
-}
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
 \examples{
 hs2 = subtable(housing,c(3,1))
 summary(hs2)

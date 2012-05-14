@@ -1,0 +1,56 @@
+\name{quickfechner}
+\alias{quickfechner}
+
+\title{
+fechnerian scaling
+}
+\description{
+This function computes a fechnerian distance matrix from either a similarity matrix or a dissimilarity matrix.
+}
+\usage{
+quickfechner(x, x.type = "diss", scale ="-", path.op = "+", sym.op = "+", rescale = FALSE)
+}
+%- maybe also 'usage' for other objects documented here.
+\arguments{
+  \item{x}{
+A similarity or dissimilarity matrix.
+}
+  \item{x.type}{
+The type of the matrix (\code{'sim'} or \code{'diss'}). 
+}
+  \item{scale}{
+Either divide the similarities by the diagonal entries (\code{'div'}, \code{'/'},\code{'*'},\code{'exp'},\code{'expected'},\code{'mult'},\code{'multiplicative'}) or subtract the diagonal entries in the dissimilarity matrix   (\code{'-'}, \code{'+'}, \code{'add'},\code{'additive'})
+}
+  \item{path.op}{
+Whether to use the similarities to find multiplicative paths (\code{'*'},\code{'exp'},\code{'expected'},\code{'mult'},\code{'multiplicative'}) or to use the dissimilarities and find additive paths (\code{'+'},\code{'add'},\code{'additive'},\code{'max'},\code{'maximum'}).
+}
+  \item{sym.op}{
+This sets the function which is used to ensure symmetry. \code{"min"} uses the minumum value, \code{"+"}, \code{"sum"} or \code{"mean"} use the sum. \code{"none"}, \code{NA} or \code{FALSE} stand for no operation and hence the resulting matrix will not necessarily be symmetric.
+}
+  \item{rescale}{
+Whether or not the original diagonal will be used for a correction of the results.
+}
+}
+\details{
+The algorithm first computes a dissimilarity matrix with a zero-diagonal. Then it iteratively tries to find shorter paths between the items.
+}
+\value{
+The Fechnerian distance matrix.
+}
+
+\author{
+Alexander Pilhoefer
+}
+
+\examples{
+data(olives)
+#not a distance matrix, but a similarity matrix in some sense
+cx <- 1-abs(cor(olives[-c(1,2,11)]))
+
+cx2 <- quickfechner(cx)
+
+rownames(cx2) <- names(olives)[-c(1,2,11)]
+plot(hclust(as.dist(cx2)))
+
+}
+

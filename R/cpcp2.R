@@ -6,7 +6,7 @@ plot = TRUE, return.df = !plot, ... ){
 	scr.res=c(1280,1024)
 	if( plot & .Platform$OS.type == "unix" ){
 		if(!("JGR" %in% .packages(all.available=FALSE))){
-			cat("Please use the 'JGR' console for iplots. To download it visit\n 'http://www.rosuda.org/software/'")
+			cat("Please use the 'JGR' GUI for iplots. To download the application visit\n 'http://www.rosuda.org/software/'")
 			return(invisible(TRUE))
 			}
 	}
