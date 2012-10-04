@@ -248,25 +248,40 @@ if( radial ){
 	
 }
 
+	 if( "cex" %in% names(label.opt) ){
+		 label.opt$cex.axis <- label.opt$cex
+		 label.opt$cex.axis <- label.opt$cex
+	 }
+	 if( "cex.axis" %in% names(label.opt) ){
+		 cex.axis <- label.opt$cex.axis
+	 }else{
+		 cex.axis <- 1
+	 }
+	 if( "cex.lab" %in% names(label.opt) ){
+		cex.lab <- label.opt$cex.lab
+	 }else{
+		 cex.lab <- 1
+	 }
+	 
 popViewport()
 vpx <- viewport(0.54,0.93,width=0.9,height = 0.05)
 pushViewport(vpx)
-my.grid.axis(x0=0,y0=0.1,len=1-xrad/xrng2,ticks=signif(xmarks,5), rot=0, keep = min(7,n-2), ltm=1/20 ,col.axis = col.axis)
+my.grid.axis(x0=0,y0=0.1,len=1-xrad/xrng2,ticks=signif(xmarks,5), rot=0, keep = min(7,n-2), ltm=1/20 ,col.axis = col.axis, lab.cex=cex.axis)
 popViewport()
 vpy <- viewport(0.07,0.46,width=0.05,height = 0.9)
 pushViewport(vpy)
-my.grid.axis(x0=0.9,y0=0,len=1-yrad/yrng2/2,ticks=signif(ymarks,5), rot=90, keep = min(7,n-2),ltm=1/20,col.axis = col.axis)			
+my.grid.axis(x0=0.9,y0=0,len=1-yrad/yrng2/2,ticks=signif(ymarks,5), rot=90, keep = min(7,n-2),ltm=1/20,col.axis = col.axis, lab.cex=cex.axis)			
 
 popViewport()
 
 vpyl <- viewport(0.02,0.5,width=0.05,height = 0.9)
 pushViewport(vpyl)
-grid.text(label=y.name,0.5,0.5,gp=gpar(fontsize = 14, col = col.axis),rot=90)
+grid.text(label=y.name,0.5,0.5,gp=gpar(fontsize = 14*cex.lab, col = col.axis),rot=90)
 popViewport()
 
 vpxl <- viewport(0.5,0.98,width=0.9,height = 0.05)
 pushViewport(vpxl)
-grid.text(label=x.name,0.5,0.5,gp=gpar(fontsize = 14,col=col.axis))
+grid.text(label=x.name,0.5,0.5,gp=gpar(fontsize = 14*cex.lab,col=col.axis))
 popViewport()
 
 

@@ -1,12 +1,14 @@
-untableSet2 <-
+untableSet <-
 function(data, freqvar = NULL){
+	
 	data = as.data.frame(data)
 	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar = "Freq" }
-	data = data.frame(data)
 	stopifnot(freqvar %in% names(data))
+	
 	ind = which(names(data) != freqvar)
 	fi = which(names(data) == freqvar)
 	names(data)[fi] = "Freq"
+	
 	n = ncol(data)
 	m = nrow(data)
 	X = data.frame(matrix(ncol=n-1,nrow=0))
@@ -20,7 +22,7 @@ function(data, freqvar = NULL){
 	X = rbind(X,as.matrix(data[c(1:m)[-c(zero,zind)],ind]))
 	return(suppressWarnings(data.frame(X)))
 }
-untableSet <- function(data, freqvar = NULL){
+untableSet2 <- function(data, freqvar = NULL){
 	data = as.data.frame(data)
 	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar = "Freq" }
 	

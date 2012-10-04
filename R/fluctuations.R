@@ -1,6 +1,6 @@
 
 
-fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.prop = 0.1, border = NULL, label = TRUE, lab.opt = list(abbrev = 3, lab.cex = 1.2), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = NULL, ...  ){
+fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.prop = 0.1, border = NULL, label = TRUE, lab.opt = list(abbrev = 3, lab.cex = 1.2), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",  ...  ){
 	#tab <- t(tab)
 	dm <- dim(tab)
 	maxv <- max(tab)
@@ -340,7 +340,7 @@ fluctree <- function(dims,parent, hsplit, gap.prop, env, ...){
 gridfluc <- function(tab,dir = "b", just = "c", shape = "r", gap.prop = 0.1, maxv = NULL,vp = NULL, col = NULL, bg = NULL, ...){
 	
 	if( is.null(bg) ){
-		bg <- "lightgrey"
+		bg <- NA
 	}
 	if( is.null(col) ){
 		col <- hsv(0,0,0,alpha=0.7)
@@ -527,11 +527,12 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", ...){
 
 
 
-fluctile3d = function(x, shape = "cube", col = "darkgrey", alpha = 0.8,...){
+fluctile3d = function(x, shape = "cube", col = "darkgrey", col.array = NULL, alpha = 0.8, add = FALSE, lab = TRUE, ...){
 	if(!"rgl" %in% .packages(all.available = TRUE)){
 		cat("Please install the package 'rgl' to run this function")
 		return(invisible(TRUE))
 	}
+	
 	check <- tryCatch(require(rgl), error = function(e) FALSE)
 	if(!check){ 
 		cat("Problems with package 'rgl' occured...")
@@ -551,9 +552,15 @@ fluctile3d = function(x, shape = "cube", col = "darkgrey", alpha = 0.8,...){
 	lvls <- lapply(x2, levels)
 	x2 <- sapply(x2, as.integer)
 	
+	if(is.null(col.array)){
+		col.array <- array(col,dim=dim)	
+	}
+	
+	
 	#MX <- identityMatrix()
 	MX <- matrix(0,ncol=4,nrow=4)
 	diag(MX) <- 1
+	if(!add){
 	open3d()
 #	lines3d(x = c(0.5,dim[1]+0.5), y = c(0.5,0.5), z =  c(0.5,0.5))
 #	lines3d(x = c(0.5,0.5), y = c(0.5,dim[2]+0.5), z =  c(0.5,0.5))
@@ -564,7 +571,7 @@ fluctile3d = function(x, shape = "cube", col = "darkgrey", alpha = 0.8,...){
 	wire3d( translate3d( cube3d( trans = scaleMatrix(dim[1]/2,dim[2]/2,dim[3]/2)), (dim[1]+1)/2,(dim[2]+1)/2,(dim[3]+1)/2)) 
 	dot3d( translate3d( cube3d( trans = scaleMatrix(dim[1]/2,dim[2]/2,dim[3]/2)), (dim[1]+1)/2,(dim[2]+1)/2,(dim[3]+1)/2))
 	
-	
+		if(lab){
 	text3d( x = 1:dim[1], y = rep(0, dim[1]), z = rep(0, dim[1]), texts = lvls[[1]])
 	text3d( x = rep(0, dim[2]), y = 1:dim[2], z = rep(0, dim[2]), texts = lvls[[2]])
 	text3d( x = rep(0, dim[3]), y = rep(0, dim[3]), z = 1:dim[3], texts = lvls[[3]])
@@ -572,14 +579,15 @@ fluctile3d = function(x, shape = "cube", col = "darkgrey", alpha = 0.8,...){
 	text3d( x = 1:dim[1], y = rep(dim[2]+1, dim[1]), z = rep(dim[3]+1, dim[1]), texts = lvls[[1]])
 	text3d( x = rep(dim[1]+1, dim[2]), y = 1:dim[2], z = rep(dim[3]+1, dim[2]), texts = lvls[[2]])
 	text3d( x = rep(dim[1]+1, dim[3]), y = rep(dim[2]+1, dim[3]), z = 1:dim[3], texts = lvls[[3]])
-	
+		}
+	}
 	apply(x2,1,function(z){
 		s <- ((z[4]/maxfreq)^(1/3))/2
 		  if(shape == "cube"){
-			shade3d( translate3d( cube3d(col=col, trans = scaleMatrix(s,s,s)), z[1], z[2], z[3]), alpha = alpha )	
+			shade3d( translate3d( cube3d(col=col.array[z[1], z[2], z[3]], trans = scaleMatrix(s,s,s)), z[1], z[2], z[3]), alpha = alpha )	
 		  }
 		  if(shape == "octagon"){
-			 shade3d( translate3d( octahedron3d(col=col, trans = scaleMatrix(s,s,s)), z[1], z[2], z[3]), alpha = alpha )	
+			 shade3d( translate3d( octahedron3d(col=col.array[z[1], z[2], z[3]], trans = scaleMatrix(s,s,s)), z[1], z[2], z[3]), alpha = alpha )	
 		  }
 
 	})
@@ -651,4 +659,32 @@ if(shape %in% c("o","oct","octahedron")){
 		
 	}, s1 = xc, s2 = yc, s3 = zc)
 		return(invisible(TRUE))
+}
+
+
+f3dcol = function(x, dims = c(1,2), col.fun = rainbow_hcl, col.opt = list()){
+	require(colorspace)
+	stopifnot( inherits(x, "array") || inherits(x, "table") )
+	nc <- prod(dim(x)[dims])
+	colv <- col.fun(nc)
+	
+	if(length(dims) == 1){
+		if(dims == 1) colv <- rep(colv, times=prod(dim(x)[2:3]))
+		if(dims == 2) colv <- rep(colv, each = dim(x)[1], times=dim(x)[3])
+		if(dims == 3) colv <- rep(colv, each=prod(dim(x)[1:2]))
+	}
+	if(length(dims) == 2){
+		if(! 1 %in% dims) colv <- rep(colv, each=dim(x)[1])
+		if(! 2 %in% dims){
+			tmp <- NULL
+			for( i in 1:dims[2] ){#1?
+				tmp <- rep(colv[(1:dim(x)[1]) + (i-1)*dim(x)[1]], times = dim(x)[2])
+			}
+			colv <- tmp
+			rm(tmp)
+		} 
+		if(! 3 %in% dims) colv <- rep(colv, times=dim(x)[3])
+	}
+	dim(colv) <- dim(x)
+	return(colv)
 }

@@ -9,7 +9,7 @@ Reduces a dataframe into a frequency table with prespecified entries. Uses a mod
 Zero-entries can be included or excluded and the variables can be coerced into factors if necessary.
 }
 \usage{subtable(data, cols, freqvar = NULL, 
-		keep.zero = FALSE, allfactor = FALSE)}
+		keep.zero = FALSE, allfactor = FALSE, return.type=class(data))}
 
 \arguments{
   \item{data}{
@@ -28,6 +28,9 @@ A logical indicating whether to convert all variables into factor variables. Int
     Optional name of a frequency variable in \code{V}. 
     If \code{dset} contains a variable called \code{"Freq"} (see \link[stats]{ftable}) 
     it will be defined as frequency variable if \code{freqvar} is unspecified.
+}
+\item{return.type}{
+\code{"table"} will return a table and anything else will result in a data.frame.
 }
 }
 \details{

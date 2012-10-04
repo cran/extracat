@@ -39,12 +39,16 @@ getindex = function(ind, dim){
 
 
 
-arsim <- function(n, dim, k, noise = 0.00, shuffle = TRUE, v = 0.1, minc = 1, exp.prop=NULL, min.prop = 1/dim/4){
+arsim <- function(n, dim, k, noise = 0.00, shuffle = TRUE, v = 0.1, minc = 1, exp.prop=NULL, min.prop = 1/dim/4, noise.type = "s", dimnames=list(LETTERS,1:max(dim))){
 
 
 nd <- length(dim)
 
 stopifnot(all(dim - k*minc >= 0))
+if( round((1-noise)*n) == 0){
+ k <- 1
+ noise <- 0
+ }
 
 	if(k==1){
 		exp.prop <- 1
@@ -70,27 +74,29 @@ if(is.null(exp.prop)){
 # distribute n
 nc <- rmultinom(1,n*(1-noise),prob=exp.prop)
 
+pvecs <- vector("list",nd)
+
 # empty or noisy matrix
-if(noise > 0){
-p1 <- runif(dim[1])
-p2 <- runif(dim[2])
-p1 <- p1/sum(p1)
-p2 <- p2/sum(p2)
+#if(noise > 0){
+#p1 <- runif(dim[1])
+#p2 <- runif(dim[2])
+#p1 <- p1/sum(p1)
+#p2 <- p2/sum(p2)
 
-M <- outer(p1,p2)
-if(nd > 2){
-for(i in 3:nd){
-p3 <- 	runif(dim[i])
-p3 <- p3/sum(p3)
+#M <- outer(p1,p2)
+#if(nd > 2){
+#for(i in 3:nd){
+#p3 <- 	runif(dim[i])
+#p3 <- p3/sum(p3)
 
-M <- outer(M,p3)	
-}}
-M <- rmultinom(1,round(n*noise,0),M)
+#M <- outer(M,p3)	
+#}}
+#M <- rmultinom(1,round(n*noise,0),M)
 
-dim(M) <- dim
-}else{
+#dim(M) <- dim
+#}else{
 M <- array(0,dim = dim)
-}
+#}
 
 # fill in the clusters
 lower <- rep(1,nd)
@@ -101,6 +107,8 @@ p1 <- p1/sum(p1)
 p2 <- p2/sum(p2)
 p1 <- p1*(1-min.prop[1])+min.prop[1]
 p2 <- p2*(1-min.prop[2])+min.prop[2]
+pvecs[[1]] <- c(pvecs[[1]],p1*nc[s]/n)
+pvecs[[2]] <- c(pvecs[[2]],p2*nc[s]/n)
 
 CM <- outer(p1,p2)
 if(nd > 2){
@@ -108,6 +116,7 @@ for(i in 3:nd){
 p3 <- 	runif(csizes[s,i])
 p3 <- p3/sum(p3)
 p3 <- p3*(1-min.prop[i])+min.prop[i]
+pvecs[[i]] <- c(pvecs[[i]],p3*nc[s]/n)
 
 CM <- outer(CM,p3)	
 }}
@@ -125,6 +134,55 @@ getindex(z,dim)
 M[indices] <- CM
 
 }
+	
+if(noise > 0){
+	if(noise.type %in% c("I","i","ind","indep")){
+		#p1 <- apply(M,1,sum)
+		#p2 <- apply(M,2,sum)
+        #p1 <- p1/sum(p1)
+		#p2 <- p2/sum(p2)
+        
+        p1 <- pvecs[[1]]
+		p2 <- pvecs[[2]]
+	
+		M2 <- outer(p1,p2)
+		if(nd > 2){
+			for(i in 3:nd){
+				#p3 <- 	apply(M,i,sum)
+				#p3 <- p3/sum(p3)
+                p3 <- pvecs[[i]]
+				M2 <- outer(M2,p3)	
+			}}
+		M2 <- rmultinom(1,round(n*noise,0),M2)
+	
+		dim(M2) <- dim
+		M <- M+M2
+	}
+	if(noise.type %in% c("S","s","shuffle")){
+		M2 <- rmultinom(1,round(n*noise),M/sum(M))
+		dim(M2) <- dim
+		ordlist <- list()
+		ordlist[[1]] <- M2
+		ordlist[2:(nd+1)] <- lapply(dim, function(z) sample(1:z))
+		
+		M2 <- do.call("[",ordlist)
+		M <- M + M2
+		}
+	}
+	if(!is.null(dimnames)){
+		if(!is.null(dimnames[[1]])){
+			for(i in 1:nd){
+				dimnames(M)[[i]] <- rep(dimnames[[1]][i],dim[i])
+			}
+		}
+		if(!is.null(dimnames[[2]])){
+			for(i in 1:nd){
+				dimnames(M)[[i]] <- paste(dimnames(M)[[i]],dimnames[[2]][1:dim[i]],sep="")
+			}
+		}
+	}
+	
+	
 if( shuffle ){
 ordlist <- list()
 ordlist[[1]] <- M
@@ -134,5 +192,5 @@ M <- do.call("[",ordlist)
 
 }
 
-return(M)
+return(as.table(M))
 }

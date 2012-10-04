@@ -114,7 +114,7 @@ ihcrit = function(x){
 	return(hammcrit(x))
 }	
 
-shcrit = function(x){
+WBCI = function(x){
 	hammcrit(x)/ihcrit(x)
 }
 
@@ -140,9 +140,126 @@ sccrit = function(x, concordant = FALSE){
 
 
 
+neg3t = function(x){
+	
+	n <- dim(x)[1]
+	m <- dim(x)[2]
+	k <- dim(x)[3]
+	
+#c1 <- classcrit(x)	
+	c2 <- classcrit(x[n:1,,]) + classcrit(x[,m:1,]) + classcrit(x[,,k:1]) 
+	
+	return(c2/3/iccrit(x))	
+	
+}
 
 
 
+neg3j = function(x,r = 1){
+	
+	n <- dim(x)[1]
+	m <- dim(x)[2]
+	k <- dim(x)[3]
+	
+#c1 <- classcrit(x)	
+	c2 <- classcrit(x[n:1,,]) + classcrit(x[,m:1,]) + classcrit(x[,,k:1]) 
+	ix <- iccrit(apply(x,r,sum))
+	x2 <- apply(x,c(1:3)[-r],sum)
+	
+	return(c2/ix/( classcrit(x2)+2*classcrit(x2,FALSE) )*sum(x)^2)	
+	
+}
 
 
+neg3jb = function(x,r = 1){
+	
+	n <- dim(x)[1]
+	m <- dim(x)[2]
+	k <- dim(x)[3]
+	
+	x2 <- apply(x,c(1:3)[-r],sum)
+	v1<-3*iccrit(x2)/( classcrit(x2)+2*classcrit(x2,FALSE) )*neg3t(x)
+	
+	return(v1)
+	
+}
+
+
+neg3c = function(x,r = 1){
+	
+	n <- dim(x)[1]
+	m <- dim(x)[2]
+	k <- dim(x)[3]
+	
+	xz <- apply(x,c(c(1:3)[-r][1],r),sum)
+	yz <- apply(x,c(c(1:3)[-r][2],r),sum)
+	
+	bxz <- classcrit(xz)
+	byz <- classcrit(yz)
+	
+	nxz <- bxz + classcrit(xz, FALSE)
+	nyz <- byz + classcrit(yz, FALSE)
+	
+	iz <- iccrit(apply(x,r,sum))
+	
+	v1 <- (nxz*nyz)/iz - (bxz*byz)/iz
+	
+	v1<- neg3t(x)*3*iccrit(x)/v1
+	
+	return(v1)
+	
+}
+
+allpairs = function(x){
+	
+	
+	N <- sum(x)
+	nd <- length(dim(x))
+	nl <- 
+	
+	nl <- c(N*(N-1),0)
+	
+	if(nd < 2){
+		return(0)
+	}
+	
+	for(i in 1:nd){
+		tt <- apply(x,i,sum)
+		nl[2] <- nl[2] + sum(tt*(tt-1))
+	}
+		
+	
+		nl <- c(nl, sapply(2:nd, function(z){
+			   comb <- combn(1:nd,z)
+			   sum(apply(comb,2,function(y){
+						 tt <- apply(x,y,sum)
+						sum( tt*(tt-1) )
+				}))
+		}))
+	
+	nls <- sum( nl * (-1)^(2:(nd+2)))/2
+	
+	return(nls)
+	
+}
+#BCI <- function(x,...){
+#    UseMethod("BCI")
+#}
+#BCI.data.frame <- function(){
+#
+#}
+
+BCI <- function(x){
+	nd <- length(dim(x))
+	ret <- (allpairs(x)-classcrit(x))/iccrit(x)/(2^(nd-1)-1)
+	return(ret)
+}
+
+
+
+BCC = function(x){
+	nd <- length(dim(x))
+	ret <- (allpairs(x)-classcrit(x))
+	return(ret)
+}
 

@@ -27,7 +27,7 @@ A smoothing function such as \code{loess} or \code{FALSE}.
 Additional arguments for the smoother, such as span.
 }
   \item{colv}{
-A color vector with one color for each group. Not implemented.
+A color vector with one color for each group.
 }
   \item{alpha}{
 The alpha-blending value for the points of the scatterplot.
@@ -40,8 +40,8 @@ Further args.
 }
 }
 \details{
-The data is first centered and standardized using the inverse of the covariance matrix. Then projections of the data onto different direction vectors (0 to 360 degree) are computed. The boxplot marks (median, box, whisker) are computed for each such projection and finally retransformed
-again using the covariance matrix. Finally the projected marks are possibly smoothed, for instance using loess.
+The data is first centered and standardized via multiplication with the inverse of the covariance matrix. Then projections of the data onto different direction vectors (0 to 360 degree) are computed. The boxplot marks (median, box, whisker) are computed for each such projection and finally retransformed
+again using the covariance matrix. Optionally the projected marks are then smoothed, e.g. via \code{smooth=loess}.
 }
 \value{
 The ggplot object.
@@ -63,6 +63,6 @@ data(olives)
 boxplot2g(olives$palmitoleic,olives$oleic,olives$Region)
 
 boxplot2g(olives$palmitoleic,olives$oleic,olives$Area,
-alpha=0.5,smooth.args=list(span=0.3))
+alpha=0.5,smooth.args=list(span=0.3), colv = rainbow(9))
 }
 

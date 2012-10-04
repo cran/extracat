@@ -1,17 +1,46 @@
-\name{dcor}
-\alias{dcor}
+\name{wdcor}
+\alias{wdcor}
+\alias{wdcor.table}
+\alias{wdcor.default}
+\alias{wdcor.data.frame}
+
 \title{
-Distance correlation for tables
+Weighted Distance Correlation
 }
 \description{
-This computes the distance correlation for two categorical variables.
+An efficient implementation of the distance correlation for two variables with the additional option to weight the observations.
+The main application for the weights is to use frequencies according to ordinal variables which can be represented by a contingency table (\code{wdcor.table)}).
+ Another idea is to make the distance correlation more robust by assigning small weights to observations which are far from the rest of the data.
+ 
+ For large datasets the distance correlation is often said to be too inefficient to be of any great use. The function \link[extracat]{approx.dcor} offers a pretty good approximation of the distance correlation via binning and \code{wdcor.table)}.
+ 
+\code{wdcor.data.frame} computes a distance correlation matrix. Factor variables are transformed to integer via \code{data.matrix}.
 }
 \usage{
-dcor(x)
+wdcor(x,\dots)
+\method{wdcor}{default}(x,y,w = NULL,ep = 1,\dots)
+\method{wdcor}{table}(x,ep = 1,\dots)
+\method{wdcor}{data.frame}(x,approx = TRUE,\dots)
 }
+
 \arguments{
   \item{x}{
-A data crosstable.
+A data crosstable or a numeric vector.
+}
+  \item{y}{
+A numeric vector.
+}
+\item{w}{
+Weights, typically frequencies. The default weights all cases the same, which leads to the standard distance correlation.
+}
+  \item{ep}{
+The euclidean (absolute) distances can be taken to the power of \code{ep}.
+}
+\item{approx}{
+Whether or not to use \link[extracat]{approx.dcor} instead of \link[extracat]{wdcor} for the \code{data.frame} method.
+}
+\item{\dots}{
+dots.
 }
 }
 
@@ -25,29 +54,27 @@ Szekely, G. J. Rizzo, M. L. and Bakirov, N. K. (2007). "Measuring and testing in
 Alexander Pilhoefer
 }
 
-
+\seealso{\link[extracat]{approx.dcor}}
 
 
 \examples{
-require(MASS)
-p1 <- (p1<-runif(8, 0.5,1))/sum(p1)
-p2 <- (p2<-runif(12,0.5,1))/sum(p2)
 
-rmat <- matrix(rmultinom(1,1000,prob = as.vector(outer(p1,p2))), ncol=12)
+# repeat and change N for different results and computation times.
+N <- 2000
+x1 <- rnorm(N,mean=10,sd=3)
+x2 <- runif(N,0,40)
+x3 <- rnorm(N,mean=30,sd=4)
+x <- sample(c(x1,x2,x3),N)		
+			
+y <- rnorm(1,sd=0.0001)*(x-mean(x))^4+ rnorm(1,sd=0.01)*(x-mean(x))^3 + rnorm(1,sd=0.1)*(x-mean(x))^2 + rnorm(1)*(x-mean(x))+rnorm(N,sd=runif(N,3,10))+ runif(N,0,20)*sin(abs(scale(x))*2*pi)
 
-dcor(rmat)
-rmat2 <- optile(rmat)
-dcor(rmat2 <- optile(rmat, fun = "distcor"))
+plot(x,y,pch=19,col=alpha("black",0.2))
+system.time(dd<-wdcor(x,y))
 
-fluctile(rmat)
-
-bmat <- arsim(1000, c(12,12), 3)
-
-dcor(bmat)
-dcor(bmat2 <- optile(bmat, fun = "distcor"))
-
-fluctile(bmat)
-cfluctile(bmat2)
+y2 <- runif(2000)
+system.time(dde<-wdcor(x,y2))
+dd
+dde
 
 }
 

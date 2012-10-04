@@ -50,7 +50,7 @@ if(do.smooth){
 
 ntv <- nlevels(data$groups)
 if(is.null(colv)){
-	print(ntv)
+#print(ntv)
 	if(ntv == 1){
 		colv = 1	
 	}else{
@@ -140,7 +140,7 @@ groupbox2d = function( x, env, prbs, past, smooth){
 	X2 <- NULL
 	groups <- NULL
 	#env$gp <- env$gp + geom_point(x=md[1],y=md[2],colour=md[3])
-	env$gp <- env$gp + geom_point(data=md,aes(x=X1,y=X2, colour = groups),size=5)
+	env$gp <- env$gp + geom_point(data=md,aes(x=X1,y=X2, colour = groups),size=5) +  scale_colour_manual(values = colv) 
 	
 	env$gp <- env$gp + geom_path(data=ccc, aes(x=X1,y=X2,group=grp, colour = groups), alpha = 1/8)
 	env$gp <- env$gp + geom_polygon(data=ccc,aes(x=X1,y=X2,group=grp, colour = groups, fill = groups), alpha = 1/8)

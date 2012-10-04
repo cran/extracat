@@ -1,7 +1,10 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <math.h>
+#include <R_ext/Rdynload.h>
+#include <R_ext/Utils.h> 
 
+#define MAT_ELT(x, i, j, nrow) x[(long)(i)+(long)(j)*(long)(nrow)]
 
 
 int mymax(int a, int b){
@@ -71,6 +74,96 @@ SEXP hammdist(SEXP dset){
 // --------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------- //
 
+SEXP dcorR(SEXP x, SEXP y, SEXP freq, SEXP e){
+	
+	
+	int n = LENGTH(y);
+	int s = n*(n-1)/2;
+	int i, i2;
+	int j,k;
+	
+		
+	float *DMY = calloc(s,sizeof(float));
+	float *DMX = calloc(s,sizeof(float));
+	double *F = calloc(s,sizeof(double));
+	
+	double Edx[n];
+	double Edy[n];
+	for (i=0; i<n; i++) {
+		Edx[i] = 0;
+		Edy[i] = 0;
+	}
+	double S1 , S2 , S3 , S2a , S2b = 0;
+	double S1X , S2X , S3X = 0;
+	double S1Y , S2Y , S3Y = 0;
+	
+	k = 0;
+		for (i=0; i<(n-1); i++) {
+			for (j = i+1; j < n; j++) {
+				DMX[k] = pow(fabs(REAL(x)[i] - REAL(x)[j]),REAL(e)[0]);
+				DMY[k] = pow(fabs(REAL(y)[i] - REAL(y)[j]),REAL(e)[0]);
+				F[k] = REAL(freq)[i] * REAL(freq)[j];
+				S1 += DMX[k]*DMY[k]*F[k];
+				S1X += DMX[k]*DMX[k]*F[k];
+				S1Y += DMY[k]*DMY[k]*F[k];
+		
+				Edx[i] += DMX[k]*REAL(freq)[j];
+				//Rprintf("\n%f, ",Edx[i]);
+				Edy[j] += DMY[k]*REAL(freq)[i];
+				Edx[j] += DMX[k]*REAL(freq)[i];
+				Edy[i] += DMY[k]*REAL(freq)[j];
+				k++;
+			}
+		}
+	
+	//Rprintf("\nEdx = \n");
+	//for (i = 0; i < n; i++) {
+	//	Rprintf("%f, ",Edx[i]);
+	//}
+	//Rprintf("\nEdy = \n");
+	//for (i = 0; i < n; i++) {
+	//	Rprintf("%f, ",Edy[i]);
+	//}
+	
+		for (i = 0; i < n; i++) {
+			S3 += Edx[i] * Edy[i] * REAL(freq)[i];
+			S2a += Edy[i] * REAL(freq)[i]; 
+			S2b += Edx[i] * REAL(freq)[i];
+			S3X += Edx[i] * Edx[i] * REAL(freq)[i];
+			S3Y += Edy[i] * Edy[i] * REAL(freq)[i];
+		}
+		S1 = 2*S1;
+		S1Y = 2*S1Y;
+		S1X = 2*S1X;
+		S2 = S2a*S2b;
+		S2X = S2b*S2b;
+		S2Y = S2a*S2a;
+		
+		
+	//Rprintf("S1 = %f\nS2 = %f\nS3 = %f\n",S1,S2,S3);
+	//Rprintf("S1X = %f\nS2X = %f\nS3X = %f\n",S1X,S2X,S3X);
+	//Rprintf("S1Y = %f\nS2Y = %f\nS3Y = %f\n",S1Y,S2Y,S3Y);
+	
+	SEXP ret = allocVector(REALSXP,1);
+	REAL(ret)[0] = pow( (S1+S2-2*S3)/pow( (S1X+S2X-2*S3X)*(S1Y+S2Y-2*S3Y) ,0.5) , 0.5) ;
+	//Rprintf("%f, %f, %f, %f, %f, %f, %f, %f, %f",S1,S2,S3,S1X,S2X,S3X,S1Y,S2Y,S3Y);
+	
+	free(DMY);
+	free(DMX);
+	free(F);
+	
+	
+	return ret;
+}
+
+
+
+
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
 
 
 
@@ -85,6 +178,55 @@ int bincoef(int n, int k){
 }
 
 
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
+SEXP MEsimple(SEXP M, SEXP dims){
+	
+	int n = INTEGER(dims)[0];
+	int m = INTEGER(dims)[1];
+	
+	int i,j,k;
+	
+	 
+	
+	
+	
+	float ME = 0.0;
+	
+	
+	
+	//set the first row and the last column
+	
+	for( i = 0; i < n-1; i++ ){ 
+		for (j=0; j<m; j++) {
+			
+			ME += REAL(M)[n*j + i] * REAL(M)[n*j + i+1]; 
+		}
+	}
+	
+	for( i = 0; i < n; i++ ){ 
+		for (j=0; j<m-1; j++) {
+			
+				ME += REAL(M)[n*j + i] * REAL(M)[n*(j+1) + i]; 
+		}
+	}	
+	
+	
+	
+	SEXP out = allocVector(REALSXP,1);
+	REAL(out)[0] = ME;
+	return out;
+	
+	
+}
+
+
+// __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
+// __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
+// __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 
 
 
@@ -107,41 +249,41 @@ SEXP simplecrit(SEXP M, SEXP dims){
 			MX[i][j] = INTEGER(M)[n*j + i]; 
 		}
 	}
-		
+	
 	
 	
 	float loss = 0.0;
 	
-
+	
 	
 	//set the first row and the last column
 	
-		for( i = 0; i < n; i++ ){ 
-			MY[i][m-1] = MX[i][m-1];
-		}
+	for( i = 0; i < n; i++ ){ 
+		MY[i][m-1] = MX[i][m-1];
+	}
 	
 	for( j = 1; j < m; j++ ){ 
 		MY[0][j] = MX[0][j];
 	}
 	
-		for( j= m - 2; j > 0 ; j-- ){
-			for( i=0; i < n-1; i++ ){
-				MY[i][j] = MX[i][j] + MY[i][j+1];
-			}
+	for( j= m - 2; j > 0 ; j-- ){
+		for( i=0; i < n-1; i++ ){
+			MY[i][j] = MX[i][j] + MY[i][j+1];
 		}
-		for( i=1; i < n-1; i++ ){
-			for( j = 1 ; j < m  ; j++ ){
-				MY[i][j] = MX[i][j] + MY[i-1][j];
-				// add all rows but the first
-				loss = loss + MX[i+1][j-1]*MY[i][j];
-			}
-		}
-		
-		// add the first row terms
+	}
+	for( i=1; i < n-1; i++ ){
 		for( j = 1 ; j < m  ; j++ ){
-			loss = loss + MX[1][j-1]*MY[0][j];
+			MY[i][j] = MX[i][j] + MY[i-1][j];
+			// add all rows but the first
+			loss = loss + MX[i+1][j-1]*MY[i][j];
 		}
-		
+	}
+	
+	// add the first row terms
+	for( j = 1 ; j < m  ; j++ ){
+		loss = loss + MX[1][j-1]*MY[0][j];
+	}
+	
 	
 	
 	
@@ -160,424 +302,6 @@ SEXP simplecrit(SEXP M, SEXP dims){
 
 
 
-SEXP quicktile2(SEXP M, SEXP dims, SEXP pv){
-	
-	// M is byrow
-	int n = INTEGER(dims)[0];
-	int m = INTEGER(dims)[1];
-	
-	int px = INTEGER(pv)[1];
-	int py = INTEGER(pv)[0];
-	
-	
-	
-	//Rprintf("%d\t%d\t%d\t%d\t%d\t",n,m,px,py);
-	
-	int i,j,i2,j2,k,tmp;
-	
-	
-	// index vectors with initial values 0..n-1 and 0..m-1 containing the actual orders
-	int RI[n];
-	int CI[m];
-	for (i = 0; i < n; i++) {
-		RI[i] = i;
-	}
-	for (j = 0; j < m; j++) {
-		CI[j] = j;
-	}
-	
-	// Delta matrices for rows and columns
-	// crit( i -> i2 ) - crit( i2 -> i ) if i < i2 and -(...) else
-	// i.e. this is 'lost' when putting i to i2
-	
-
-	
-	// Sum of delta matrices 
-	
-		float *DC2 = calloc(m*m,sizeof(float));
-		float DR2[n][n];
-		//int DC[m][m];
-		//int DR[n][n];
-		int MS[n][m];
-		int MT[n][m];
-	float DC[m][m];
-	float DR[n][n];
-	//double MS[n][m];
-	//double MT[n][m];
-	//double DC2[m][m];
-	//double DR2[n][n];
-
-	if (py == 1) {
-		for (i = 0; i < n; i++) {
-			DR2[i][i] = 0;
-			for (i2 = 0; i2 < n; i2++) {
-				DR[i][i2] = 0;
-			}
-		}
-	}
-	if (px == 1) {
-		for (j = 0; j < m; j++) {
-			DC2[j+j*m] = 0;
-			
-			for (j2 = 0; j2 < m; j2++) {
-				DC[j][j2] = 0;
-			}
-		}
-	}
-	
-	//Rprintf("check02");
-	// the criterion
-	float crtv = 0;
-	float td;
-	
-	//an marray pointer to M
-	
-	 //int* mv = &INTEGER(M)[0];
-	 //int (*MT)[m] = (int (*)[m])mv;
-	//for (i = 0; i < n; i++) {
-	//	for (j = 0; j < m; j++) {
-	//	Rprintf("%d\t", MT[i][j]);
-	//}
-	//Rprintf("\n");
-	//}
-
-	for (j = 0; j < m; j++) {
-		for (i = 0; i < n; i++) {
-			MT[i][j] = INTEGER(M)[i+j*n];
-		}
-	}
-
-	
-	
-// --------------------- compute the initial delta values --------------------- //
-	
-		// cumsum by columns
-		for (j = 0; j < m; j++) {
-			MS[0][j] = MT[0][j];
-		}
-		for (i = 1; i < n; i++) {
-			for (j = 0; j < m; j++) {
-				MS[i][j] = MT[i][j]+MS[i-1][j];
-			}
-		}
-		
-		// delta C
-	
-		for (j = 0; j < m-1; j++) {
-			for (j2 = j+1; j2 < m; j2++) {
-				for (i = 1; i < n; i++) {
-					td = MT[i][j]*MS[i-1][j2];
-					crtv += td;
-					//DC[j][j2] += ( MT[i][j]*MS[i-1][j2] - MT[i][j2]*MS[i-1][j] ); // loss
-					DC[j][j2] += ( td - MT[i][j2]*MS[i-1][j] ); // loss
-				}
-				DC[j2][j] = -DC[j][j2];
-			}
-		}
-		// also computes the initial criterion
-	
-	if (py == 1) {
-		// cumsum by rows
-		for (i = 0; i < n; i++) {
-			MS[i][0] = MT[i][0];
-		}
-		for (i = 0; i < n; i++) {
-			for (j = 1; j < m; j++) {
-				MS[i][j] = MT[i][j]+MS[i][j-1];
-			}
-		}
-		
-		// delta R
-		for (i = 0; i < n-1; i++) {
-			for (i2 = i+1; i2 < n; i2++) {
-				for (j = 1; j < m; j++) {
-					DR[i][i2] += ( MT[i][j]*MS[i2][j-1] - MT[i2][j]*MS[i][j-1] ); // loss
-				}
-				DR[i2][i] = -DR[i][i2];
-			}
-		}
-	}
-	
-
-	
-	//Rprintf("\n\nstart crtv = %f\n\n",crtv);
-	
-// --------------------- start the main algorithm --------------------- //	
-	
-	
-	// look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to i2)
-	// 'best' is the decrease in crtv, r1, r2, c1, c2 are the corresp. indices
-	float bestc = 0;
-	float bestr = 0;
-	float best = 0;
-	int r1 = 0;
-	int r2 = 0;
-	int c1 = 0;
-	int c2 = 0;
-	int opt = 0;
-	int steps = 0;
-
-	while( opt == 0 ){	
-		
-		
-		//look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to k)
-		
-		if (py == 1) {
-			for (i = 0; i < n-1; i++) {
-				for (i2 = i+1; i2 < n; i2++) {
-					DR2[i][i2] = DR2[i][i2-1] + DR[ RI[i] ][ RI[i2] ];
-					
-					if (DR2[i][i2] > bestr) {
-						
-						bestr = DR2[i][i2];
-						r1 = i;
-						r2 = i2;
-					}
-				}
-				
-			}
-			
-			for (i = 1; i < n; i++) {
-				for (i2 = i-1; i2 >= 0; i2--) {
-					DR2[i][i2] = DR2[i][i2+1] +  DR[ RI[i2] ][ RI[i] ];//i, i2?
-					
-					if (DR2[i][i2] > bestr) {
-						
-						bestr = DR2[i][i2];
-						r1 = i;
-						r2 = i2;
-					}
-				}
-				
-			}
-		}
-		
-		
-		if (px == 1) {
-			for (j = 0; j < m-1; j++) {
-				for (j2 = j+1; j2 < m; j2++) {
-					DC2[j+j2*m] = DC2[j+(j2-1)*m] + DC[ CI[j] ][ CI[j2] ];
-					
-					if (DC2[j+j2*m] > bestc) {
-						
-						bestc = DC2[j+j2*m];
-						c1 = j;
-						c2 = j2;
-					}
-				}
-				
-			}
-			
-			for (j = 1; j < m; j++) {
-				for (j2 = j-1; j2 >= 0; j2--) {
-					DC2[j+j2*m] = DC2[j+(j2+1)*m] + DC[ CI[j2] ][ CI[j] ]; // j, j2??
-					
-					if (DC2[j+j2*m] > bestc) {
-						
-						bestc = DC2[j+j2*m];
-						c1 = j;
-						c2 = j2;
-					}
-				}
-				
-			}
-		}
-	
-	// two columns OR two rows are exchanged. The DR/DC values will change whilst DC/DR remains unchanged.
-	// the original data matrix and the delta matrices DC and DR and MS remain unchanged with repect to their row/column orders.
-		// BUT the values change dependent on the permutations! Hence the sums (DR2 and DC2) use CI[j] and RI[i]
-		
-		//Rprintf("\n\n r1 = %d, r2 = %d, bestr = %f\n",r1,r2, bestr);
-		//Rprintf("\n\n c1 = %d, c2 = %d, bestc = %f\n",c1,c2, bestc);
-		
-		//bestc = bestr+1;
-		
-		
-		// reset bestc and bestr
-		if( bestc > 0 || bestr > 0 ){	
-			
-		if (bestc > bestr) {
-			best = bestc;
-			
-			if (c1 < c2) {
-				// cumulative partial rowsums
-				for (i = 0; i < n; i++) {
-					MS[i][ CI[c2] ] = MT[i][ CI[c2] ];
-				}
-				if (c1+1 < c2) { // not neighboring
-					for (k = c2-1; k > c1; k--) {
-						for (i = 0; i < n; i++) {
-							MS[i][ CI[k] ] = MT[i][ CI[k] ]+MS[i][ CI[k+1] ];
-						}
-					}
-				}
-				if (py == 1) {
-					// changes to DR
-					for (i = 0; i < n-1; i++) {
-						for (i2 = i+1; i2 < n; i2++) {
-							DR[i][i2] -= 2*(  MT[i2][ CI[c1] ]*MS[i][ CI[c1+1] ] -  MT[i][ CI[c1] ]*MS[i2][ CI[c1+1] ] );
-							DR[i2][i] = -DR[i][i2];
-						}
-					}
-				}
-				
-				// index vector CI changes
-				tmp = CI[c1];
-				for (i = c1; i < c2; i++) {
-					CI[i] = CI[i+1];
-				}
-				CI[c2] = tmp;
-				//Rprintf("------------M-------------\n");
-				
-				//for (i = 0; i < n; i++) {
-				//	for (j = 0; j < m; j++) {
-				//		Rprintf("%d\t",MT[ RI[i] ][ CI[j] ]);
-				//	}
-				//	Rprintf("\n");
-				//}
-				
-				//Rprintf("----------------------------\n");
-				
-			}else {
-				// cumulative partial rowsums
-				for (i = 0; i < n; i++) {
-					MS[i][ CI[c2] ] = MT[i][ CI[c2] ];
-				}
-				if (c2+1 < c1) { // not neighboring
-					for (k = c2+1; k < c1; k++) {
-						for (i = 0; i < n; i++) {
-							MS[i][ CI[k] ] = MT[i][ CI[k] ]+MS[i][ CI[k-1] ];
-						}
-					}
-				}
-				if (py == 1) {
-					// changes to DR
-					for (i = 0; i < n-1; i++) {
-						for (i2 = i+1; i2 < n; i2++) {
-							DR[i][i2] -= 2*(  MT[i][ CI[c1] ]*MS[i2][ CI[c1-1] ] - MT[i2][ CI[c1] ]*MS[i][ CI[c1-1] ] ); // neg. of c1 < c2
-							DR[i2][i] = -DR[i][i2];
-						}
-					}
-				}
-				
-				// index vector CI changes
-				tmp = CI[c1];
-				for (i = c1; i > c2; i--) {
-					CI[i] = CI[i-1];
-				}
-				CI[c2] = tmp;
-			}
-
-		}else{ // bestr >= bestc
-		
-			
-			best = bestr;
-			if (r1 < r2) {
-				// cumulative partial colsums
-				for (j = 0; j < m; j++) {
-					MS[ RI[r2] ][j] = MT[ RI[r2] ][j];
-				}
-				if (r1+1 < r2) { // not neighboring
-					for (k = r2-1; k > r1; k--) {
-						for (j = 0; j < m; j++) {
-							MS[ RI[k] ][j] = MT[ RI[k] ][j]+MS[ RI[k+1] ][j];
-						}
-					}
-				}
-			
-				
-				if (px == 1) {
-					// changes to DC
-					for (j = 0; j < m-1; j++) {
-						for (j2 = j+1; j2 < m; j2++) {
-							DC[j][j2] -= 2*( MT[ RI[r1] ][j2]*MS[ RI[r1+1] ][j] - MT[ RI[r1] ][j]*MS[ RI[r1+1] ][j2]);
-							DC[j2][j] = -DC[j][j2];
-						}
-					}
-				}
-				
-				// index vector RI changes
-				tmp = RI[r1];
-				for (i = r1; i < r2; i++) {
-					RI[i] = RI[i+1];
-				}
-				RI[r2] = tmp;
-			
-			}else {
-				// cumulative partial colsums
-				for (j = 0; j < m; j++) {
-					MS[ RI[r2] ][j] = MT[ RI[r2] ][j];
-				}
-				if (r2+1 < r1) { // not neighboring
-					for (k = r2+1; k < r1; k++) {
-						for (j = 0; j < m; j++) {
-							MS[ RI[k] ][j] = MT[ RI[k] ][j]+MS[ RI[k-1] ][j];
-						}
-					}
-				}
-				if (px == 1) {
-					// changes to DC
-					for (j = 0; j < m-1; j++) {
-						for (j2 = j+1; j2 < m; j2++) {
-							DC[j][j2] -= 2*(  MT[ RI[r1] ][j]*MS[ RI[r1-1] ][j2] - MT[ RI[r1] ][j2]*MS[ RI[r1-1] ][j] );
-							DC[j2][j] = -DC[j][j2];
-						}
-					}
-				}
-				
-				// index vector RI changes
-				tmp = RI[r1];
-				for (i = r1; i > r2; i--) {
-					RI[i] = RI[i-1];
-				}
-				RI[r2] = tmp;
-				
-				
-				
-			}
-
-			
-		}
-		
-		// reset
-		bestc = 0;
-		bestr = 0;
-	
-		
-			crtv -= best;
-			//Rprintf("step %d, crtv = %f\n",steps,crtv);
-			//Rprintf("\n\nnew cv = %f\n\n",crtv);
-			best = 0;
-		}else { // best <= 0
-			opt = 1;
-		}
-		//if( steps > 16 ){
-		//	opt = 1;
-		//}
-		steps++;
-	
-}
-	
-	
-	
-	free(DC2);
-	
-	SEXP out = allocVector(REALSXP,n+m+1);
-	for( i = 0; i < n;i++ ){
-		REAL(out)[i] = RI[i]; //+1
-	}
-	for( j = 0; j < m;j++ ){
-		REAL(out)[n+j] = CI[j]; //+1
-	}
-	
-	REAL(out)[n+m] = crtv;
-	//Rprintf("\nOptimization ended after %d steps with crtv=%f\n",steps,crtv);
-	return out;
-}
-
-
-
-
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
@@ -592,421 +316,9 @@ SEXP quicktile2(SEXP M, SEXP dims, SEXP pv){
 
 
 
-SEXP quicktile(SEXP M, SEXP dims, SEXP pv){
-	
-	// M is byrow
-	int n = INTEGER(dims)[0];
-	int m = INTEGER(dims)[1];
-	
-	int px = INTEGER(pv)[1];
-	int py = INTEGER(pv)[0];
-	
-	
-	
-	//Rprintf("%d\t%d\t%d\t%d\t%d\t",n,m,px,py);
-	
-	int i,j,i2,j2,k,tmp;
-	
-	
-	// index vectors with initial values 0..n-1 and 0..m-1 containing the actual orders
-	int RI[n];
-	int CI[m];
-	for (i = 0; i < n; i++) {
-		RI[i] = i;
-	}
-	for (j = 0; j < m; j++) {
-		CI[j] = j;
-	}
-	
-	// Delta matrices for rows and columns
-	// crit( i -> i2 ) - crit( i2 -> i ) if i < i2 and -(...) else
-	// i.e. this is 'lost' when putting i to i2
-	
-
-	
-	// Sum of delta matrices 
-	
-		float DC2[m][m];
-		float DR2[n][n];
-		//int DC[m][m];
-		//int DR[n][n];
-		int MS[n][m];
-		int MT[n][m];
-	float DC[m][m];
-	float DR[n][n];
-	//double MS[n][m];
-	//double MT[n][m];
-	//double DC2[m][m];
-	//double DR2[n][n];
-
-	if (py == 1) {
-		for (i = 0; i < n; i++) {
-			DR2[i][i] = 0;
-			for (i2 = 0; i2 < n; i2++) {
-				DR[i][i2] = 0;
-			}
-		}
-	}
-	if (px == 1) {
-		for (j = 0; j < m; j++) {
-			DC2[j][j] = 0;
-			
-			for (j2 = 0; j2 < m; j2++) {
-				DC[j][j2] = 0;
-			}
-		}
-	}
-	
-	//Rprintf("check02");
-	// the criterion
-	float crtv = 0;
-	float td;
-	
-	//an marray pointer to M
-	
-	 //int* mv = &INTEGER(M)[0];
-	 //int (*MT)[m] = (int (*)[m])mv;
-	//for (i = 0; i < n; i++) {
-	//	for (j = 0; j < m; j++) {
-	//	Rprintf("%d\t", MT[i][j]);
-	//}
-	//Rprintf("\n");
-	//}
-
-	for (j = 0; j < m; j++) {
-		for (i = 0; i < n; i++) {
-			MT[i][j] = INTEGER(M)[i+j*n];
-		}
-	}
-
-	
-	
-// --------------------- compute the initial delta values --------------------- //
-	
-		// cumsum by columns
-		for (j = 0; j < m; j++) {
-			MS[0][j] = MT[0][j];
-		}
-		for (i = 1; i < n; i++) {
-			for (j = 0; j < m; j++) {
-				MS[i][j] = MT[i][j]+MS[i-1][j];
-			}
-		}
-		
-		// delta C
-	
-		for (j = 0; j < m-1; j++) {
-			for (j2 = j+1; j2 < m; j2++) {
-				for (i = 1; i < n; i++) {
-					td = MT[i][j]*MS[i-1][j2];
-					crtv += td;
-					//DC[j][j2] += ( MT[i][j]*MS[i-1][j2] - MT[i][j2]*MS[i-1][j] ); // loss
-					DC[j][j2] += ( td - MT[i][j2]*MS[i-1][j] ); // loss
-				}
-				DC[j2][j] = -DC[j][j2];
-			}
-		}
-		// also computes the initial criterion
-	
-	if (py == 1) {
-		// cumsum by rows
-		for (i = 0; i < n; i++) {
-			MS[i][0] = MT[i][0];
-		}
-		for (i = 0; i < n; i++) {
-			for (j = 1; j < m; j++) {
-				MS[i][j] = MT[i][j]+MS[i][j-1];
-			}
-		}
-		
-		// delta R
-		for (i = 0; i < n-1; i++) {
-			for (i2 = i+1; i2 < n; i2++) {
-				for (j = 1; j < m; j++) {
-					DR[i][i2] += ( MT[i][j]*MS[i2][j-1] - MT[i2][j]*MS[i][j-1] ); // loss
-				}
-				DR[i2][i] = -DR[i][i2];
-			}
-		}
-	}
-	
-
-	
-	//Rprintf("\n\nstart crtv = %f\n\n",crtv);
-	
-// --------------------- start the main algorithm --------------------- //	
-	
-	
-	// look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to i2)
-	// 'best' is the decrease in crtv, r1, r2, c1, c2 are the corresp. indices
-	float bestc = 0;
-	float bestr = 0;
-	float best = 0;
-	int r1 = 0;
-	int r2 = 0;
-	int c1 = 0;
-	int c2 = 0;
-	int opt = 0;
-	int steps = 0;
-
-	while( opt == 0 ){	
-		
-		
-		//look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to k)
-		
-		if (py == 1) {
-			for (i = 0; i < n-1; i++) {
-				for (i2 = i+1; i2 < n; i2++) {
-					DR2[i][i2] = DR2[i][i2-1] + DR[ RI[i] ][ RI[i2] ];
-					
-					if (DR2[i][i2] > bestr) {
-						
-						bestr = DR2[i][i2];
-						r1 = i;
-						r2 = i2;
-					}
-				}
-				
-			}
-			
-			for (i = 1; i < n; i++) {
-				for (i2 = i-1; i2 >= 0; i2--) {
-					DR2[i][i2] = DR2[i][i2+1] +  DR[ RI[i2] ][ RI[i] ];//i, i2?
-					
-					if (DR2[i][i2] > bestr) {
-						
-						bestr = DR2[i][i2];
-						r1 = i;
-						r2 = i2;
-					}
-				}
-				
-			}
-		}
-		
-		
-		if (px == 1) {
-			for (j = 0; j < m-1; j++) {
-				for (j2 = j+1; j2 < m; j2++) {
-					DC2[j][j2] = DC2[j][j2-1] + DC[ CI[j] ][ CI[j2] ];
-					
-					if (DC2[j][j2] > bestc) {
-						
-						bestc = DC2[j][j2];
-						c1 = j;
-						c2 = j2;
-					}
-				}
-				
-			}
-			
-			for (j = 1; j < m; j++) {
-				for (j2 = j-1; j2 >= 0; j2--) {
-					DC2[j][j2] = DC2[j][j2+1] + DC[ CI[j2] ][ CI[j] ]; // j, j2??
-					
-					if (DC2[j][j2] > bestc) {
-						
-						bestc = DC2[j][j2];
-						c1 = j;
-						c2 = j2;
-					}
-				}
-				
-			}
-		}
-	
-	// two columns OR two rows are exchanged. The DR/DC values will change whilst DC/DR remains unchanged.
-	// the original data matrix and the delta matrices DC and DR and MS remain unchanged with repect to their row/column orders.
-		// BUT the values change dependent on the permutations! Hence the sums (DR2 and DC2) use CI[j] and RI[i]
-		
-		//Rprintf("\n\n r1 = %d, r2 = %d, bestr = %f\n",r1,r2, bestr);
-		//Rprintf("\n\n c1 = %d, c2 = %d, bestc = %f\n",c1,c2, bestc);
-		
-		//bestc = bestr+1;
-		
-		
-		// reset bestc and bestr
-		if( bestc > 0 || bestr > 0 ){	
-			
-		if (bestc > bestr) {
-			best = bestc;
-			
-			if (c1 < c2) {
-				// cumulative partial rowsums
-				for (i = 0; i < n; i++) {
-					MS[i][ CI[c2] ] = MT[i][ CI[c2] ];
-				}
-				if (c1+1 < c2) { // not neighboring
-					for (k = c2-1; k > c1; k--) {
-						for (i = 0; i < n; i++) {
-							MS[i][ CI[k] ] = MT[i][ CI[k] ]+MS[i][ CI[k+1] ];
-						}
-					}
-				}
-				if (py == 1) {
-					// changes to DR
-					for (i = 0; i < n-1; i++) {
-						for (i2 = i+1; i2 < n; i2++) {
-							DR[i][i2] -= 2*(  MT[i2][ CI[c1] ]*MS[i][ CI[c1+1] ] -  MT[i][ CI[c1] ]*MS[i2][ CI[c1+1] ] );
-							DR[i2][i] = -DR[i][i2];
-						}
-					}
-				}
-				
-				// index vector CI changes
-				tmp = CI[c1];
-				for (i = c1; i < c2; i++) {
-					CI[i] = CI[i+1];
-				}
-				CI[c2] = tmp;
-				//Rprintf("------------M-------------\n");
-				
-				//for (i = 0; i < n; i++) {
-				//	for (j = 0; j < m; j++) {
-				//		Rprintf("%d\t",MT[ RI[i] ][ CI[j] ]);
-				//	}
-				//	Rprintf("\n");
-				//}
-				
-				//Rprintf("----------------------------\n");
-				
-			}else {
-				// cumulative partial rowsums
-				for (i = 0; i < n; i++) {
-					MS[i][ CI[c2] ] = MT[i][ CI[c2] ];
-				}
-				if (c2+1 < c1) { // not neighboring
-					for (k = c2+1; k < c1; k++) {
-						for (i = 0; i < n; i++) {
-							MS[i][ CI[k] ] = MT[i][ CI[k] ]+MS[i][ CI[k-1] ];
-						}
-					}
-				}
-				if (py == 1) {
-					// changes to DR
-					for (i = 0; i < n-1; i++) {
-						for (i2 = i+1; i2 < n; i2++) {
-							DR[i][i2] -= 2*(  MT[i][ CI[c1] ]*MS[i2][ CI[c1-1] ] - MT[i2][ CI[c1] ]*MS[i][ CI[c1-1] ] ); // neg. of c1 < c2
-							DR[i2][i] = -DR[i][i2];
-						}
-					}
-				}
-				
-				// index vector CI changes
-				tmp = CI[c1];
-				for (i = c1; i > c2; i--) {
-					CI[i] = CI[i-1];
-				}
-				CI[c2] = tmp;
-			}
-
-		}else{ // bestr >= bestc
-		
-			
-			best = bestr;
-			if (r1 < r2) {
-				// cumulative partial colsums
-				for (j = 0; j < m; j++) {
-					MS[ RI[r2] ][j] = MT[ RI[r2] ][j];
-				}
-				if (r1+1 < r2) { // not neighboring
-					for (k = r2-1; k > r1; k--) {
-						for (j = 0; j < m; j++) {
-							MS[ RI[k] ][j] = MT[ RI[k] ][j]+MS[ RI[k+1] ][j];
-						}
-					}
-				}
-			
-				
-				if (px == 1) {
-					// changes to DC
-					for (j = 0; j < m-1; j++) {
-						for (j2 = j+1; j2 < m; j2++) {
-							DC[j][j2] -= 2*( MT[ RI[r1] ][j2]*MS[ RI[r1+1] ][j] - MT[ RI[r1] ][j]*MS[ RI[r1+1] ][j2]);
-							DC[j2][j] = -DC[j][j2];
-						}
-					}
-				}
-				
-				// index vector RI changes
-				tmp = RI[r1];
-				for (i = r1; i < r2; i++) {
-					RI[i] = RI[i+1];
-				}
-				RI[r2] = tmp;
-			
-			}else {
-				// cumulative partial colsums
-				for (j = 0; j < m; j++) {
-					MS[ RI[r2] ][j] = MT[ RI[r2] ][j];
-				}
-				if (r2+1 < r1) { // not neighboring
-					for (k = r2+1; k < r1; k++) {
-						for (j = 0; j < m; j++) {
-							MS[ RI[k] ][j] = MT[ RI[k] ][j]+MS[ RI[k-1] ][j];
-						}
-					}
-				}
-				if (px == 1) {
-					// changes to DC
-					for (j = 0; j < m-1; j++) {
-						for (j2 = j+1; j2 < m; j2++) {
-							DC[j][j2] -= 2*(  MT[ RI[r1] ][j]*MS[ RI[r1-1] ][j2] - MT[ RI[r1] ][j2]*MS[ RI[r1-1] ][j] );
-							DC[j2][j] = -DC[j][j2];
-						}
-					}
-				}
-				
-				// index vector RI changes
-				tmp = RI[r1];
-				for (i = r1; i > r2; i--) {
-					RI[i] = RI[i-1];
-				}
-				RI[r2] = tmp;
-				
-				
-				
-			}
-
-			
-		}
-		
-		// reset
-		bestc = 0;
-		bestr = 0;
-	
-		
-			crtv -= best;
-			//Rprintf("step %d, crtv = %f\n",steps,crtv);
-			//Rprintf("\n\nnew cv = %f\n\n",crtv);
-			best = 0;
-		}else { // best <= 0
-			opt = 1;
-		}
-		//if( steps > 16 ){
-		//	opt = 1;
-		//}
-		steps++;
-	
-}
-	
-	
-	
-	
-	
-	SEXP out = allocVector(REALSXP,n+m+1);
-	for( i = 0; i < n;i++ ){
-		REAL(out)[i] = RI[i]; //+1
-	}
-	for( j = 0; j < m;j++ ){
-		REAL(out)[n+j] = CI[j]; //+1
-	}
-	
-	REAL(out)[n+m] = crtv;
-	//Rprintf("\nOptimization ended after %d steps with crtv=%f\n",steps,crtv);
-	return out;
-}
-
+// __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
+// __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
+// __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 
 
 
@@ -1025,10 +337,12 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 	int n = INTEGER(dims)[0];
 	int m = INTEGER(dims)[1];
 	
-	int MX[n][m];
+	//int MX[n][m];
+    int* MX = calloc(n*m,sizeof(int));
+    // one unnecessary copy here...
 	for (j = 0; j < m; j++) {
 		for (i = 0; i < n; i++) {
-			MX[i][j] = INTEGER(M)[i+j*n];
+			MAT_ELT(MX,i,j,n) = INTEGER(M)[i+j*n];
 		}
 	}
 	
@@ -1055,45 +369,39 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 		cord[j]=j;
 	}
 	
-	int NE[n][m];
-	int NW[n][m];
-	int SE[n][m];
-	int SW[n][m];
+	//int NE[n][m];
+	//int NW[n][m];
+	//int SE[n][m];
+	//int SW[n][m];
+    int* NE = calloc(n*m,sizeof(int));
+    int* NW = calloc(n*m,sizeof(int));
+    int* SE = calloc(n*m,sizeof(int));
+    int* SW = calloc(n*m,sizeof(int));
 	
 	for (j = 0; j < m; j++) {
-		NE[0][j] = MX[0][j];
-		SE[n-1][j] = MX[n-1][j];
-		NW[0][j] = MX[0][j];
-		SW[n-1][j] = MX[n-1][j];
+		MAT_ELT(NE,0,j,n) = MAT_ELT(MX,0,j,n);
+		MAT_ELT(SE,n-1,j,n) = MAT_ELT(MX,n-1,j,n);
+		MAT_ELT(NW,0,j,n) = MAT_ELT(MX,0,j,n);
+		MAT_ELT(SW,n-1,j,n) = MAT_ELT(MX,n-1,j,n);
 	}
-	//for (i = 0; i < n; i++) {
-		//NE[i][m-1] = MX[i][m-1];
-		//SE[i][m-1] = MX[i][m-1];
-		//NW[i][0] = MX[i][0];
-		//SW[i][0] = MX[i][0];
-	//}
+
 	for (i = 1; i < n; i++) {
 		for (j = 0; j < m; j++) {
-			NW[i][j] = NW[i-1][j] + MX[i][j];
-			NE[i][j] = NW[i-1][j] + MX[i][j];
-			SE[n-i-1][j] = SE[n-i][j] + MX[n-i-1][j];
-			SW[n-i-1][j] = SW[n-i][j] + MX[n-i-1][j];
+			MAT_ELT(NW,i,j,n) = MAT_ELT(NW,i-1,j,n) + MAT_ELT(MX,i,j,n);
+			MAT_ELT(NE,i,j,n) = MAT_ELT(NW,i-1,j,n) + MAT_ELT(MX,i,j,n);
+			MAT_ELT(SE,n-i-1,j,n) = MAT_ELT(SE,n-i,j,n) + MAT_ELT(MX,n-i-1,j,n);
+			MAT_ELT(SW,n-i-1,j,n) = MAT_ELT(SW,n-i,j,n) + MAT_ELT(MX,n-i-1,j,n);
 		}
 	}
 	for (i = 0; i < n; i++) {
 		for (j = 1; j < m; j++) {
-			NW[i][j] = NW[i][j-1] + NW[i][j];
-			NE[i][m-j-1] = NE[i][m-j] + NE[i][m-j-1];
-			SE[i][m-j-1] = SE[i][m-j] + SE[i][m-j-1];
-			SW[i][j] = SW[i][j-1] + SW[i][j];
+			MAT_ELT(NW,i,j,n) = MAT_ELT(NW,i,j-1,n) + MAT_ELT(NW,i,j,n);
+            MAT_ELT(NE,i,m-j-1,n) = MAT_ELT(NE,i,m-j,n) + MAT_ELT(NE,i,m-j-1,n);
+            MAT_ELT(SE,i,m-j-1,n) = MAT_ELT(SE,i,m-j,n) + MAT_ELT(SE,i,m-j-1,n);
+            MAT_ELT(SW,i,j,n) = MAT_ELT(SW,i,j-1,n) + MAT_ELT(SW,i,j,n);
 		}
 	}
-	//for (i = 0; i < n; i++) {
-	//	for (j = 0; j < m; j++) {
-	//		Rprintf("%d\t",NW[i][j]);
-	//	}
-	//	Rprintf("\n");
-	//}
+
 	
 	
 	///////////
@@ -1113,23 +421,23 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 			for (i2 = rowcuts[k]+1; i2 < rowcuts[k+1]; i2++) { // i2 and j2 are first in the second part
 				for (j2 = colcuts[k]+1; j2 < colcuts[k+1]; j2++) {
 					
-					a = NW[i2-1][j2-1];
-					b = NE[i2-1][j2];
-					c = SW[i2][j2-1];
-					d = SE[i2][j2];
+					a = MAT_ELT(NW,i2-1,j2-1,n);
+					b = MAT_ELT(NE,i2-1,j2,n);
+					c = MAT_ELT(SW,i2,j2-1,n);
+					d = MAT_ELT(SE,i2,j2,n);
 					if( k > 0 ){//if (colcuts[k] > 0) { //left+top
-						a = NW[i2-1][j2-1] - NW[i2-1][ colcuts[k]-1 ] - NW[ rowcuts[k]-1 ][j2-1] + NW[ rowcuts[k]-1 ][ colcuts[k]-1 ];
-						c = c - SW[i2][ colcuts[k]-1 ];
-						b = b - NE[ rowcuts[k]-1 ][ j2 ];
+						a = MAT_ELT(NW,i2-1,j2-1,n) - MAT_ELT(NW,i2-1, colcuts[k]-1 ,n) - MAT_ELT(NW, rowcuts[k]-1 ,j2-1,n) + MAT_ELT(NW, rowcuts[k]-1 , colcuts[k]-1 ,n);
+						c = c - MAT_ELT(SW,i2, colcuts[k]-1 ,n);
+						b = b - MAT_ELT(NE, rowcuts[k]-1 , j2 ,n);
 					}
 					if( k+1 < ncl ){//if (colcuts[k+1] < m-1) { //right+bottom
-						d = SE[i2][j2] - SE[i2][ colcuts[k+1] ] - SE[ rowcuts[k+1] ][j2] + SE[ rowcuts[k+1] ][ colcuts[k+1] ];
-						c = c - SW[ rowcuts[k+1] ][j2-1]; 
-						b = b - NE[ i2-1 ][ colcuts[k+1] ];
+						d = MAT_ELT(SE,i2,j2,n) - MAT_ELT(SE,i2, colcuts[k+1] ,n) - MAT_ELT(SE, rowcuts[k+1] ,j2,n) + MAT_ELT(SE, rowcuts[k+1] , colcuts[k+1] ,n);
+						c = c - MAT_ELT(SW, rowcuts[k+1] ,j2-1,n); 
+						b = b - MAT_ELT(NE, i2-1 , colcuts[k+1] ,n);
 					}
 					if(k > 0 && k+1 < ncl){//if (colcuts[k+1] < m-1 && colcuts[k] > 0) { //all
-						c = c + SW[ rowcuts[k+1] ][ colcuts[k]-1 ];
-						b = b + NE[ rowcuts[k]-1 ][ colcuts[k+1] ];
+						c = c + MAT_ELT(SW, rowcuts[k+1] , colcuts[k]-1 ,n);
+						b = b + MAT_ELT(NE, rowcuts[k]-1 , colcuts[k+1] ,n);
 					}
 					//Rprintf(" a = %d, b = %d, c = %d, d = %d\n",a,b,c,d);
 				if(v == 1){	
@@ -1393,103 +701,12 @@ float mvclasscrit2(int *m0, int *IM, int dims[], int nd){
 }
 
 
-
-
 // --------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------- //
 
 
 
-
-float mvclasscrit(int *m0, int *IM, int dims[], int nd){
-	
-	
-	int i,ix,j, j1,j2,s, s1, s2, k, rind ,lind, d;
-
-	int (*IX)[nd] = (int (*)[nd])IM;
-	
-	
-	int cp[nd];
-	int cpr[nd];
-	cp[0] = 1;
-	cpr[nd-1] = 1;
-
-	for (i = 1; i < nd; i++) {
-		cp[i] = cp[i-1]*dims[i-1];
-		cpr[nd-1-i] = cpr[nd-i]*dims[nd-i];//CHECK
-	}
-
-	// m1 array for the cumsums
-	int ml = cp[nd-1]*dims[nd-1];
-	int m1[ ml ];
-	int m2[ ml ];
-	//int m2[ ml ];
-	for (i = 0; i < ml; i++) {
-		m1[i] = m0[i];
-		m2[i] = 0;
-	}
-	
-	//go through m1 and m0 with stepsize s acc. to dimension k
-	// dims is in reverse order
-	
-	for (d = 0; d < nd; d++) {
-		
-		s1 = cp[d];
-		s2 = cpr[d];
-		
-		// first k-vector is zero
-		
-		for (j1 = 0; j1 < s2; j1++) {
-			for (j2 = 0; j2 < s1; j2++) {
-				rind = IX[0][d]*s1 + j1*s1*dims[d] + j2;
-				m1[ rind ] = 0;
-			}
-		}
-		
-		// cumsum over k = d 1st
-		for (i = 1; i < dims[d]; i++) {
-			for (j1 = 0; j1 < s2; j1++) {
-				for (j2 = 0; j2 < s1; j2++) {
-					rind = IX[i][d]*s1 + j1*s1*dims[d] + j2;
-					lind = IX[i-1][d]*s1 + j1*s1*dims[d] + j2;
-					m1[ rind ] = m1[ lind ] + m0[ lind ];
-				}
-			}
-		}
-		
-		// cumsum over other dimensions once
-		// add to m2 and reset m1
-		for (k = 0; k < nd; k++) {
-			s1 = cp[k];
-			s2 = cpr[k];
-			if (d != k) {
-				for (i = 1; i < dims[k]; i++) {
-					for (j1 = 0; j1 < s2; j1++) {
-						for (j2 = 0; j2 < s1; j2++) {
-								rind = IX[i][k]*s1 + j1*s1*dims[k] + j2;
-								lind = IX[i-1][k]*s1 + j1*s1*dims[k] + j2;
-								m1[ rind ] += m1[ lind ];
-								m2[ rind ] += m1[ lind ]; // not rind
-							}
-							
-						}
-					}
-				}
-			} 
-		
-		for (i = 0; i < ml; i++) {
-			m1[i] = m0[i];
-		}
-		
-	}
-	float cv = 0.0;
-	for (i = 0; i < ml; i++) {
-		cv = cv + m2[i] * m0[i];
-	}
-
-	return cv;
-}
 
 // --------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------- //
@@ -1716,7 +933,7 @@ SEXP mvclass(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 						}		
 					
 						if( mt == 0 ){
-							tempcrit =  mvclasscrit(mv, TIMp, dimv, nd);
+							tempcrit =  mvclasscrit2(mv, TIMp, dimv, nd);
 						}
 						if( mt == 1 ){
 							tempcrit =  mvhammcrit(mv, TIMp, dimv, nd);
@@ -1808,8 +1025,6 @@ SEXP mvclass(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 
 
 
-
-
 // ----------------------------------------------------------------------------------
 
 static void quickSort (float *a, int *order, int lo, int hi)
@@ -1841,6 +1056,7 @@ static void quickSort (float *a, int *order, int lo, int hi)
     if (i<hi) quickSort(a, order, lo2, hi);
 	
 }
+
 
 
 
@@ -1911,10 +1127,13 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 	}
 	// m1 array for the cumsums
 	int mln = cp[nd-1]*dimv[nd-1];
-	int m1[ mln ];
-	int m1i[ mln ];
+	//int m1[ mln ];
+	//int m1i[ mln ];
 	
-	int m0[ mln ];
+	//int m0[ mln ];
+	int* m1 = calloc(mln,sizeof(int));
+	int* m1i = calloc(mln,sizeof(int));
+	int* m0 = calloc(mln,sizeof(int));
 	
 	for (i = 0; i < mln; i++) {
 		m0[i] = INTEGER(M)[i];
@@ -1925,7 +1144,7 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 		m1i[i] = 0;
 	}
 	
-	int* m1ip = &m1i[0];
+	//int* m1ip = &m1i[0];
 	
 	
 	
@@ -1936,7 +1155,8 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 	int *ordp = &ord[0];
 	
 	while (opt == 0) {
-		
+		//////Rprintf("hoi\n\n");
+		opt = 1;
 		for (d = 0; d < nd; d++) {
 			
 			
@@ -2003,24 +1223,17 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 					iweight = 0;
 					for (j2 = 0; j2 < s1; j2++) {
 						for (j1 = 0; j1 < s2; j1++) {
-							//rind = 1*s1t + j1*s1t*dimv[d] + j2;
+							//IS THIS CORRECT??? IX[i][d] or simply i ????
 							lind = IM[i][d]*s1 + j1*s1*dimv[d] + j2;
+                            //lind = i*s1 + j1*s1*dimv[d] + j2;
 							m1i[ rind*2+1 ] = m0[ lind ];
 							iweight += m0[ lind ];
-						//	Rprintf("val %d from %d to %d\n", m0[ lind ],lind,rind);
-							rind++;
+                            rind++;
 						}
 					}
-					//Rprintf("iweight = %d\n",iweight);
-					//Rprintf("sums:\n");
-					//for (s = 0; s < dimv[1-d]; s++) {
-					//	for (j = 0; j < 2; j++) {
-					//		Rprintf("%d\t\t", m1i[j+s*2]);
-					//	}
-					//	Rprintf("\n");
-					//}
+			
 										
-					cvv[i] = mvclasscrit(m1ip, TIMp, tmpdimv, nd) / iweight;
+					cvv[i] = mvclasscrit2(m1i, TIMp, tmpdimv, nd) / iweight;//here we had the old mvclasscrit and m1ip
 					//Rprintf("cvv[%d] = %f\n",i,cvv[i]);
 				}	
 				
@@ -2032,46 +1245,34 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 			
 			quickSort(cvp,ordp,0,dimv[d]-1);	
 			
-			//for (s = 0; s < dimv[d]; s++) {
-			//	Rprintf("%d\t",ord[s]);
-			//}
-			//Rprintf("check06\n\n");
-		
-			//for (s = 0; s < dimv[d]; s++) {
-			//	Rprintf("%f\t",cvv[s]);
-			//}
+            //CIM is the temporary order resulting from the quicksort
 			for (s = 0; s < dimv[d]; s++) {
-				 CIM[s][d] = ord[s];
+				//TEST: odd dimensions (1,3,...) inverse??
+				//if( (d % 2) == 1){
+				//	CIM[s][d] = ord[dimv[d]-s-1];
+				//}else {
+					CIM[s][d] = ord[s];
+				//}
+
 			}
 			
-			//Rprintf("\n\n");
-			//for (s = 0; s < dimv[0]; s++) {
-			//	for (j = 0; j < dimv[1]; j++) {
-			//		Rprintf("%d \t",mv[  IM[s][0] + IM[j][1]*dimv[0]]);
-			//	}
-			//	Rprintf("\n");
-			//}
-			
-			//Rprintf("\n\n");
-			//for (s = 0; s < dimv[0]; s++) {
-			//	for (j = 0; j < dimv[1]; j++) {
-			//		Rprintf("%d \t",mv[  CIM[s][0] + CIM[j][1]*dimv[0]]);
-			//	}
-			//	Rprintf("\n");
-			//}
-			
-			oldcrit = mvclasscrit(mv, IX, dimv, nd);
-			//Rprintf("old crit = %f", oldcrit);
-			newcrit = mvclasscrit(mv, CIMp, dimv, nd);
+						
+			oldcrit = mvclasscrit2(mv, IX, dimv, nd);//here we had the old mvclasscrit
+			//////Rprintf("\n\ndim = %d, old crit = %f\n", d,oldcrit);
+			newcrit = mvclasscrit2(mv, CIMp, dimv, nd);
 			if (newcrit > bestcrit) {
 				bestcrit = newcrit;
-				//Rprintf("new best crit = %f", bestcrit);
+				//////Rprintf("new best crit = %f", bestcrit);
 				for (s = 0; s < dimv[d]; s++) {
 					IM[s][d] = CIM[s][d];
 				}
+				opt = 0;
 			}else {
-				//Rprintf("newcrit = %f stop", newcrit);
-				opt = 1;
+				//////Rprintf("newcrit = %f stop", newcrit);
+				// ????
+				for (s = 0; s < dimv[d]; s++) {
+					CIM[s][d] = IM[s][d];
+				}
 			}
 		}
 	}
@@ -2110,596 +1311,6 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 
 
 
-
-
-
-
-// this function will perform permutations for the categories until a local optimum is reached
-SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP treelengths){
-	
-	// the input is as follows:
-	
-	// > M is the array which is to be optimized
-	// > dims is a vector with the numbers of categories for each variable
-	// > pv is a 0/1 vector which indicates whether or not a variable shall be reordered
-	// > vs is a (currently unused) version number
-	// > tree contains a (binary) tree object with 4 entries for each node:
-	//  the first and the last index of the left and the right branch
-	//  usually the right index of the left branch is 1 less than the left index of the right branch
-	// > CM is a nd x nd matrix with optimal values for the pairwise criteria. It is used to decide which variable shall be optimized in each major step.
-	// > minc (eps) is the minimal improvement which is required for a movement as a ratio of the total criterion value at the beginning of a major step.
-	//  i.e. if eps = 0.01 only movements with an improvement of at least 1 percent are possible.
-	
-	int r,s,t,i,j,k,tmp, tmp2, d, g0, g1, g2, i1, i2, g;
-	int nd = LENGTH(dims);
-
-    tmp = INTEGER(treelengths)[0];
-   
-	int tl[nd];
-    for (i = 0; i < nd; i++) {
-        if (LENGTH(treelengths) > 1 ) {
-            tl[i] = INTEGER(treelengths)[i];
-        }else{
-            tl[i] = 0;
-        }
-    }
-    
-    
-    if( LENGTH(treelengths) > 1 ){	
-	// set tree parameters and objects
-        for (i = 1; i < nd; i++) {
-            tmp = mymax(tmp,INTEGER(treelengths)[i]);
-        }
-        tmp = 3*tmp;
-    }
-    int TM[tmp][nd];
-    //int *tl = &INTEGER(treelengths)[0];
-	// TM is equivalent to trees, but easier to read in the code later
-	// it contains the indices of the node children: min.left, min.right = max.left +1, max.right
-	// TM will not change during the algorithm, the changes are made in the index vector it refers to
-
-    if( LENGTH(treelengths) > 1 ){	
-        k = 0;
-        for (i = 0; i < tmp; i++) {
-            for (j = 0; j < nd; j++) {
-                TM[i][j] = 0;
-            }
-        }
-        for (d = 0; d < nd; d++) {
-            for (i = 0; i < tl[d]; i++) {
-                TM[3*i][d] = INTEGER(treevec)[k + 3*i]-1;
-                TM[3*i+1][d] = INTEGER(treevec)[k + 3*i+1]-1;
-                TM[3*i+2][d] = INTEGER(treevec)[k + 3*i+2]-1;
-            }
-            k += 3*tl[d];
-        }
-    }
-    
-   // Rprintf("TM = \n");
-	//for (i = 0; i < tmp; i++) {
-	//	for (j = 0; j < nd; j++) {
-	//		Rprintf("%d\t",TM[i][j]);
-	//	}
-     //   Rprintf("\n");
-	//}
-
-	int dimv[nd];
-	for (i=0; i<nd; i++) {
-		dimv[i] = INTEGER(dims)[i];
-	}
-	//Rprintf("no. of trees = %d", nt);  
-	// ml is the highest number of categories among all variables
-	// biglen is the total number of categories ober all variables
-	int ml = dimv[0];
-	int biglen = ml;
-	for(i = 1; i < nd; i++){
-		biglen = biglen + dimv[i];
-		if( ml < dimv[i] )
-			ml = dimv[i];
-	}
-
-	// IX is a matrix with the current order of indices. Each column is for one variable
-	// PX contains the current position of the original indices (only for trees)
-	int IX[ml][nd];
-	int PX[ml][nd];
-    int cind[ml];
-	// initial indices
-	for (k = 0; k < nd; k++) {
-		for (i = 0; i < dimv[k]; i++) {
-			IX[i][k] = i;
-			PX[i][k] = i;
-		}
-	}
-
-    int *mv = &INTEGER(M)[0];
-    int *IXp = &IX[0][0];
-	// cp and cpr are products of the numbers of categories for the variables before and after dimension d
-	// this is needed to grab the right entries from the m0 and m1 vectors
-	int cp[nd];
-	int cpr[nd];
-	cp[0] = 1;
-	cpr[nd-1] = 1;
-	
-	for (i = 1; i < nd; i++) {
-		cp[i] = cp[i-1]*dimv[i-1];
-		cpr[nd-1-i] = cpr[nd-i]*dimv[nd-i];
-	}
-	
-	// the m1 array will contain the temporary (for one major step) cumulative sums over all dimensions except d
-	// m0 contains the original values and is used to feed m1 in each step
-	// m2 is the same as m1 except that all entries are relocated at one position further (i -> i+1)
-	// all three have length mln
-	int mln = cp[nd-1]*dimv[nd-1];
-	int m1[ mln ];
-	int m0[ mln ];
-	int m2[ mln ];
-	
-	for (i = 0; i < mln; i++) {
-		m0[i] = INTEGER(M)[i];
-	}
-	for (i = 0; i < mln; i++) {
-		m1[i] = m0[i];
-		m2[i] = 0;
-	}
-
-	// TODO: compute the overall criterion alongside the computations
-	// (init step and inc)
-	
-	float bestcrit = 0;//FLT_MAX;
-	float newcrit = 0;
-	float startcrit = 0;
-	newcrit = mvclasscrit2(mv, IXp, dimv, nd);
-  //  Rprintf("initial crit = %f",newcrit);
-	
-	int opt = 0;
-	
-	int ds, s1, s2, s1t, s2t, j1, j2, rind, lind;
-
-	// DM contains the pairwise delta values
-	// (i.e. the difference between the criterion when cat. 1 is before or after cat. 2)
-	// DMC contains the cumulative sums over rows of DM starting from the diagonal outwards
-	int DM[ml][ml];
-	long DMC[ml][ml];	 
-
-		 
-    // best is the best movement delta value from DMC
-    // ii and jj are the corresp. indices
-    // eps is the minimal value for a movement
-    // eps should be either 0 or decrease with every major step
-			 
-    float best;
-    int ii, jj, gg, ll, lr;
-    float eps = 0;
-	float imp;
-			 
-	/// init done
-	//Rprintf("begin optim\n");
-	// d is the current dimension considered for optimization
-	d = 0;
-	int init = 1;
-  
-// ___   MAIN STEP   ___ //
-//  |				  |  //
-//  V                 V  //   
-    
-	while(opt == 0){
-		////
-		if(INTEGER(pv)[d] > 0){
-		// optimality is assumed unless an improvement can be made
-		opt = 1;
-		
-        // current index for this dimension to work with
-        for (i = 0; i < ml; i++) {
-            cind[i] = i;
-        }
-        for (i = 0; i < ml; i++) {
-            for (j = 0; j < ml; j++) {
-                DM[i][j] = 0;
-                DMC[i][j] = 0;
-            }
-        }
-		// cumsum over all dimensions except d
-       for (k = 0; k < nd; k++) {
-			s1 = cp[k];
-			s2 = cpr[k];
-			if (d != k) {
-				for (j1 = 0; j1 < s2; j1++) {
-                for (j2 = 0; j2 < s1; j2++) {
-                    for (i = 1; i < dimv[k]; i++) {
-//rind = IX[i][k]*s1 + j1*s1*dimv[k] + j2;
-//lind = IX[i-1][k]*s1 + j1*s1*dimv[k] + j2;
-                        rind = i*s1 + j1*s1*dimv[k] + j2;
-                        lind = rind-s1;
-							m1[ rind ] += m1[ lind ];
-						}
-						
-					}
-				}
-			}
-		} 
-        
-   
-    //     Rprintf("test1");
-    // shift the cumsums to index+1 (except dim d)
-    // >> compute index increment
-        int cpx[nd];
-        cpx[0] = dimv[0];
-        
-        for (i = 1; i < nd; i++) {
-            cpx[i] = cpx[i-1]*dimv[i];
-        }
-        int inc;
-        if(d == 0){
-            inc = 0;
-        }else{
-            inc = 1;
-        }
-        for (s = 0; s < nd-1; s++) {
-            if( s != d-1 ){
-                inc += cpx[s];
-            }
-        }
-      //   Rprintf("inc = %d\n",inc);
-        for (i = 0; i < mln-inc; i++) {
-            m2[i + inc] = m1[i];
-        }
-      //  Rprintf("test2");
-    // >> set the border (any dim expet d) to 0
-        for (k = 0; k < nd; k++) {
-            if(k != d){
-                s1 = cp[k];
-                s2 = cpr[k];
-                for (j1 = 0; j1 < s2; j1++) {
-                    for (j2 = 0; j2 < s1; j2++) {
-                        //lind = IX[0][k]*s1 + j1*s1*dimv[k] + j2;
-                        lind =  j1*s1*dimv[k] + j2;
-                        m2[ lind ] = 0;
-                    }
-                }
-            }
-        }
-      //  Rprintf("cumsums done");
-       // for (i = 0; i < mln; i++) {
-           // Rprintf(" %d ",m2[i]);
-        //} 
-		// compute pairwise criteria from m2 and m0
-		// the mv criterion is to maximize the number of 'diagonal' pairs
-		// i.e. the cumsums 
-        // >> first write 'i1 is before i2 to DM
-        // >> (we lose that much if we put i1 after i2)
-        
-        s1 = cp[d];
-        s2 = cpr[d];
-		for (i1 = 0; i1 < dimv[d]; i1++) {
-			for (i2 = 0; i2 < dimv[d]; i2++) {
-				if(i1 != i2){
-					for (j1 = 0; j1 < s2; j1++) {
-						for (j2 = 0; j2 < s1; j2++) {
-							//lind = IX[i1][d]*s1 + j1*s1*dimv[d] + j2;
-							//rind = IX[i2][d]*s1 + j1*s1*dimv[d] + j2;
-                            lind = i1*s1 + j1*s1*dimv[d] + j2;
-							rind = i2*s1 + j1*s1*dimv[d] + j2;
-							DM[i1][i2] += m0[ rind ] * m2[ lind ]; 
-						}
-					}
-				}
-			}
-		}
-      //  Rprintf("DM = \n");
-       // for (i1 = 0; i1 < dimv[d]; i1++) {
-		//	for (i2 = 0; i2 < dimv[d]; i2++) {
-        //        Rprintf("%d\t",DM[i1][i2]); 
-       //     }
-       //     Rprintf("\n");
-		//}
-        // >> now write 'put i1 after i2 difference' to DM
-		
-
-        for (i1 = 0; i1 < dimv[d]-1; i1++) {
-			for (i2 = i1; i2 < dimv[d]; i2++) {
-				if( (init == 1) & (i2 > i1) ){
-					startcrit += DM[i1][i2];
-				}
-                DM[i1][i2] = DM[i2][i1] - DM[i1][i2];
-                DM[i2][i1] = -DM[i1][i2];
-            }
-		}
-		//if( (init == 1) ){
-			//Rprintf("startcrit = %f\n", startcrit);
-			init = 0;
-		//}
-		
-      //   Rprintf("DM = \n");
-     //   for (i1 = 0; i1 < dimv[d]; i1++) {
-		//	for (i2 = 0; i2 < dimv[d]; i2++) {
-         //       Rprintf("%d\t",DM[i1][i2]); 
-         //   }
-       //     Rprintf("\n");
-		//}
-        
-		// reset m1 to m0,(m2 to 0?)
-		for (i = 0; i < mln; i++) {
-            m1[i] = m0[i];
-            m2[i] = 0;
-		}
-
-
-		
-/// -----------------------------------------------------------------------		
-
-		// ___   INTRA STEP 2  ___ //
-		//  |				    |  //
-		//  V                   V  //  
-		
-		// compute optimal order for veriable d from DM
-		// note that DM is in the original order, DMC is in IX order
-        
-		// improvement must be better than eps to proceed
-        imp = eps + 1;
-		while( imp > eps ){
-			
-			if(tl[d] > 0){
-                imp = 0; //best = 0;
-			// ---------------- TREE STEP ---------------- //
-				// there is a tree for dimension d	
-				//Rprintf("treestep\n\n");
-				// use IX = PX.old (IX is overwritten at the end of the tree step)
-                // PX.length = dimv or tl?
-               // Rprintf("tree %d", d);
-                
-				for (i = 0; i < dimv[d]; i++) {
-                    cind[i] = IX[i][d];
-					IX[i][d] = PX[i][d];
-				}
-				//anybetter = 0;
-                
-				// go through all nodes
-				// both DM and the tree work on the original indices
-                // i.e. we always use the same indices, but on a changed DM matrix
-                // save the differences in DMC[0][ 0..tl[d]-1 ]
-                for (g = 0; g < tl[d]; g++) {
-					DMC[ 0 ][ g ] = 0;
-					g0 = TM[ g*3 + 0][d];
-					g1 = TM[ g*3 + 1][d];
-					g2 = TM[ g*3 + 2][d];
-					//Rprintf("check node (%d, %d, %d):\t",PX[g0][d],PX[g1][d],PX[g2][d]);
-                    for (i = g0; i < g1; i++) {
-                        for (j = g1; j < g2+1; j++) {
-                            if(PX[g0][d] < PX[g1][d]){
-                                DMC[ 0 ][ g ] += DM[ PX[i][d] ][ PX[j][d] ];//+= DM[ cind[i] ][ cind[j] ];
-                            }else{
-                                DMC[ 0 ][ g ] -= DM[ PX[i][d] ][ PX[j][d] ];//-= DM[ cind[i] ][ cind[j] ];
-                            }
-                        }
-                    }
-					//Rprintf("DMC = %d\n",DMC[ 0 ][ g ]);
-                }
-               
-				// do all good steps
-				// = apply change to current index and original index IX
-				for (g = 0; g < tl[d]; g++) {
-                    // do all changes which are an improvement
-                    if (DMC[0][g] > 0) {
-                        if(DMC[0][g] > best){
-                            imp = DMC[0][g];
-                        }
-                        // ll and lr are the numbers of items in the two branches
-                        // both are negative iff PX[g1][d] < PX[g0][d]
-                       
-                        g0 = TM[ g*3 + 0][d];
-                        g1 = TM[ g*3 + 1][d];
-                        g2 = TM[ g*3 + 2][d];
-                    
-                        ll = g1-g0; //PX[g1][d]-PX[g0][d];
-                        lr = g2-g1+1; //PX[g2][d]-PX[g1][d]+1;
-					
-                        bestcrit += DMC[0][g];
-                        if (PX[g1][d] > PX[g0][d]) {
-                            for (s = g0; s < g1; s++) {
-                                PX[s][d] += lr;
-                            }
-                            for (s = g1; s < g2+1; s++) {
-                                PX[s][d] -= ll;
-                            }
-                        }else{
-                            for (s = g0; s < g1; s++) {
-                                PX[s][d] -= lr;
-                            }
-                            for (s = g1; s < g2+1; s++) {
-                                PX[s][d] += ll;
-                            }
-                        }
-                       // Rprintf("node %d:\n",g);
-                        //Rprintf("better PX = \n");
-                        //for (i = 0; i < tl[d]; i++) {
-                         //   Rprintf("%d\t",PX[ i ][d]);
-                        //}
-                        //anybetter = 1;
-                        // an improvement was possible => not yet optimal
-                        opt = 0;
-                    }
-				}
-                //if(anybetter == 1){
-					
-					//rearrange m0 acc. to the new PX order
-					// m1 and m0 are still the same => read from m1
-					// IX is the old position, PX is the new one ( IX[i][d] == cind[ IX[i][d] ] )
-					for (i = 0; i < dimv[d]; i++) {
-						cind[ PX[i][d] ] = IX[i][d];
-                    }
-                    //Rprintf("cind = \n");
-                    //for (i = 0; i < dimv[d]; i++) {
-					//	Rprintf("%d\t",cind[ i ]);
-                    //}
-					s1 = cp[d];
-					s2 = cpr[d];
-					
-					for (i = 0; i < dimv[d]; i++) {
-						for (j1 = 0; j1 < s2; j1++) {
-							for (j2 = 0; j2 < s1; j2++) {
-								rind = i*s1 + j1*s1*dimv[d] + j2;
-								//lind = IX[i][d]*s1 + j1*s1*dimv[d] + j2;
-								lind = cind[i]*s1 + j1*s1*dimv[d] + j2;
-								m0[rind] = m1[lind]; 
-							}
-						}
-					}
-					for (i = 0; i < mln; i++) {
-						m1[i] = m0[i];
-					}
-                    //Rprintf("old PX = \n");
-                    //for (i = 0; i < dimv[d]; i++) {
-					//	Rprintf("%d\t",IX[ i ][d]);
-                    //}
-                    //Rprintf("new PX = \n");
-                    //for (i = 0; i < dimv[d]; i++) {
-					//	Rprintf("%d\t",PX[ i ][d]);
-                    //}
-				   
-				//}
-                // update IX (refrain from misusing IX as a temporal PX)
-                for (s = 0; s < dimv[d]; s++) {
-                    IX[ PX[s][d] ][d] = s;
-                }
-                
-                //Rprintf("new IX = \nc(");
-                //for (i = 0; i < dimv[d]; i++) {
-               //     Rprintf("%d,\t",IX[ i ][d]+1);
-               // }
-				//Rprintf(")");
-                
-				//imp = best;
-                // Rprintf(" m0 = \n");
-				//for (i = 0; i < dimv[0]; i++) {
-                //   for (j = 0; j < dimv[1]; j++) {
-				 //     Rprintf("%d\t",m0[i + j*dimv[0]]);
-                //}
-                //Rprintf("\n%d\t%f\n",d,imp);
-				//}  
-				imp = 0;
-			}else{
-			// ---------------- FREE STEP ---------------- //
-				best = 0;
-				for (i = 0; i < dimv[d]-1; i++) {
-					for (j = i+1; j < dimv[d]; j++) {
-						DMC[ i ][ j ] = DMC[ i ][ j-1 ] + DM[ cind[i] ][ cind[j] ];//+ DM[ IX[i][d] ][ IX[j][d] ];
-						if(DMC[ i ][ j ] > best){
-							ii = i;
-							jj = j;
-							best = DMC[ i ][ j ];
-						}
-					}
-				}
-				for (i = 1; i < dimv[d]; i++) {
-					for (j = i-1; j >= 0; j--) {
-						DMC[ i ][ j ] = DMC[ i ][ j+1 ] + DM[ cind[j] ][ cind[i] ];//+ DM[ IX[j][d] ][ IX[i][d] ]; // i <-> j ?
-						if(DMC[ i ][ j ] > best){
-							ii = i;
-							jj = j;
-							best = DMC[ i ][ j ];
-						}
-					}
-				}
-				//Rprintf("DMC = \n");
-				//for (i1 = 0; i1 < dimv[d]; i1++) {
-                //for (i2 = 0; i2 < dimv[d]; i2++) {
-				//  Rprintf("%d\t",DMC[i1][i2]); 
-                //}
-				//  Rprintf("\n");
-				//}
-				// do best step
-				// = apply change to current index and original index IX
-				if(best > eps){
-					// Rprintf(" ---- ---- %d / %d is better by %f\t", ii,jj, best);
-					bestcrit += best;
-					tmp = IX[ii][d];
-					tmp2 = cind[ii];
-					if (ii < jj) {
-						for (s = ii; s < jj; s++) {
-							IX[s][d] = IX[s+1][d];
-							cind[s] = cind[s+1];
-						}
-						IX[jj][d] = tmp;
-						cind[jj] = tmp2;
-					}
-					if (ii > jj) {
-						for (s = ii; s > jj; s--) {
-							IX[s][d] = IX[s-1][d];
-							cind[s] = cind[s-1];
-						}
-						IX[jj][d] = tmp;
-						cind[jj] = tmp2;
-					}
-					// an improvement was possible => not yet optimal
-					opt = 0;
-				}else{
-					// Rprintf("### -------- stop ------ #\n");
-					
-					//rearrange m0 acc. to the new IX order
-					// m1 and m0 are still the same => read from m1
-					s1 = cp[d];
-					s2 = cpr[d];
-					
-					for (i = 0; i < dimv[d]; i++) {
-						for (j1 = 0; j1 < s2; j1++) {
-							for (j2 = 0; j2 < s1; j2++) {
-								rind = i*s1 + j1*s1*dimv[d] + j2;
-								//lind = IX[i][d]*s1 + j1*s1*dimv[d] + j2;
-								lind = cind[i]*s1 + j1*s1*dimv[d] + j2;
-								m0[rind] = m1[lind]; 
-							}
-						}
-					}
-					for (i = 0; i < mln; i++) {
-						m1[i] = m0[i];
-					}
-				}
-				imp = best;
-				// Rprintf(" m0 = \n");
-				//for (i = 0; i < dimv[0]; i++) {
-				//    for (j = 0; j < dimv[1]; j++) {
-				//      Rprintf("%d\t\t",m0[i + j*dimv[0]]);
-                //}
-                //Rprintf("\n");
-				//}
-				
-			}
-			
-		}
-		/// ''''' END INTRA STEP 2 ''''' ///
-		}
-/// -----------------------------------------------------------------------				
-		// decide which d is next
-		d = (d+1)%nd;
-		
-		//
-      //  Rprintf("\n new order %d\n",d);
-		//newcrit = mvclasscrit2(mv, IXp, dimv, nd);
-       // Rprintf("newcrit = %f\n",newcrit);
-		//Rprintf("bestcrit = %f\n",bestcrit);
-        //if(newcrit <= bestcrit){
-         //   opt = 1;
-        //}else{
-        //    bestcrit = newcrit;
-       // }
-		
-	}
-	/// ''''' END MAIN STEP ''''' ///
-	
-	
-	SEXP out = allocVector(REALSXP, biglen + 1);
-	
-	k = 0;
-	for(i = 0; i < nd; i++){
-		for (j = 0; j < dimv[i]; j++) {
-			REAL(out)[k] = IX[j][i];
-			k++;
-		}
-	}
-	REAL(out)[biglen] = bestcrit+newcrit;
-	//Rprintf("bestcrit = %f\n",bestcrit);
-	return out;
-}
 
 
 
@@ -3941,6 +2552,964 @@ SEXP quickhamm2d(SEXP M, SEXP dims, SEXP pv){
 }
 
 
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
 
 
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+
+SEXP quicktile(SEXP M, SEXP dims, SEXP pv){
+	
+	// M is byrow
+	int n = INTEGER(dims)[0];
+	int m = INTEGER(dims)[1];
+	
+	int px = INTEGER(pv)[1];
+	int py = INTEGER(pv)[0];
+	
+	
+	//Rprintf("%d\t%d\t%d\t%d\t%d\t",n,m,px,py);
+	
+	int i,j,i2,j2,k,tmp;
+	
+	
+	// index vectors with initial values 0..n-1 and 0..m-1 containing the actual orders
+	int RI[n];
+	int CI[m];
+	for (i = 0; i < n; i++) {
+		RI[i] = i;
+	}
+	for (j = 0; j < m; j++) {
+		CI[j] = j;
+	}
+	
+	// Delta matrices for rows and columns
+	// crit( i -> i2 ) - crit( i2 -> i ) if i < i2 and -(...) else
+	// i.e. this is 'lost' when putting i to i2
+	
+	
+   
+	// Sum of delta matrices 
+	
+
+	float *DC2 = calloc(m*m,sizeof(float));
+	
+	float *DR2 = calloc(n*n,sizeof(float));
+	float *DC = calloc(m*m,sizeof(float));
+	
+	float *DR = calloc(n*n,sizeof(float));
+	
+	int *MS = calloc(n*m,sizeof(int));	
+	int *MT = calloc(n*m,sizeof(int));	
+	
+	
+	
+	if (py == 1) {
+		for (i = 0; i < n; i++) {
+			MAT_ELT(DR2,i,i,n) = 0;
+			for (i2 = 0; i2 < n; i2++) {
+				MAT_ELT(DR,i,i2,n) = 0;
+			}
+		}
+	}
+	if (px == 1) {
+		for (j = 0; j < m; j++) {
+			MAT_ELT(DC2,j,j,m) = 0;
+			
+			for (j2 = 0; j2 < m; j2++) {
+				MAT_ELT(DC,j,j2,m) = 0;
+			}
+		}
+	}
+	
+	//Rprintf("check02");
+	// the criterion
+	float crtv = 0;
+	float td;
+	
+	//an marray pointer to M
+	
+	//int* mv = &INTEGER(M)[0];
+	//int (*MT)[m] = (int (*)[m])mv;
+	//for (i = 0; i < n; i++) {
+	//	for (j = 0; j < m; j++) {
+	//	Rprintf("%d\t", MT[i][j]);
+	//}
+	//Rprintf("\n");
+	//}
+	
+	for (j = 0; j < m; j++) {
+		for (i = 0; i < n; i++) {
+			MAT_ELT(MT,i,j,n) = INTEGER(M)[i+j*n];
+		}
+	}
+	
+	
+	
+	// --------------------- compute the initial delta values --------------------- //
+	
+	// cumsum by columns
+	for (j = 0; j < m; j++) {
+		MAT_ELT(MS,0,j,n) = MAT_ELT(MT,0,j,n);
+	}
+	for (i = 1; i < n; i++) {
+		for (j = 0; j < m; j++) {
+			MAT_ELT(MS,i,j,n) = MAT_ELT(MT,i,j,n) + MAT_ELT(MS,i-1,j,n);
+		}
+	}
+	
+	// delta C
+	
+	for (j = 0; j < m-1; j++) {
+		for (j2 = j+1; j2 < m; j2++) {
+			for (i = 1; i < n; i++) {
+				td = MAT_ELT(MT,i,j,n) * MAT_ELT(MS,i-1,j2,n);
+				crtv += td;
+				//DC[j][j2] += ( MT[i][j]*MS[i-1][j2] - MT[i][j2]*MS[i-1][j] ); // loss
+				MAT_ELT(DC,j,j2,m) += ( td - MAT_ELT(MT,i,j2,n) * MAT_ELT(MS,i-1,j,n) ); // loss
+			}
+			MAT_ELT(DC,j2,j,m) = - MAT_ELT(DC,j,j2,m);
+		}
+	}
+	// also computes the initial criterion
+	
+	if (py == 1) {
+		// cumsum by rows
+		for (i = 0; i < n; i++) {
+			MAT_ELT(MS,i,0,n) = MAT_ELT(MT,i,0,n);
+		}
+		for (i = 0; i < n; i++) {
+			for (j = 1; j < m; j++) {
+				MAT_ELT(MS,i,j,n) = MAT_ELT(MT,i,j,n) + MAT_ELT(MS,i,j-1,n);
+			}
+		}
+		
+		// delta R
+		for (i = 0; i < n-1; i++) {
+			for (i2 = i+1; i2 < n; i2++) {
+				for (j = 1; j < m; j++) {
+					MAT_ELT(DR,i,i2,n) += ( MAT_ELT(MT,i,j,n) * MAT_ELT(MS,i2,j-1,n) - MAT_ELT(MT,i2,j,n) * MAT_ELT(MS,i,j-1,n) ); // loss
+				}
+				MAT_ELT(DR,i2,i,n) = - MAT_ELT(DR,i,i2,n);
+			}
+		}
+	}
+	
+	
+	//Rprintf("\n\nstart crtv = %f\n\n",crtv);
+	
+	// --------------------- start the main algorithm --------------------- //	
+	
+	
+	// look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to i2)
+	// 'best' is the decrease in crtv, r1, r2, c1, c2 are the corresp. indices
+	float bestc = 0;
+	float bestr = 0;
+	float best = 0;
+	int r1 = 0;
+	int r2 = 0;
+	int c1 = 0;
+	int c2 = 0;
+	int opt = 0;
+	int steps = 0;
+	
+	while( opt == 0 ){	
+		
+		
+		//look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to k)
+		
+		if (py == 1) {
+			for (i = 0; i < n-1; i++) {
+				for (i2 = i+1; i2 < n; i2++) {
+					MAT_ELT(DR2,i,i2,n) = MAT_ELT(DR2,i,i2-1,n)+ MAT_ELT(DR, RI[i] , RI[i2] ,n);
+					if (MAT_ELT(DR2,i,i2,n) > bestr) {
+						
+						bestr = MAT_ELT(DR2,i,i2,n);
+						r1 = i;
+						r2 = i2;
+					}
+				}
+				
+			}
+			
+			for (i = 1; i < n; i++) {
+				for (i2 = i-1; i2 >= 0; i2--) {
+					MAT_ELT(DR2,i,i2,n) = MAT_ELT(DR2,i,i2+1,n)+  MAT_ELT(DR, RI[i2] , RI[i] ,n);
+					if (MAT_ELT(DR2,i,i2,n) > bestr) {
+						
+						bestr = MAT_ELT(DR2,i,i2,n);
+						r1 = i;
+						r2 = i2;
+					}
+				}
+				
+			}
+		}
+		
+		
+		if (px == 1) {
+			for (j = 0; j < m-1; j++) {
+				for (j2 = j+1; j2 < m; j2++) {
+					MAT_ELT(DC2,j,j2,m) = MAT_ELT(DC2,j,j2-1,m)+ MAT_ELT(DC, CI[j] , CI[j2] ,m);
+					if (MAT_ELT(DC2,j,j2,m) > bestc) {
+						
+						bestc = MAT_ELT(DC2,j,j2,m);
+						c1 = j;
+						c2 = j2;
+					}
+				}
+				
+			}
+			
+			for (j = 1; j < m; j++) {
+				for (j2 = j-1; j2 >= 0; j2--) {
+					MAT_ELT(DC2,j,j2,m) = MAT_ELT(DC2,j,j2+1,m)+ MAT_ELT(DC, CI[j2] , CI[j] ,m);
+					if (MAT_ELT(DC2,j,j2,m) > bestc) {
+						
+						bestc = MAT_ELT(DC2,j,j2,m);
+						c1 = j;
+						c2 = j2;
+					}
+				}
+				
+			}
+		}
+		
+		
+		
+		// two columns OR two rows are exchanged. The DR/DC values will change whilst DC/DR remains unchanged.
+		// the original data matrix and the delta matrices DC and DR and MS remain unchanged with repect to their row/column orders.
+		// BUT the values change dependent on the permutations! Hence the sums (DR2 and DC2) use CI[j] and RI[i]
+		
+		//Rprintf("\n\n r1 = %d, r2 = %d, bestr = %f\n",r1,r2, bestr);
+		//Rprintf("\n\n c1 = %d, c2 = %d, bestc = %f\n",c1,c2, bestc);
+		
+		//bestc = bestr+1;
+		
+		
+		// reset bestc and bestr
+		if( bestc > 0 || bestr > 0 ){	
+			
+			if (bestc > bestr) {
+				best = bestc;
+				
+				if (c1 < c2) {
+					// cumulative partial rowsums
+					for (i = 0; i < n; i++) {
+						MAT_ELT(MS,i, CI[c2] ,n) = MAT_ELT(MT,i, CI[c2] ,n);
+					}
+					if (c1+1 < c2) { // not neighboring
+						for (k = c2-1; k > c1; k--) {
+							for (i = 0; i < n; i++) {
+								MAT_ELT(MS,i, CI[k] ,n) = MAT_ELT(MT,i, CI[k] ,n) + MAT_ELT(MS,i, CI[k+1] ,n);
+							}
+						}
+					}
+					if (py == 1) {
+						// changes to DR
+						for (i = 0; i < n-1; i++) {
+							for (i2 = i+1; i2 < n; i2++) {
+								//							Rprintf("c1 = %d, CI[c1+1] = %d\n",c1,CI[c1+1]);
+								//							Rprintf("----------\n");
+								//							Rprintf("MT[%d,%d] = %d, MS[%d,%d] = %d, prod = %f\n",i2,CI[c1],MT[i2][ CI[c1] ],i,CI[c1+1],MS[i][ CI[c1+1] ],2*(float)MT[i2][ CI[c1] ]*MS[i][ CI[c1+1] ]);
+								//							Rprintf("----------\n");
+								//							Rprintf("\nMT[%d,%d] = %d, MS[%d,%d] = %d, prod = %f\n",i,CI[c1],MT[i][ CI[c1] ],i2,CI[c1+1],MS[i2][ CI[c1+1] ],2*(float)MT[i][ CI[c1] ]*MS[i2][ CI[c1+1] ]);
+								//Rprintf("----------\n");
+								MAT_ELT(DR,i,i2,n) -= 2*(  (float)MAT_ELT(MT,i2, CI[c1] ,n) * MAT_ELT(MS,i, CI[c1+1] ,n) -  (float)MAT_ELT(MT,i, CI[c1] ,n) * MAT_ELT(MS,i2, CI[c1+1] ,n) );
+								MAT_ELT(DR,i2,i,n) = -MAT_ELT(DR,i,i2,n);
+							}
+						}
+					}
+					
+					// index vector CI changes
+					tmp = CI[c1];
+					for (i = c1; i < c2; i++) {
+						CI[i] = CI[i+1];
+					}
+					CI[c2] = tmp;
+					//Rprintf("------------M-------------\n");
+					
+					//for (i = 0; i < n; i++) {
+					//	for (j = 0; j < m; j++) {
+					//		Rprintf("%d\t",MT[ RI[i] ][ CI[j] ]);
+					//	}
+					//	Rprintf("\n");
+					//}
+					
+					//Rprintf("----------------------------\n");
+					
+				}else {
+					// cumulative partial rowsums
+					for (i = 0; i < n; i++) {
+						MAT_ELT(MS,i, CI[c2] ,n) = MAT_ELT(MT,i, CI[c2] ,n);
+					}
+					if (c2+1 < c1) { // not neighboring
+						for (k = c2+1; k < c1; k++) {
+							for (i = 0; i < n; i++) {
+								MAT_ELT(MS,i, CI[k] ,n) = MAT_ELT(MT,i, CI[k] ,n) + MAT_ELT(MS,i, CI[k-1] ,n);
+							}
+						}
+					}
+					if (py == 1) {
+						// changes to DR
+						for (i = 0; i < n-1; i++) {
+							for (i2 = i+1; i2 < n; i2++) {
+								MAT_ELT(DR,i,i2,n) -= 2*(  (float)MAT_ELT(MT,i, CI[c1] ,n) * MAT_ELT(MS,i2, CI[c1-1] ,n) - (float)MAT_ELT(MT,i2, CI[c1] ,n) * MAT_ELT(MS,i, CI[c1-1] ,n) ); // neg. of c1 < c2
+								MAT_ELT(DR,i2,i,n) = -MAT_ELT(DR,i,i2,n);
+							}
+						}
+					}
+					
+					// index vector CI changes
+					tmp = CI[c1];
+					for (i = c1; i > c2; i--) {
+						CI[i] = CI[i-1];
+					}
+					CI[c2] = tmp;
+				}
+				
+			}else{ // bestr >= bestc
+				
+				
+				best = bestr;
+				if (r1 < r2) {
+					// cumulative partial colsums
+					for (j = 0; j < m; j++) {
+						MAT_ELT(MS, RI[r2] ,j,n) = MAT_ELT(MT, RI[r2] ,j,n);
+					}
+					if (r1+1 < r2) { // not neighboring
+						for (k = r2-1; k > r1; k--) {
+							for (j = 0; j < m; j++) {
+								MAT_ELT(MS, RI[k] ,j,n) = MAT_ELT(MT, RI[k] ,j,n) + MAT_ELT(MS, RI[k+1] ,j,n);
+							}
+						}
+					}
+					
+					
+					if (px == 1) {
+						// changes to DC
+						for (j = 0; j < m-1; j++) {
+							for (j2 = j+1; j2 < m; j2++) {
+								MAT_ELT(DC,j,j2,m) -= 2*( (float)MAT_ELT(MT, RI[r1] ,j2,n) * MAT_ELT(MS, RI[r1+1] ,j,n) - (float)MAT_ELT(MT, RI[r1] ,j,n) * MAT_ELT(MS, RI[r1+1] ,j2,n));
+								MAT_ELT(DC,j2,j,m) = -MAT_ELT(DC,j,j2,m);
+							}
+						}
+					}
+					
+					// index vector RI changes
+					tmp = RI[r1];
+					for (i = r1; i < r2; i++) {
+						RI[i] = RI[i+1];
+					}
+					RI[r2] = tmp;
+					
+				}else {
+					// cumulative partial colsums
+					for (j = 0; j < m; j++) {
+						MAT_ELT(MS, RI[r2] ,j,n) = MAT_ELT(MT, RI[r2] ,j,n);
+					}
+					if (r2+1 < r1) { // not neighboring
+						for (k = r2+1; k < r1; k++) {
+							for (j = 0; j < m; j++) {
+								MAT_ELT(MS, RI[k] ,j,n) = MAT_ELT(MT, RI[k] ,j,n) + MAT_ELT(MS, RI[k-1] ,j,n);
+							}
+						}
+					}
+					if (px == 1) {
+						// changes to DC
+						for (j = 0; j < m-1; j++) {
+							for (j2 = j+1; j2 < m; j2++) {
+								MAT_ELT(DC,j,j2,m) -= 2*(  (float)MAT_ELT(MT, RI[r1] ,j,n) * MAT_ELT(MS, RI[r1-1] ,j2,n) - (float)MAT_ELT(MT, RI[r1] ,j2,n) * MAT_ELT(MS, RI[r1-1] ,j,n) );
+								MAT_ELT(DC,j2,j,m) = -MAT_ELT(DC,j,j2,m);
+							}
+						}
+					}
+					
+					// index vector RI changes
+					tmp = RI[r1];
+					for (i = r1; i > r2; i--) {
+						RI[i] = RI[i-1];
+					}
+					RI[r2] = tmp;
+					
+					
+					
+				}
+				
+				
+			}
+			
+			// reset
+			bestc = 0;
+			bestr = 0;
+			
+			
+			crtv -= best;
+			
+			
+			best = 0;
+		}else { // best <= 0
+			opt = 1;
+		}
+		//if( steps > 16 ){
+		//	opt = 1;
+		//}
+		steps++;
+		
+	}
+	
+	
+	
+	
+	
+	SEXP out = allocVector(REALSXP,n+m+1);
+	for( i = 0; i < n;i++ ){
+		REAL(out)[i] = RI[i]; //+1
+	}
+	for( j = 0; j < m;j++ ){
+		REAL(out)[n+j] = CI[j]; //+1
+	}
+	
+	REAL(out)[n+m] = crtv;
+	free(DC2);
+	free(DR2);
+	free(DC);
+	free(DR);
+	free(MS);
+	free(MT);
+	//Rprintf("\nOptimization ended after %d steps with crtv=%f\n",steps,crtv);
+	return out;
+}
+
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+
+
+// this function will perform permutations for the categories until a local optimum is reached
+SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP treelengths){
+	
+	// the input is as follows:
+	
+	// > M is the array which is to be optimized
+	// > dims is a vector with the numbers of categories for each variable
+	// > pv is a 0/1 vector which indicates whether or not a variable shall be reordered
+	// > vs is a (currently unused) version number
+	// > tree contains a (binary) tree object with 4 entries for each node:
+	//  the first and the last index of the left and the right branch
+	//  usually the right index of the left branch is 1 less than the left index of the right branch
+	// > CM is a nd x nd matrix with optimal values for the pairwise criteria. It is used to decide which variable shall be optimized in each major step.
+	// > minc (eps) is the minimal improvement which is required for a movement as a ratio of the total criterion value at the beginning of a major step.
+	//  i.e. if eps = 0.01 only movements with an improvement of at least 1 percent are possible.
+	
+	int r,s,t,i,j,k,tmp, tmp2, d, g0, g1, g2, i1, i2, g;
+	int nd = LENGTH(dims);
+	
+    tmp = INTEGER(treelengths)[0];
+	
+	int tl[nd];
+    for (i = 0; i < nd; i++) {
+        if (LENGTH(treelengths) > 1 ) {
+            tl[i] = INTEGER(treelengths)[i];
+        }else{
+            tl[i] = 0;
+        }
+    }
+        
+    if( LENGTH(treelengths) > 1 ){	
+		// set tree parameters and objects
+        for (i = 1; i < nd; i++) {
+            tmp = mymax(tmp,INTEGER(treelengths)[i]);
+        }
+        tmp = 3*tmp;
+    }
+    int TM[tmp][nd];
+    //int *tl = &INTEGER(treelengths)[0];
+	// TM is equivalent to trees, but easier to read in the code later
+	// it contains the indices of the node children: min.left, min.right = max.left +1, max.right
+	// TM will not change during the algorithm, the changes are made in the index vector it refers to
+	
+    if( LENGTH(treelengths) > 1 ){	
+        k = 0;
+        for (i = 0; i < tmp; i++) {
+            for (j = 0; j < nd; j++) {
+                TM[i][j] = 0;
+            }
+        }
+        for (d = 0; d < nd; d++) {
+            for (i = 0; i < tl[d]; i++) {
+                TM[3*i][d] = INTEGER(treevec)[k + 3*i]-1;
+                TM[3*i+1][d] = INTEGER(treevec)[k + 3*i+1]-1;
+                TM[3*i+2][d] = INTEGER(treevec)[k + 3*i+2]-1;
+            }
+            k += 3*tl[d];
+        }
+    }
+ 	
+	int dimv[nd];
+	for (i=0; i<nd; i++) {
+		dimv[i] = INTEGER(dims)[i];
+	}
+	//Rprintf("no. of trees = %d", nt);  
+	// ml is the highest number of categories among all variables
+	// biglen is the total number of categories ober all variables
+	int ml = dimv[0];
+	int biglen = ml;
+	for(i = 1; i < nd; i++){
+		biglen = biglen + dimv[i];
+		if( ml < dimv[i] )
+			ml = dimv[i];
+	}
+	// IX is a matrix with the current order of indices. Each column is for one variable
+	// PX contains the current position of the original indices (only for trees)
+	int IX[ml][nd];
+	int PX[ml][nd];
+    int cind[ml];
+	// initial indices
+	for (k = 0; k < nd; k++) {
+		for (i = 0; i < dimv[k]; i++) {
+			IX[i][k] = i;
+			PX[i][k] = i;
+		}
+	}
+	
+    int *mv = &INTEGER(M)[0];
+    int *IXp = &IX[0][0];
+	// cp and cpr are products of the numbers of categories for the variables before and after dimension d
+	// this is needed to grab the right entries from the m0 and m1 vectors
+	int cp[nd];
+	int cpr[nd];
+	cp[0] = 1;
+	cpr[nd-1] = 1;
+	
+	for (i = 1; i < nd; i++) {
+		cp[i] = cp[i-1]*dimv[i-1];
+		cpr[nd-1-i] = cpr[nd-i]*dimv[nd-i];
+	}
+	
+	// the m1 array will contain the temporary (for one major step) cumulative sums over all dimensions except d
+	// m0 contains the original values and is used to feed m1 in each step
+	// m2 is the same as m1 except that all entries are relocated at one position further (i -> i+1)
+	// all three have length mln
+	
+	long mln = cp[nd-1]*dimv[nd-1];
+	
+	float *m1 = calloc(mln,sizeof(float));
+	float *m0 = calloc(mln,sizeof(float));
+	float *m2 = calloc(mln,sizeof(float));
+	
+	
+	for (i = 0; i < mln; i++) {
+		m0[i] = mv[i];//INTEGER(M)[i];
+	}
+	for (i = 0; i < mln; i++) {
+		m1[i] = mv[i];//m0[i]
+		m2[i] = 0;
+	}
+	// TODO: compute the overall criterion alongside the computations
+	// (init step and inc)
+	
+	float bestcrit = 0;//FLT_MAX;
+	float newcrit = 0;
+	float startcrit = 0;
+	newcrit = mvclasscrit2(mv, IXp, dimv, nd);
+	//  Rprintf("initial crit = %f",newcrit);
+	int opt = 0;
+	
+	int ds, s1, s2, s1t, s2t, j1, j2, rind, lind;
+	
+	// DM contains the pairwise delta values
+	// (i.e. the difference between the criterion when cat. 1 is before or after cat. 2)
+	// DMC contains the cumulative sums over rows of DM starting from the diagonal outwards
+	
+	int *DM = calloc(ml*ml,sizeof(int));
+	int *DMC = calloc(ml*ml,sizeof(int));
+	
+    // best is the best movement delta value from DMC
+    // ii and jj are the corresp. indices
+    // eps is the minimal value for a movement
+    // eps should be either 0 or decrease with every major step
+	
+    float best;
+    int ii, jj, gg, ll, lr;
+    float eps = 0;
+	float imp;
+	
+	/// init done
+	//Rprintf("begin optim\n");
+	// d is the current dimension considered for optimization
+	d = 0;
+	int init = 1;
+	
+	// ___   MAIN STEP   ___ //
+	//  |				  |  //
+	//  V                 V  //   
+    
+	while(opt == 0){
+		////
+		if(INTEGER(pv)[d] > 0){
+			// optimality is assumed unless an improvement can be made
+			opt = 1;
+			
+			// current index for this dimension to work with
+			for (i = 0; i < ml; i++) {
+				cind[i] = i;
+			}
+			for (i = 0; i < ml; i++) {
+				for (j = 0; j < ml; j++) {
+					MAT_ELT(DM,i,j,ml) = 0;
+					MAT_ELT(DMC,i,j,ml) = 0;
+				}
+			}
+			// cumsum over all dimensions except d
+			for (k = 0; k < nd; k++) {
+				s1 = cp[k];
+				s2 = cpr[k];
+				if (d != k) {
+					for (j1 = 0; j1 < s2; j1++) {
+						for (j2 = 0; j2 < s1; j2++) {
+							for (i = 1; i < dimv[k]; i++) {
+								//rind = IX[i][k]*s1 + j1*s1*dimv[k] + j2;
+								//lind = IX[i-1][k]*s1 + j1*s1*dimv[k] + j2;
+								rind = i*s1 + j1*s1*dimv[k] + j2;
+								lind = rind-s1;
+								m1[ rind ] += m1[ lind ];
+							}
+							
+						}
+					}
+				}
+			} 
+			
+			//     Rprintf("test1");
+			// shift the cumsums to index+1 (except dim d)
+			// >> compute index increment
+			int cpx[nd];
+			cpx[0] = dimv[0];
+			
+			for (i = 1; i < nd; i++) {
+				cpx[i] = cpx[i-1]*dimv[i];
+			}
+			int inc;
+			if(d == 0){
+				inc = 0;
+			}else{
+				inc = 1;
+			}
+			for (s = 0; s < nd-1; s++) {
+				if( s != d-1 ){
+					inc += cpx[s];
+				}
+			}
+			//   Rprintf("inc = %d\n",inc);
+			for (i = 0; i < mln-inc; i++) {
+				m2[i + inc] = m1[i];
+			}
+			//  Rprintf("test2");
+			// >> set the border (any dim expet d) to 0
+			for (k = 0; k < nd; k++) {
+				if(k != d){
+					s1 = cp[k];
+					s2 = cpr[k];
+					for (j1 = 0; j1 < s2; j1++) {
+						for (j2 = 0; j2 < s1; j2++) {
+							//lind = IX[0][k]*s1 + j1*s1*dimv[k] + j2;
+							lind =  j1*s1*dimv[k] + j2;
+							m2[ lind ] = 0;
+						}
+					}
+				}
+			}
+			
+			// compute pairwise criteria from m2 and m0
+			// the mv criterion is to maximize the number of 'diagonal' pairs
+			// i.e. the cumsums 
+			// >> first write 'i1 is before i2 to DM
+			// >> (we lose that much if we put i1 after i2)
+			
+			s1 = cp[d];
+			s2 = cpr[d];
+			for (i1 = 0; i1 < dimv[d]; i1++) {
+				for (i2 = 0; i2 < dimv[d]; i2++) {
+					if(i1 != i2){
+						for (j1 = 0; j1 < s2; j1++) {
+							for (j2 = 0; j2 < s1; j2++) {
+								//lind = IX[i1][d]*s1 + j1*s1*dimv[d] + j2;
+								//rind = IX[i2][d]*s1 + j1*s1*dimv[d] + j2;
+								lind = i1*s1 + j1*s1*dimv[d] + j2;
+								rind = i2*s1 + j1*s1*dimv[d] + j2;
+								MAT_ELT(DM,i1,i2,ml) += m0[ rind ] * m2[ lind ]; 
+							}
+						}
+					}
+				}
+			}
+			// >> now write 'put i1 after i2 difference' to DM
+			
+			
+			for (i1 = 0; i1 < dimv[d]-1; i1++) {
+				for (i2 = i1; i2 < dimv[d]; i2++) {
+					if( (init == 1) & (i2 > i1) ){
+						startcrit += MAT_ELT(DM,i1,i2,ml);
+					}
+					MAT_ELT(DM,i1,i2,ml) = MAT_ELT(DM,i2,i1,ml) - MAT_ELT(DM,i1,i2,ml);
+					MAT_ELT(DM,i2,i1,ml) = -MAT_ELT(DM,i1,i2,ml);
+				}
+			}
+			//if( (init == 1) ){
+			//Rprintf("startcrit = %f\n", startcrit);
+			init = 0;
+			//}
+			
+				
+			// reset m1 to m0,(m2 to 0?)
+			for (i = 0; i < mln; i++) {
+				m1[i] = m0[i];
+				m2[i] = 0;
+			}
+			
+			
+			
+			/// -----------------------------------------------------------------------		
+			
+			// ___   INTRA STEP 2  ___ //
+			//  |				    |  //
+			//  V                   V  //  
+			
+			// compute optimal order for veriable d from DM
+			// note that DM is in the original order, DMC is in IX order
+			
+			// improvement must be better than eps to proceed
+			imp = eps + 1;
+			while( imp > eps ){
+				
+				if(tl[d] > 0){
+					imp = 0; //best = 0;
+					// ---------------- TREE STEP ---------------- //
+					// there is a tree for dimension d	
+					
+					// use IX = PX.old (IX is overwritten at the end of the tree step)
+							
+					for (i = 0; i < dimv[d]; i++) {
+						cind[i] = IX[i][d];
+						IX[i][d] = PX[i][d];
+					}
+					//anybetter = 0;
+					
+					// go through all nodes
+					// both DM and the tree work on the original indices
+					// i.e. we always use the same indices, but on a changed DM matrix
+					// save the differences in DMC[0][ 0..tl[d]-1 ]
+					for (g = 0; g < tl[d]; g++) {
+						MAT_ELT(DMC,0,g,ml) = 0;
+						g0 = TM[ g*3 + 0][d];
+						g1 = TM[ g*3 + 1][d];
+						g2 = TM[ g*3 + 2][d];
+						//Rprintf("check node (%d, %d, %d):\t",PX[g0][d],PX[g1][d],PX[g2][d]);
+						for (i = g0; i < g1; i++) {
+							for (j = g1; j < g2+1; j++) {
+								if(PX[g0][d] < PX[g1][d]){
+									MAT_ELT(DMC,0,g,ml) += MAT_ELT(DM, PX[i][d] , PX[j][d] ,ml);//+= DM[ cind[i] ][ cind[j] ];
+								}else{
+									MAT_ELT(DMC,0,g,ml) -= MAT_ELT(DM, PX[i][d],PX[j][d] ,ml);//-= DM[ cind[i] ][ cind[j] ];
+								}
+							}
+						}
+					}
+					
+					// do all good steps
+					// = apply change to current index and original index IX
+					for (g = 0; g < tl[d]; g++) {
+						// do all changes which are an improvement
+						if ( MAT_ELT(DMC,0,g,ml) > 0) {
+							if(MAT_ELT(DMC,0,g,ml) > best){
+								imp = MAT_ELT(DMC,0,g,ml);
+							}
+							// ll and lr are the numbers of items in the two branches
+							// both are negative iff PX[g1][d] < PX[g0][d]
+							
+							g0 = TM[ g*3 + 0][d];
+							g1 = TM[ g*3 + 1][d];
+							g2 = TM[ g*3 + 2][d];
+							
+							ll = g1-g0; //PX[g1][d]-PX[g0][d];
+							lr = g2-g1+1; //PX[g2][d]-PX[g1][d]+1;
+							
+							bestcrit += MAT_ELT(DMC,0,g,ml);
+							if (PX[g1][d] > PX[g0][d]) {
+								for (s = g0; s < g1; s++) {
+									PX[s][d] += lr;
+								}
+								for (s = g1; s < g2+1; s++) {
+									PX[s][d] -= ll;
+								}
+							}else{
+								for (s = g0; s < g1; s++) {
+									PX[s][d] -= lr;
+								}
+								for (s = g1; s < g2+1; s++) {
+									PX[s][d] += ll;
+								}
+							}
+							
+							//anybetter = 1;
+							// an improvement was possible => not yet optimal
+							opt = 0;
+						}
+					}
+					//if(anybetter == 1){
+					
+					//rearrange m0 acc. to the new PX order
+					// m1 and m0 are still the same => read from m1
+					// IX is the old position, PX is the new one ( IX[i][d] == cind[ IX[i][d] ] )
+					for (i = 0; i < dimv[d]; i++) {
+						cind[ PX[i][d] ] = IX[i][d];
+                    }
+                   
+					s1 = cp[d];
+					s2 = cpr[d];
+					
+					for (i = 0; i < dimv[d]; i++) {
+						for (j1 = 0; j1 < s2; j1++) {
+							for (j2 = 0; j2 < s1; j2++) {
+								rind = i*s1 + j1*s1*dimv[d] + j2;
+								//lind = IX[i][d]*s1 + j1*s1*dimv[d] + j2;
+								lind = cind[i]*s1 + j1*s1*dimv[d] + j2;
+								m0[rind] = m1[lind]; 
+							}
+						}
+					}
+					for (i = 0; i < mln; i++) {
+						m1[i] = m0[i];
+					}
+               
+					// update IX (refrain from misusing IX as a temporal PX)
+					for (s = 0; s < dimv[d]; s++) {
+						IX[ PX[s][d] ][d] = s;
+					}
+					
+										imp = 0;
+				}else{
+					// ---------------- FREE STEP ---------------- //
+					best = 0;
+					for (i = 0; i < dimv[d]-1; i++) {
+						for (j = i+1; j < dimv[d]; j++) {
+							MAT_ELT(DMC,i,j,ml) = MAT_ELT(DMC,i,j-1,ml) + MAT_ELT(DM,cind[i],cind[j],ml);//+ DM[ IX[i][d] ][ IX[j][d] ];
+							if(MAT_ELT(DMC,i,j,ml) > best){
+								ii = i;
+								jj = j;
+								best = MAT_ELT(DMC,i,j,ml);
+							}
+						}
+					}
+					for (i = 1; i < dimv[d]; i++) {
+						for (j = i-1; j >= 0; j--) {
+							MAT_ELT(DMC,i,j,ml) = MAT_ELT(DMC,i,j+1,ml) + MAT_ELT(DM,cind[j],cind[i],ml);//+ DM[ IX[j][d] ][ IX[i][d] ]; // i <-> j ?
+							if(MAT_ELT(DMC,i,j,ml) > best){
+								ii = i;
+								jj = j;
+								best = MAT_ELT(DMC,i,j,ml);
+							}
+						}
+					}
+					// do best step
+					// = apply change to current index and original index IX
+					if(best > eps){
+						// Rprintf(" ---- ---- %d / %d is better by %f\t", ii,jj, best);
+						bestcrit += best;
+						tmp = IX[ii][d];
+						tmp2 = cind[ii];
+						if (ii < jj) {
+							for (s = ii; s < jj; s++) {
+								IX[s][d] = IX[s+1][d];
+								cind[s] = cind[s+1];
+							}
+							IX[jj][d] = tmp;
+							cind[jj] = tmp2;
+						}
+						if (ii > jj) {
+							for (s = ii; s > jj; s--) {
+								IX[s][d] = IX[s-1][d];
+								cind[s] = cind[s-1];
+							}
+							IX[jj][d] = tmp;
+							cind[jj] = tmp2;
+						}
+						// an improvement was possible => not yet optimal
+						opt = 0;
+					}else{
+						// Rprintf("### -------- stop ------ #\n");
+						
+						//rearrange m0 acc. to the new IX order
+						// m1 and m0 are still the same => read from m1
+						s1 = cp[d];
+						s2 = cpr[d];
+						
+						for (i = 0; i < dimv[d]; i++) {
+							for (j1 = 0; j1 < s2; j1++) {
+								for (j2 = 0; j2 < s1; j2++) {
+									rind = i*s1 + j1*s1*dimv[d] + j2;
+									//lind = IX[i][d]*s1 + j1*s1*dimv[d] + j2;
+									lind = cind[i]*s1 + j1*s1*dimv[d] + j2;
+									m0[rind] = m1[lind]; 
+								}
+							}
+						}
+						for (i = 0; i < mln; i++) {
+							m1[i] = m0[i];
+						}
+					}
+					imp = best;
+										
+				}
+				
+			}
+			/// ''''' END INTRA STEP 2 ''''' ///
+		}
+		/// -----------------------------------------------------------------------				
+		// decide which d is next
+		d = (d+1)%nd;
+		
+				
+	}
+	/// ''''' END MAIN STEP ''''' ///
+	
+	
+	SEXP out = allocVector(REALSXP, biglen + 1);
+	
+	k = 0;
+	for(i = 0; i < nd; i++){
+		for (j = 0; j < dimv[i]; j++) {
+			REAL(out)[k] = IX[j][i];
+			k++;
+		}
+	}
+	REAL(out)[biglen] = bestcrit+newcrit;
+	free(m1);
+	free(m0);
+	free(m2);
+	free(DM);
+	free(DMC);
+	return out;
+}
+
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
 

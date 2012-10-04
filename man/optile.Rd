@@ -12,12 +12,12 @@ write  \code{myplot( optile(x) )} for an optimized version of \code{myplot(x)}.
 The interface is extendible using ones own functions should they fulfill the requirements (see details).
 }
 \usage{
-optile(x, fun = "class", presort = FALSE, foreign = NULL,
+optile(x, fun = "BCC", presort = FALSE, foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
  past = NULL, scale = FALSE, freqvar = NULL,
  return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL,\dots)
  
- \method{optile}{list}(x, fun = "class", presort = FALSE, foreign = NULL,
+ \method{optile}{list}(x, fun = "BCC", presort = FALSE, foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
  past = NULL, scale = FALSE, freqvar = NULL,
  return.data = TRUE, return.type = "table", vs = 0, tree = NULL,
@@ -31,32 +31,30 @@ The categorical data of one of the following classes:
 }
   \item{fun}{
 The optimization function. Currently available are:
-\code{class, hamming, casort, csvd , rmca} and \code{preclass}. \code{Class, hamming} and \code{preclass} require \code{foreign = ".Call"}
-See Details.
-}
+\code{BCC, WBCC, CA, csvd , rmca} and \code{IBCC}. For more information see details. }
   \item{presort}{
-Whether or not to use \code{preclass} for an initial pre-ordering
+Whether or not to use \code{IBCC} for an initial pre-ordering.
 }
   \item{foreign}{
-Where to find the optimization function \code{fun}. \code{NULL} if it is an R function.
+Where to find the optimization function \code{fun}. \code{NULL} for an R function or for instance \code{".Call"} and \code{.C} for an external function.
 }
   \item{args}{
 further arguments which will be passed to \code{fun}.
 }
   \item{perm.cat}{
-All variables with a fixed category order (e.g. ordinal variables) should have a \code{FALSE} here. Has no effect if \code{fun = "casort"}
+A logical vector indicating which variables are considered for optimization and which will remain untouched. Has no effect if \code{fun = "casort"}.
 }
   \item{method}{
 Either \code{NULL, "joint"} or \code{"stepwise"}. \code{NULL} will pass the dataframe to \code{fun, "joint"} will pass the Burt matrix (with all pairwise tables) and \code{"stepwise"} will repeatedly call \code{fun} for 2, 3, 4, and so on variables. See Details.
 }
   \item{iter}{
-Some optimizations depend on the initial category orders (e.g. \code{"class"} and \code{"preclass"}). This will compute the optimization for \code{iter} random starting points and choose the best.
+Some optimizations depend on the initial category orders (e.g. \code{"BCC"} and \code{"IBCC"}). If \code{iter > 1} the optimization is repeated for \code{iter} random initial category orders and the best result is returned.
 }
   \item{past}{
 Not implemented yet.
 }
   \item{scale}{
-Not implemented yet. ( Function to scale resulting criteria to make them comparable)
+Not implemented yet.
 }
   \item{freqvar}{
 The name of the frequency variable, if any.
@@ -68,19 +66,29 @@ Whether to return the data or just the new orders.
 The class of the object which will be returned. Defaults to the input type.
 }
   \item{vs}{
-An optional version number. \code{"hamming"} is currently equivalent to \code{"class"} and \code{vs =1}}
+An optional version number. \code{"WBCC"} is currently equivalent to \code{"BCC"} and \code{vs =1}}
   \item{tree}{
-A list whose entries are either a tree object like they are obtained from \link[stats]{hclust} or the string \code{"hc"}. If the ith entry is a tree object, the ith variable should to be the result from cutting the tree into \code{dim(x)[i]} clusters via \link[extracat]{subtree}. \code{"hc"} will compute a hierarchical clustering for the rows and columns with arguments specified in \code{args}.
+A list whose entries are either tree objects (e.g. from \link[stats]{hclust}) or the string \code{"hc"}. If the i-th entry is a tree object, the i-th variable is the result from cutting the tree into \code{dim(x)[i]} clusters via \link[extracat]{subtree}. \code{"hc"} will compute a hierarchical clustering for the rows and columns with arguments specified in \code{args}.
 }
   \item{k}{
-A vector of integers specifying the numbers of clusters into which the tree objects shall be cut. See \link[stats]{hclust}. }
+A vector of integers specifying the numbers of clusters into which the tree objects shall be cut. See \link[extracat]{subtree}. }
   \item{h}{
-Instead of a number of clusters \code{k} the height at which the dendrogram shall be cut can be specified. See \link[stats]{hclust}.}
+Instead of a number of clusters \code{k} the height at which the dendrogram shall be cut can be specified. See \link[extracat]{subtree}.}
   \item{\dots}{
 dots
 }
 }
 \details{
+The optile interface makes it possible to resort the categories in different representations of categorical data.
+
+The most important points to know are
+\tabular{l}{
+The function by default returns the same type of object as was passed in the function call.\cr
+It is possible to specify custom optimization functions.\cr
+The function is able to handle tree objects which specify a hierarchical tree graph on the categories.\cr
+The function can pass either multidimensional tables, the corresponding Burt matrix (method = "joint") or a hierarchical series of tables ("stepwise") to the optimization functions.\cr
+}
+
 How to add a custom optimization function:
 
 It is possible to use custom functions for the optile interface as long as they meet the following requirements:
@@ -90,10 +98,7 @@ The function should have the form\cr
 \code{foreign( "fun", data, dims, perm.cat, ...)} \cr
 where fun is the name of the function and foreign is \code{".Call", ".C", ...}
 
-The function returns a vector of the new category orders and the resulting criterion, e.g. \code{c( 1,3,5,2,4, 5,4,3,2,1,6,7, 78978 )}
-(CURRENTLY: 0..k-1 instead of 1..k)
-
-The function works with integer input weights/frequencies.
+The function returns a vector of the new category orders (minus 1) and the resulting criterion, e.g. \code{c( 0,2,4,1,3,  4,3,2,1,0,5,6,  0.7612 )}
 
 \code{dims} is a vector with the number of categories for each variable and \code{perm.cat} is a 0/1 vector which indicates whether or not to change the category order of a variable.
 
@@ -102,18 +107,16 @@ There are three possible types for the \code{data} argument of \code{fun} which 
 The argument \code{method} can be one of \code{NULL, "stepwise"} or \code{"joint"}.
 The default \code{method = NULL} indicates that \code{fun} accepts a multidimensional table as for instance can be produced via \code{xtabs}.
 
-If \code{method = "joint"} a Burt matrix is computed and passed to \code{fun}. This matrix contains all 2-way tables and is an easy way to pass the joint 2-way-interaction data to a function. For instance \code{"fun=casort"} uses this data representation.
+If \code{method = "joint"} a Burt matrix is computed and passed to \code{fun} (c.f. \link[extracat]{Burt}). For instance \code{"fun=casort"} uses this data representation.
 
-\code{method = "stepwise"} or \code{method = "sw"} passes \code{fun, data, foreign} as well as any \code{args} to a function called \code{steptile} which initially builds a 2-way table of the first pair of variables, passes it to fun and stores the computed category orders. Afterwards the other variables are added one by one. i.e. in a step for the k-th variable the function passes a k-way table to \code{fun} and a new category order for this variable is computed given the (already fixed) category orders of the variables 1 to k-1. E.g. for the \code{"class"} and \code{"hamming"} criteria this is a lot faster than the multivariate (method = NULL) version.
-
+\code{method = "stepwise"} or \code{method = "sw"} passes \code{fun, data, foreign} as well as any \code{args} to a function called \code{steptile} which initially builds a 2-way table of the first pair of variables, passes it to fun and stores the computed category orders. Afterwards the other variables are added one by one. i.e. in a step for the k-th variable the function passes a k-way table to \code{fun} and a new category order for this variable is computed given the (already fixed) category orders of the variables 1 to k-1. This version is well suited for hierarchical visualizations like classical mosaicplots.
 
 CURRENTLY AVAILABLE SORTING FUNCTIONS:
 
-\code{"class"} and \code{"hamming"}: both maximize the number of pairs of observations which are  consistent with a pseudo diagonal,
-i.e. for such a pair all factor levels of one observation should be higher than the corresponding ones of the other observation. The \code{"hamming"} version additionally uses weights according to the hamming distance of the observations.
+\code{"BCC"} and \code{"WBCC"}: minimize the Bertin Classification Criterion and the Weighted Bertin Classification Criterion.
+BCC is the number of observation pairs which are not fully concordant among all relevant observation pairs (pairs which differ in all variables). A pair of observations \code{a} and \code{b} is fully concordant if all entries in \code{a} are smaller than those in \code{b} or vice versa. Full concordance results in a so-called pseudo-diagonal. WBCC uses the Hamming distance between the observations as weights for the contradictions to such a diagonal form and also takes pairs within the same row or column into account.
 
 \code{"casort"}: computes a correspondence analysis (SVD) and sorts by the first coordinate vector of each dimension. For more than two dimensions Multiple CA based on the Burt matrix is used.
-It is also useful to compute initial category orders.
 
 \code{"rmca"}: 
 Adopts the idea of CA for k > 2 dimensions without dropping information: For each dimension d = 1..k with categories d1...dr compute the scaled average k-1 dimensional profile sdd and perform an SVD of (sd1...sdr)-sdd. Like in correspondence analysis the first coordinate vector is used for the reordering.
@@ -127,16 +130,16 @@ Idea: for any variable h != d we have h1 < h2 < ... < hx due to the cumulative s
 
 
 \code{"distcor"}:
-Two-way tables or matrices can also be optimized by means of the distance correlation. See \link[extracat]{dcor}.
+Two-way tables or matrices can also be optimized by means of the distance correlation. See \link[extracat]{wdcor}.
 
-\code{"preclass"}:
-This function is used for the presorting and is written in C (\code{foreign =".Call"}).
-It iteratively sorts the categories of one variable at a time. Therefore it computes the average over the remaining dimensions and scales the profiles of each category as well as the average profile. It then computes the classification criterion between each category profile and the average profile which results in one value per category. The categories are then sorted by this criterion.
-The procedure is very quick and yields good results in most cases. It strongly depends on the initial category orders as do the classification or hamming algorithms. It is possible to choose this for the main sorting function by setting \code{fun = "preclass"}.
+\code{"IBCC"}:
+Iteratively sorts the categories of one variable at a time. Therefore it computes the average over the remaining dimensions and scales the profiles of each category as well as the average profile. It then computes the classification criterion between each category profile and the average profile which results in one value per category. The categories are then sorted by this criterion.
+The procedure is very quick and yields good results in most cases. It strongly depends on the initial category orders as do the BCC or WBCC algorithms.
+This function is written in C which means that \code{foreign =".Call"} must be set. Alternatively it can be used to presort the data via the shortcut \code{presort = TRUE}.
 
 }
 \value{
-The function returns the data. The return type is by default the same as the input type but can be redefined via \code{return.type}.
+The function returns the reordered data. The return type is by default the same as the input type but can be redefined via \code{return.type}.
 }
 
 \author{
@@ -155,9 +158,9 @@ This was part of the Google Summer of Code 2011.
 ############ ------------ EXAMPLE I ------------ ############
 # ----- Cluster results from the Current Population Survey ----- #
 data(CPScluster)
-cpsX = subtable(CPScluster,c(5, 12, 26, 34, 38, 39), allfactor=TRUE)
+cpsX = subtable(CPScluster,c(5, 26, 34, 38, 39), allfactor=TRUE)
 
-# joint and stepwise classification criterion. both use a very quick algorithm.
+# joint and stepwise optimization of BCC
 ss <- optile(cpsX,presort=TRUE, return.data=TRUE, method="joint")
 ss2 <- optile(cpsX,presort=TRUE, return.data=TRUE, method="sw")
 
@@ -191,7 +194,7 @@ fluctile(xtabs(Freq~.,data=ssC[,-4]))
 cpcp(ssC)
 
 # cpcp for presort algorithm with 20 iterations
-ssP <- optile(cpsX,presort=FALSE, fun = "preclass",
+ssP <- optile(cpsX,presort=FALSE, fun = "IBCC",
 return.data=TRUE, method=NULL, foreign = ".Call",iter=20)
 cpcp(ssP)
 
@@ -256,6 +259,62 @@ for(i in 1:5) levels(rawdata[,i]) <- 1:6
 (kappam.fleiss(rawdata[,-2]))
 
 
+## Let's have a look at kmeans with 2:12 clusters
+library(biclust)
+data(BicatYeast)
+
+cs <- NULL
+for(i in 2:12) cs <-  cbind(cs, kmeans(BicatYeast, centers=i,nstart=100)$cluster)
+cs <- as.data.frame(cs)
+names(cs) <- paste("V",2:12,sep="")
+ocs <- optile(cs,method="joint")
+cpcp(ocs,sort.individual=TRUE)
+# and set alpha-blending, show.dots = TRUE
+
+
+# and with hierarchical clusterings
+cs2 <- NULL
+library(amap)
+hc <- hcluster(BicatYeast)
+for(i in 2:20) cs2 <- cbind(cs2, subtree(hc,k=i)$data)
+cs2 <- as.data.frame(cs2)
+names(cs2) <- paste("V",2:20,sep="")
+cpcp(cs2,sort.individual=TRUE)
+# and set alpha-blending to about 0.6, show.dots = TRUE, then
+ss <- iset()
+ibar(ss$V6)
+# and VIEW >> Set color (rainbow)
+# Ideally the axes would be at a distance according to the heights of the cuts.
+# e.g. for the first 12 clusters (after that there are some cuts at about the same height)
+
+# the complete dendrogram doesn't look too attractive:
+plot(hc)
+
+# and plotting the top cuts only omits the information
+# on how many cases are in each node or leaf
+
+xcoords <- rev(tail(hc$height,11))
+xcoords <- xcoords/max(hc$height) 
+ycoords <- data.matrix(ss[,20:30])
+ycoords <- apply(ycoords,2,function(s){
+	y <- s - min(s)
+	y <- y/max(y)
+	return(y)
+})
+ycoords <- cbind(ycoords, as.integer(as.matrix(ss[,5])))
+colv <- rainbow_hcl(6)
+dev.new()
+par(mfrow=c(1,2))
+plot(1,pch="", xlim=c(0,1), ylim=c(min(xcoords)-0.007,1))
+
+
+apply(ycoords,1,function(s){
+points(x=s[-12], y=xcoords,)
+	points(x=s[-12],y=xcoords,pch=19, col = colv[s[12]])
+	lines(x=s[-12], y=xcoords, col = colv[s[12]])
+})
+hc$height <- hc$height/max(hc$height)
+plclust(subtree(hc,12),hang=0.02)
 
 
 ############ ------------ EXAMPLE IV ------------ ############

@@ -1,5 +1,8 @@
 \name{cpcp}
 \alias{cpcp}
+\alias{cpcp.table}
+\alias{cpcp.default}
+
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Parallel Coordinates Plot for categorical data
@@ -9,11 +12,20 @@ This function provides a parallel coordinates plot for categorical as well as co
 It applies sorted numeric point sequences to the categories which indicate the relative frequencies and allow a sensible interactive highlighting.
 There are options to change the rule for the gaps between these sequences and to apply an additional ordering algorithm.
 }
-\usage{cpcp(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",
+\usage{
+cpcp(x,\dots)
+\method{cpcp}{table}(
+x,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",
 na.rule = "omit", spread=0.3,gap.space = 0.2, sort.individual=FALSE, 
-jitter = FALSE, plot = TRUE, return.df = !plot,\dots)}
+jitter = FALSE, plot = TRUE, return.df = !plot,\dots)
+
+ \method{cpcp}{default}(
+x,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",
+na.rule = "omit", spread=0.3,gap.space = 0.2, sort.individual=FALSE, 
+jitter = FALSE, plot = TRUE, return.df = !plot,\dots)
+}
 \arguments{
-  \item{V}{
+  \item{x}{
 data frame containing the variables for the plot. A special choice and order can be made by setting the second argument \code{ord}.If \code{V} is a frequency table (see e.g. \link[stats]{ftable}) the frequency variable has to be named "Freq".
 }
 \item{freqvar}{
@@ -84,7 +96,7 @@ To receive \pkg{JGR} please visit \url{http://www.rosuda.org/software} and downl
 }
 \examples{
 \dontrun{
-cpcp(V = housing)
+cpcp(x = housing)
 
 A <- arsim(1000,c(4,8,12,16),4, noise = 0.05)
 cpcp(A, sort.individual = TRUE)

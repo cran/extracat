@@ -3,20 +3,30 @@
 
 \docType{package}
 \title{
-Graphical extensions for catagorical data
+Categorical Data Visualization and Analysis
 }
 \description{
-Provides interactive parallel coordinates plots based on package \code{iplots} for categorical and continuous data
-as well as a grid-based special version of multiple barcharts, \link[extracat]{rmb} which shows the relative frequencies of a target variable an the corresponding weights in a MB-like graphical layout.
-Functions related to the Google Summer of Code 2011 are also included:
-\link[extracat]{optile} resorts the categories of variables in order to sort of diagonalize the tables and graphical representations, which makes them easier to interpret. \link[extracat]{fluctile} provides fluctuation diagrams for the visualisation.
+This package offers a variety of functions that can be used for categorical data analysis or at least have to do with categorical data. 
+
+Among the most interesting features are
+\tabular{ll}{
+\link[extracat]{rmb} \tab RMB plots visualize contingency tables . The function offers different visualizations of conditional distributions and their corresponding weights (frequencies) including multiple barcharts, spineplots and piecharts. There are different ways of displaying the residuals from statistical models.\cr
+\link[extracat]{cpcp} \tab CPCP plots visualize a contingency table or a data frame with categorical variables via interactive parallel coordinates plots. Thsi function uses the iplots package.\cr
+\link[extracat]{optile} \tab The OPTILE interface was developed for the Google Summer of Code 2011. It offers a variety of reordering techniques for contingency tables. The reordering of the categories not only improves visualizations.\cr
+\link[extracat]{rmbmat} \tab A matrix of RMB plots not unlike a Scatterplot matrix (SPLOM) is produced. It uses binning for continuous data.\cr
+\link[extracat]{hexpie} \tab After a hexagonal binning of x and y a third categorical target variable is displayed via piecharts (or embedded hexagons) within the hexagons. This avoids problems with overplotting.\cr
+\link[extracat]{quickfechner} \tab A very fast implementation of the fechnerian scaling technique, which computes a fechnerian distance matrix from a (dis.)similarity matrix.\cr
+\link[extracat]{fluctile} \tab Offers two- or multidimensional fluctuation diagrams and multiple barcharts.\cr
+\link[extracat]{arsim} \tab Simulates categorical data arrays of any dimension. The number of observations, the number of block clusters and the noise level and type can be chosen. \cr
+}
+
 }
 \details{
 \tabular{ll}{
 Package: \tab extracat\cr
 Type: \tab Package\cr
-Version: \tab 1.5-0\cr
-Date: \tab 2012-04-25\cr
+Version: \tab 1.6-1\cr
+Date: \tab 2012-10-04\cr
 License: \tab -\cr
 LazyLoad: \tab yes\cr
 }

@@ -1,26 +1,63 @@
-cpcp = function(V,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",
+cpcp = function(x,...){
+	UseMethod("cpcp")	
+}
+cpcp.table = function(x,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",
+spread=0.3,gap.space = 0.2
+,sort.individual=FALSE, jitter = FALSE,
+plot = TRUE, return.df = !plot,...){
+	x <- as.data.frame(x)
+	NextMethod("cpcp",object = x,ord = ord, freqvar = freqvar,numerics = numerics, gap.type = gap.type,na.rule = na.rule,
+spread=spread,gap.space = gap.space
+,sort.individual=sort.individual, jitter = jitter,
+plot = plot, return.df = return.df)
+}
+cpcp.array = function(x,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",
+spread=0.3,gap.space = 0.2
+,sort.individual=FALSE, jitter = FALSE,
+plot = TRUE, return.df = !plot,...){
+	x <- as.data.frame(as.table(x))
+	NextMethod("cpcp",object = x,ord = ord, freqvar = freqvar,numerics = numerics, gap.type = gap.type,na.rule = na.rule,
+spread=spread,gap.space = gap.space
+,sort.individual=sort.individual, jitter = jitter,
+plot = plot, return.df = return.df)
+}
+
+cpcp.default = function(x,ord = NULL, freqvar = NULL,numerics = NULL, gap.type = "equal.tot",na.rule = "omit",
 spread=0.3,gap.space = 0.2
 ,sort.individual=FALSE, jitter = FALSE,
 plot = TRUE, return.df = !plot, ... ){
 	ieXt = FALSE
 	scr.res=c(1280,1024)
-	if( plot & .Platform$OS.type == "unix" ){
-		if(!("JGR" %in% .packages(all.available=FALSE))){
-			cat("Please use the 'JGR' GUI for iplots. To download the application visit\n 'http://www.rosuda.org/software/'")
-			return(invisible(TRUE))
-			}
-	}
+	
 			
-	if(plot & !( "iplots" %in% .packages(all.available = TRUE) ) ){
-		cat("Installing required package 'iplots'...")
-		install.packages('iplots')   
+	#if(plot & !( "iplots" %in% .packages(all.available = TRUE) ) ){
+        #	cat("Installing required package 'iplots'...")
+        #	install.packages('iplots')   
+        #	}
+	if(plot){ 
+        if("Acinonyx" %in% .packages(all.available = TRUE)){
+			if(!("JGR" %in% .packages(all.available=FALSE))){
+				require(Acinonyx)
+			}else{
+				require("iplots")
+			}
+        }else{
+		if(  .Platform$OS.type == "unix" ){
+			if(!("JGR" %in% .packages(all.available=FALSE))){
+				cat("Please use the 'JGR' GUI for iplots. To download the application visit\n 'http://www.rosuda.org/software/'")
+				return(invisible(TRUE))
+			}
 		}
-	if(plot){ 	
-			require(iplots)
+            if(!( "iplots" %in% .packages(all.available = TRUE) ) ){
+                cat("Installing required package 'iplots'...")
+                install.packages('iplots')   
+            }
+            require(iplots)
+        }
 	}
 	
 	
-	V = data.frame(V)
+	V = data.frame(x)
 	m = nrow(V)
 	
 	if(!is.null(numerics)){
@@ -216,12 +253,17 @@ plot = TRUE, return.df = !plot, ... ){
 
 			names(cpcp)=c(names(V),paste("C",vn,sep="."),paste("S",vn,sep="."),paste("I",vn,sep="."))	
 		if(plot){
-			s = iset.new("icpcp",cpcp)
+			if(!"package:Acinonyx" %in% search()){
+				s = iset.new("icpcp",cpcp)
+			}else{
+				s = cpcp
+			}
 			ipcp(s[,(1:n) + ncol(V) ])
+			if(!"package:Acinonyx" %in% search()){
 			# setting the size and location as the upper half of the screen
 			iplot.location(x=10, y=10, relative=FALSE, plot=iplot.cur())
 			iplot.size(width=(scr.res[1])*(n-1)/n, height=scr.res[2]/2.2, plot=iplot.cur())
-		
+			}
 			
 		}
 		#itext <- function(x, y=NULL, labels=seq(along=x), ax=NULL, ay=NULL, ..., plot=iplot.cur())

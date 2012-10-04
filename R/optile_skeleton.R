@@ -1,5 +1,5 @@
 
-optile = function(x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile = function(x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
 freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, ...){
 	UseMethod("optile")	
 }
@@ -7,7 +7,7 @@ freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = N
 #UseMethod("optile")	
 #}
 
-optile.default = function (x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile.default = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
     freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, ...){
 
 
@@ -15,13 +15,20 @@ optile.default = function (x, fun = "class", presort = FALSE, foreign = NULL, ar
 fi <- which(names(x) %in% c("Freq",freqvar))
 nd <- ncol(x)-any(fi)
 
+		if(fun %in% c("RMCA","CA","CSVD")){
+			fun <- tolower(fun)
+		}
+		if(fun == "IBCC"){
+			fun <- "preclass"
+			foreign <- ".Call"
+		}
 
 if(!is.null(tree)){
 	stopifnot(length(tree) == nd | all(tree == "hc"))
 	if(all(tree == "hc")){
 		tree <- rep("hc", nd)	
 	}
-	if(!(fun %in% c("treeclass","class"))){
+	if(!(fun %in% c("TBCC","BCC"))){
 		cat("trees defined -> using fun = treeclass.")	
 	}
 	fun <- "treeclass"
@@ -40,8 +47,9 @@ joint <- ifelse(is.null(method), FALSE, method %in% c("joint","pairwise","pw"))
 
 
 # workarounds:
+		
 if(nd == 2){
-	if( fun == "rmca" ){
+	if( fun %in% c("rmca") ){
 		fun <- "casort"	
 	}
 	
@@ -53,26 +61,26 @@ if( fun %in% c("ca","casort") ){
 	foreign <- NULL
 	iter <- 1
 }
-if( fun %in% c("casort","rmca")){
+if( fun %in% c("casort","rmca","ca")){
 	presort <- FALSE
 	iter <- 1	
 }
-if( fun == "preclass" ){
+if( fun %in% c("preclass","presort","IBCC") ){
 	presort <- FALSE	
 }
-if( fun %in% c("hamming","hamm") ){
+if( fun %in% c("hamming","hamm","WBCC") ){
 	if(nd == 2){
 		fun = "quickhamm2d"
 		foreign=".Call"
 	}else{
-		simpleWarning("hamming for more than 2 dimensions is under construction. code is still erroneous. Please use the unweighted classification criterion.")	
+		simpleWarning("hamming for more than 2 dimensions is under construction. code is still erroneous. Will use the unweighted BCC instead.")	
 		fun <- "mvclass"
 		#vs <- as.integer(1)
 	}
 	
 		
 }
-if( (fun %in% c("class","mvclass") ) ){
+if( (fun %in% c("class","mvclass","BCC") ) ){
 	foreign <- ".Call"
 	fun <- "quickmv"
 	if(joint){
@@ -84,11 +92,11 @@ if( (fun %in% c("class","mvclass") ) ){
 		fun <- "stepclass"
 	}
 }
-if( fun %in% c("quickmv","quickhamm") ){
+if( fun %in% c("quickmv","quickhamm","quickmv2") ){
 	args <- c( args, as.integer(0), as.integer(0), as.integer(0)) 
 }
 neg <- 1
-if( nd == 2 & fun %in% c("class","quickmv") & vs < 1 ){
+if( nd == 2 & fun %in% c("class","quickmv","BCC") & vs < 1 ){
 	fun <- "quicktile"
 	foreign <- ".Call"
 	neg <- -1
@@ -224,7 +232,7 @@ if ( joint ){
 
 	#data <- as.data.frame(data)
 	#data <- data.table(data)
-#print("start")
+
 	try(
 		res <- eval(optcall)
 	)
@@ -352,7 +360,7 @@ if ( joint ){
 
 
 
-optile.matrix = function (x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile.matrix = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
     freqvar = NULL, return.data = TRUE, return.type = "matrix", vs = 0, tree = NULL, ...){
 	
 	dx <- dim(x)
@@ -363,7 +371,7 @@ optile.matrix = function (x, fun = "class", presort = FALSE, foreign = NULL, arg
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree)
 } 
 
-optile.array = function (x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile.array = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
     freqvar = NULL, return.data = TRUE, return.type = "array", vs = 0, tree = NULL, ...){
 	
 	dx <- dim(x)
@@ -374,7 +382,7 @@ optile.array = function (x, fun = "class", presort = FALSE, foreign = NULL, args
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
 } 
 
-optile.table = function (x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile.table = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
     freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, ...){
 #print("spectabular")
 	dx <- dim(x)
@@ -385,7 +393,7 @@ optile.table = function (x, fun = "class", presort = FALSE, foreign = NULL, args
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree)
 } 
 
-optile.ftable = function (x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile.ftable = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
     freqvar = NULL, return.data = TRUE, return.type = "ftable", vs = 0, tree = NULL, ...){
 	
 	dx <- dim(x)
@@ -622,12 +630,11 @@ steptile = function( args ){
 }
 
 
-
-
 # ----------------------------------------------------------------------------------------------- #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  ca algorithms  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
 # ----------------------------------------------------------------------------------------------- #
 
+		
 
 casort <- function(data, dims, perm.cat, ...){
 	
@@ -637,17 +644,21 @@ casort <- function(data, dims, perm.cat, ...){
 	require(ca)
 	
 	nd <- length(dims)
+
+		# simple ca for 2 dimensions
+		# multiple ca (on burt matrix) for 3 or more dimensions
+		ca1 <- ca(data)
 		
-	ca1 <- ca(data)
-	cd2 <- cumsum(dims)
-	cd1 <- c(1,cd2[-nd]+1)
-	orders <- list()
+		cd2 <- cumsum(dims)
+		cd1 <- c(1,cd2[-nd]+1)
+		orders <- list()
 	
-	for( k in 1:nd ){
-		#orders[[k]] <- 	order( ca1$colcoord[cd1[k]:cd2[k],1])-1
-		orders[[k]] <- do.call(order, as.data.frame( round( ca1$colcoord[cd1[k]:cd2[k],], 12) ))-1 
-	}
-	crit <- ca1$sv[1]
+		for( k in 1:nd ){
+			orders[[k]] <- do.call(order, as.data.frame( round( ca1$colcoord[cd1[k]:cd2[k],], 12) ))-1 
+		}
+		crit <- ca1$sv[1]
+	
+		
 	return(c( unlist(orders),crit ))
 }
 
@@ -764,7 +775,7 @@ csvd <- function(data, dims, perm.cat, ...){
 	coords <- list()
 	cumdims <- c(0,cumsum(dims))
 	
-	#presort with ca algorithm
+	#presort with (mj)ca algorithm
 	
 	# indicator matrix (code from package nnet):
 	imat <- function(s)
@@ -786,8 +797,9 @@ csvd <- function(data, dims, perm.cat, ...){
 	N <- sum(tt)	
 	data <- as.data.frame(data)
 	
-	Z <- as.data.frame(do.call(cbind,sapply(data[,1:nd],imat, simplify = FALSE)))
-	Z <- t(Z * data[,nd+1]) %*% as.matrix(Z)
+#Z <- as.data.frame(do.call(cbind,sapply(data[,1:nd],imat, simplify = FALSE)))
+#Z <- t(Z * data[,nd+1]) %*% as.matrix(Z)
+	Z <- Burt(data)
 	storage.mode(Z) = "integer"	
 	
 	res0 <- casort(Z,dims,perm.cat)
@@ -807,7 +819,7 @@ csvd <- function(data, dims, perm.cat, ...){
 	#for( i in 1:nd ){
 	#	data[,i] <- as.factor(data[,i])	
 	#}
-	
+
 	
 	opt <- FALSE
 	while(!opt){
@@ -824,37 +836,43 @@ csvd <- function(data, dims, perm.cat, ...){
 					for(s in 1:(nd-1)){
 						z <- apply(z,-s,cumsum)
 					}
-			z/max(z)#sum	
+			z /sum(z) #max(z)	
 			})
 		}
-		#ex.profs = rowMeans(profs)
-		#M = (profs -	ex.profs)/sqrt(ex.profs)
+		mz <- (profs %*% c(1/colSums(profs)))/ncol(profs)
+		profs <- apply(profs,2,function(z) z/sum(z)-mz)
+		
+		
 		M <- profs
 		M[is.nan(M)] <- 0
 
 		
 		S <- svd(M)
-		coords[[i]] <- S$v[,1]
-		##print(dim(S$u))
-		##print(dim(S$v))
-		##ord = order(S$v[,1])
-		##if(ord[1] > ord[length(ord)]){
-		##	coords[[i]] = rev(coords[[i]])	
-		##}
-		##cat("rows ",order(S$u[,1]))
-		##cat("cols ",order(S$v[,1]))
+		#coords[[i]] <- S$v[,1]
+		#neworder <- do.call(order, as.data.frame(round(S$v, 12)))
+		#data[,i] = factor(data[,i],levels = levels(data[,i])[neworder])
+		coords[[i]] <- S$v
 		
-		#neworder <- order(coords[[i]])
-		neworder <- do.call(order, as.data.frame(round(S$v, 12)))
+		neworder <- do.call(order, as.data.frame( round( coords[[i]], 12) ))	
+	
 		data[,i] = factor(data[,i],levels = levels(data[,i])[neworder])
 		
-		if( !all(orders[[i]] == orders[[i]][neworder]) ){
+		if( (!all(orders[[i]] == orders[[i]][neworder]))  &  (!all(orders[[i]] == orders[[i]][rev(neworder)])) ){
 			opt <- FALSE	
 		}
+# maybe save the last setup for i = 1..nd and compare this ??
+		
 		orders[[i]] <- orders[[i]][neworder]
 		
 		tt <- xtabs(Freq~.,data=data)
-		#print(tt)
+		pp<-BCI(tt)
+		if(pp > 1){
+			orders[[i]] <- rev(orders[[i]])
+			data[,i] = factor(data[,i],levels = rev(levels(data[,i])))
+			tt <- xtabs(Freq~.,data=data)
+			pp<-neg3t(tt)
+		}
+	
 		
 	}	
 	}
@@ -901,31 +919,21 @@ ind <- 1:nd
 	mz <- apply(A, -i, sum)
 	mz <- mz/N
 
-	M <- matrix( apply(A, i, function(s){
-		(s/sum(s) - mz)
-		}), ncol= dims[i])
 
+	M <- apply(A,i,function(z){ z/sum(z) }) - mz
+	
 	S <- svd(M[which(rowSums(M) > 0),])
-	return(S$v[,1])
+	return(S$v)
 	})
 #}
-
-#for( i in 1:nd ){	
-#	mz <- apply(A, -i, sum)
-#	mz <- mz/N
-#
-#	M <- matrix( apply(A, i, function(s){
-#		(s/sum(s) - mz)
-#		}), ncol= dims[i])
-#
-#	S <- svd(M[which(rowSums(M) > 0),])
-#	coords[[i]] <- S$v[,1]
-#}
+ords <- lapply(coords, function(z){
+	ord <- do.call(order, as.data.frame( round( z, 12) ))	
+})
 
 	for( i in 1:nd ){
-		data[,i] = factor(data[,i],levels = levels(data[,i])[order(coords[[i]])])
+		data[,i] = factor(data[,i],levels = levels(data[,i])[ ords[[i]] ])
 	}	
-	return(c(unlist(lapply(coords,order))-1,0))
+	return(c(unlist(ords)-1,0))
 }else{
 	# TODO: better solution here
 	return(extracat:::casort(data,dims,perm.cat))	
@@ -1092,7 +1100,7 @@ untree <- function(x,y, ind = FALSE){
 	return(ret)
 }
 
-optile.list = function (x, fun = "class", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
+optile.list = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
     freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, k = NULL, h = NULL, ...){
 	
 	#stopifnot( all(labels(ncl) %in% c("h","k", "")) )
@@ -1167,7 +1175,7 @@ optile.list = function (x, fun = "class", presort = FALSE, foreign = NULL, args 
 	#print(treelist)
 	#names(args)[[ length(args) ]] <- "treelist"
 	
-	NextMethod("optile",object = x, fun = "treeclass", presort = FALSE, foreign = NULL, args = args, perm.cat = perm.cat, method = NULL, iter = iter, past = past, scale = scale, 
+	NextMethod("optile",object = x, fun = "TBCC", presort = FALSE, foreign = NULL, args = args, perm.cat = perm.cat, method = NULL, iter = iter, past = past, scale = scale, 
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = treelist )
 }
 
@@ -1388,3 +1396,6 @@ tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, til
 	upViewport()
 	return(invisible(TRUE))
 }
+
+
+
