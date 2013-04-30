@@ -8,7 +8,7 @@ fluctuation diagrams
 Create a fluctuation diagram from a multidimensional table.
 }
 \usage{
-fluctile(tab, dir = "b", just = "c", hsplit = FALSE, shape ="r", gap.prop = 0.1,  border = NULL, label = TRUE, lab.opt = list(abbrev = 3, lab.cex = 1.2), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",...  )
+fluctile(tab, dir = "b", just = "c", hsplit = FALSE, shape ="r", gap.prop = 0.1,  border = NULL, label = TRUE, lab.opt = list(), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",...  )
 }
 
 \arguments{
@@ -29,10 +29,6 @@ A logical for alternating columns and rows or a vector of logicals with TRUE for
   }
   \item{gap.prop}{
 proportion of the gaps between the rows/columns within each block.
-}
-
-  \item{abbrev}{
-abbreviate the labels to a given number of characters.
 }
   \item{border}{
 The proportion of the space used for the labels.

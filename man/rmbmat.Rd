@@ -126,7 +126,10 @@ data(olives)
 
 
 \dontrun{
-rmbmat(olives, tv=2)
+
+# mode = "c" piecharts are currently slow
+
+rmbmat(olives, tv=2, mode = "s")
 
 rmbmat(olives[,1:5], tv=2, col ="div", plot.tv = TRUE, lower.opt = list(tv2 = 1, col ="rgb"))
 

@@ -37,7 +37,8 @@ plot = TRUE, return.df = !plot, ... ){
 	if(plot){ 
         if("Acinonyx" %in% .packages(all.available = TRUE)){
 			if(!("JGR" %in% .packages(all.available=FALSE))){
-				require(Acinonyx)
+				#require(Acinonyx)
+				simpleWarning("Cannot run iplots without JGR. Please use the JGR console")
 			}else{
 				require("iplots")
 			}

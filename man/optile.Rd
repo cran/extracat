@@ -3,7 +3,7 @@
 \alias{optile.list}
 
 \title{
-optimization of category orders for nominal categorical datasets and tables
+optimization of category orders for multiway tables and multivariate categorical datasets
 }
 \description{
 This function will take a categorical data object (\code{data.frame, table, ftable, matrix, array}) and optimize its category orders graphical representations.
@@ -11,17 +11,18 @@ It offers an interface which will by default return the same type of object that
 write  \code{myplot( optile(x) )} for an optimized version of \code{myplot(x)}. 
 The interface is extendible using ones own functions should they fulfill the requirements (see details).
 }
+
 \usage{
 optile(x, fun = "BCC", presort = FALSE, foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
- past = NULL, scale = FALSE, freqvar = NULL,
- return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL,\dots)
+ freqvar = NULL, return.data = TRUE,
+  return.type = "data.frame", vs = 0, tree = NULL, sym = FALSE, \dots)
  
  \method{optile}{list}(x, fun = "BCC", presort = FALSE, foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
- past = NULL, scale = FALSE, freqvar = NULL,
- return.data = TRUE, return.type = "table", vs = 0, tree = NULL,
-  k = NULL, h = NULL, \dots)
+ freqvar = NULL, return.data = TRUE, 
+ return.type = "table", vs = 0, tree = NULL,
+  sym = FALSE, k = NULL, h = NULL, \dots)
 }
 
 \arguments{
@@ -31,12 +32,13 @@ The categorical data of one of the following classes:
 }
   \item{fun}{
 The optimization function. Currently available are:
-\code{BCC, WBCC, CA, csvd , rmca} and \code{IBCC}. For more information see details. }
+\code{BCC, WBCC, CA, csvd , rmca, symmtile, barysort} and \code{IBCC}. For more information see details. }
   \item{presort}{
-Whether or not to use \code{IBCC} for an initial pre-ordering.
+Whether or not to use \code{IBCC} for an initial pre-ordering. This still works but using \code{optile} twice instead is the recommended alternative.
 }
   \item{foreign}{
 Where to find the optimization function \code{fun}. \code{NULL} for an R function or for instance \code{".Call"} and \code{.C} for an external function.
+E.g. \code{barysort} needs \code{foreign = ".Call"}.
 }
   \item{args}{
 further arguments which will be passed to \code{fun}.
@@ -45,16 +47,12 @@ further arguments which will be passed to \code{fun}.
 A logical vector indicating which variables are considered for optimization and which will remain untouched. Has no effect if \code{fun = "casort"}.
 }
   \item{method}{
-Either \code{NULL, "joint"} or \code{"stepwise"}. \code{NULL} will pass the dataframe to \code{fun, "joint"} will pass the Burt matrix (with all pairwise tables) and \code{"stepwise"} will repeatedly call \code{fun} for 2, 3, 4, and so on variables. See Details.
+Either \code{NULL, "joint"} or \code{"stepwise"}. 
+\code{method = NULL} means that the whole data table is passed to \code{fun}. \code{method = "joint"} uses the \link[extracat]{Burt} matrix instead of the whole table which only reflects two-way associations not unlike a covariance matrix. 
+\code{method = "stepwise"} will repeatedly call \code{fun} for 2, 3, 4, and so on variables.
 }
   \item{iter}{
-Some optimizations depend on the initial category orders (e.g. \code{"BCC"} and \code{"IBCC"}). If \code{iter > 1} the optimization is repeated for \code{iter} random initial category orders and the best result is returned.
-}
-  \item{past}{
-Not implemented yet.
-}
-  \item{scale}{
-Not implemented yet.
+Some optimizations depend on the initial category orders (e.g. \code{"BCC"} and \code{"IBCC"}). If \code{iter > 1} the optimization is repeated for \code{iter} random initial category orders and the best result is returned. In this case \code{fun} must return comparable values.
 }
   \item{freqvar}{
 The name of the frequency variable, if any.
@@ -70,6 +68,9 @@ An optional version number. \code{"WBCC"} is currently equivalent to \code{"BCC"
   \item{tree}{
 A list whose entries are either tree objects (e.g. from \link[stats]{hclust}) or the string \code{"hc"}. If the i-th entry is a tree object, the i-th variable is the result from cutting the tree into \code{dim(x)[i]} clusters via \link[extracat]{subtree}. \code{"hc"} will compute a hierarchical clustering for the rows and columns with arguments specified in \code{args}.
 }
+  \item{sym}{
+If \code{fun} is \code{BCC} or \code{IBCC} it is possible to run a symmetric version of the algorithm by setting  \code{sym = TRUE}.
+}
   \item{k}{
 A vector of integers specifying the numbers of clusters into which the tree objects shall be cut. See \link[extracat]{subtree}. }
   \item{h}{
@@ -79,14 +80,14 @@ dots
 }
 }
 \details{
-The optile interface makes it possible to resort the categories in different representations of categorical data.
+The \code{optile} interface makes it possible to resort the categories in different representations of categorical data.
 
 The most important points to know are
 \tabular{l}{
 The function by default returns the same type of object as was passed in the function call.\cr
-It is possible to specify custom optimization functions.\cr
+It is possible to specify custom optimization functions via \code{fun} and \code{foreign}.\cr
 The function is able to handle tree objects which specify a hierarchical tree graph on the categories.\cr
-The function can pass either multidimensional tables, the corresponding Burt matrix (method = "joint") or a hierarchical series of tables ("stepwise") to the optimization functions.\cr
+The function can pass either multidimensional tables, the corresponding Burt matrix (\code{method = "joint"}) or a hierarchical series of tables (\code{method = "stepwise"}) to the optimization functions.\cr
 }
 
 How to add a custom optimization function:
@@ -101,6 +102,7 @@ where fun is the name of the function and foreign is \code{".Call", ".C", ...}
 The function returns a vector of the new category orders (minus 1) and the resulting criterion, e.g. \code{c( 0,2,4,1,3,  4,3,2,1,0,5,6,  0.7612 )}
 
 \code{dims} is a vector with the number of categories for each variable and \code{perm.cat} is a 0/1 vector which indicates whether or not to change the category order of a variable.
+
 
 There are three possible types for the \code{data} argument of \code{fun} which can be set via \code{method}:
 
@@ -135,7 +137,16 @@ Two-way tables or matrices can also be optimized by means of the distance correl
 \code{"IBCC"}:
 Iteratively sorts the categories of one variable at a time. Therefore it computes the average over the remaining dimensions and scales the profiles of each category as well as the average profile. It then computes the classification criterion between each category profile and the average profile which results in one value per category. The categories are then sorted by this criterion.
 The procedure is very quick and yields good results in most cases. It strongly depends on the initial category orders as do the BCC or WBCC algorithms.
-This function is written in C which means that \code{foreign =".Call"} must be set. Alternatively it can be used to presort the data via the shortcut \code{presort = TRUE}.
+This function is written in C which means that \code{foreign =".Call"} must be set. Alternatively it can be used to presort the data via the shortcut \code{presort = TRUE} but this is deprecated and not recommended.
+
+\code{"distcor"}:
+Two-way tables or matrices can also be optimized by means of the distance correlation. See \link[extracat]{wdcor}.
+
+\code{"barysort"}:
+Uses the barycenter heuristic to minimize the number of crossings heuristically. The heuristic is fast and yields good results but only works for two dimensions.
+For \code{optile} one must set \code{foreign = ".Call")}.
+For a simple R implementation see \link[extracat]{barysort}.
+
 
 }
 \value{

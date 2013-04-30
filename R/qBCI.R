@@ -12,7 +12,8 @@ qBCI.default <- function(x,y,p = NULL, k = 5,iter=20, ...){
 		p <- 1/floor(1/p)
 	}
 	if(!is.factor(x)){
-		qx <- quantile(x,seq(0,1,p))
+		qx <- quantile(x,seq(0,1,p),na.rm = TRUE)
+		qx[1] <- -Inf
 		if( length(qxx <- unique(qx)) < length(qx)){
 			simpleWarning("non-unique quantiles detected")	
 		}
@@ -23,7 +24,8 @@ qBCI.default <- function(x,y,p = NULL, k = 5,iter=20, ...){
 		}
 	}
 	if(!is.factor(y)){
-		qy <- quantile(y,seq(0,1,p))
+		qy <- quantile(y,seq(0,1,p),na.rm = TRUE)
+		qy[1] <- -Inf
 		if( length(qyy <- unique(qy)) < length(qy)){
 			simpleWarning("non-unique quantiles detected")	
 		}
@@ -37,6 +39,8 @@ qBCI.default <- function(x,y,p = NULL, k = 5,iter=20, ...){
 	BCI(optile(tt,iter=iter))
 }
 
+
+
 qBCI.data.matrix <- function(x,p = NULL, k = 5, sort = TRUE, iter=20, ...){
 	
 	N <- nrow(x)
@@ -49,7 +53,9 @@ qBCI.data.matrix <- function(x,p = NULL, k = 5, sort = TRUE, iter=20, ...){
 	}
 	
 	x <- sapply(x, function(z) {
-		cut(z, quantile(z,seq(0,1,p)))
+		qz <- quantile(z,seq(0,1,p),na.rm = TRUE)
+		qz[1] <- -Inf
+		cut(z, qz)
 		})
 	x <- subtable(x,1:nd)
 	x <- xtabs(Freq~.,data=x)
@@ -80,6 +86,33 @@ BCImat <- function(x, k = 5, iter = 20, p = NULL){
 	M[lower.tri(M)] <- values
 	M <- M + t(M)
 	colnames(M) <- rownames(M) <- names(x)
+		return(M)
+}
+
+
+WBCImat <- function(x, iter = 20, freqvar = NULL, fun = "WBCC"){
+
+	if("Freq" %in% names(x)) freqvar <- "Freq"
+	
+	if(!is.null(freqvar)){
+		fi <- which(names(x)==freqvar)
+		names(x)[fi] <- "Freq"	
+	}else{
+		x <- subtable(x,1:ncol(x))	
+		fi <- ncol(x)
+	}
+	
+	nd <- ncol(x)
+	ids <- combn( (1:nd)[-fi],2)
+	
+	values <- apply(ids,2,function(z){
+		ret<-WBCI(tt<-optile(xtabs(Freq~x[,z[1]]+x[,z[2]],data=x),iter=iter, fun = fun))
+		return(ret)
+	})
+	M <- matrix(0,nd-1,nd-1)
+	M[lower.tri(M)] <- values
+	M <- M + t(M)
+	colnames(M) <- rownames(M) <- names(x)[-fi]
 		return(M)
 }
 
@@ -124,80 +157,11 @@ wdcor.data.frame = function(x, approx = TRUE, ...){
 	}
 	M <- matrix(0,nd,nd)
 	M[lower.tri(M)] <- values
-	diag(M) <- 1
 	M <- M + t(M)
+    diag(M) <- 1
 	colnames(M) <- rownames(M) <- nmz
 		return(M)
 }
-
-#mcrit <- function(x, fun = "BCI", fn = NULL, ff = NULL, all.numeric = FALSE, all.factor= FALSE, weights = "Freq", symmetric = TRUE , args = list()){
-#	
-#	if( weights %in% names(x) ){
-#		w <- which(names(x) == weights)
-#		x <- x[,-w]
-#		w <- x[,w]	
-#	}
-#	nd <- ncol(x)
-#	level <- 2
-#	
-#	
-#	
-##if(symmetric){
-###	ids <- do.call(c,lapply(1:level,function(z) combn(1:nd,z,simplify=FALSE)))
-##}else{
-#		ids <- expand.grid(replicate(level,list(1:nd)))
-##ids <- lapply(ids, unique)
-##}
-#	if(symmetric){
-#		ids <- ids[which(ids[,1] >= ids[,2]), ]	
-#	}
-#	
-#	isnum <- which(sapply(x, is.numeric))
-#	
-#	if(all.numeric){
-#		x <- data.matrix(x)	
-#		isnum <- 1:ncol(x)
-#	}
-#	if(all.factor){
-#			x[,isnum] <- sapply(x[,isnum], qbin)
-#	}
-#	
-#	types <- sapply(x,typeof)
-#	
-#	if( is.null(ff) ) ff <- fun
-#	if( is.null(fn) ) fn <- fun
-#	
-#print(ids)	
-#	values <- apply(ids,1, function(z){
-#		fun1 <- fn
-#		if( all (types[z] %in% c("numeric","integer") ) ){
-#			fun1 <- fun	
-#		}
-#		if( all (types[z] %in% c("factor") ) ){
-#			fun1 <- ff	
-#		}
-#		
-#		cc <- call(fun1,x[,z])
-#		for( i in seq_along(args) ){
-#			 cc[[i+2]] <- args[[i]]
-#		}
-#		
-#		eval(cc)
-#	})
-#	print(values)
-#	if(symmetric){
-#		M <- matrix(0,ncol=nd,nrow=nd)
-#		M[lower.tri(M, diag = TRUE)] <- values	
-#		M <- M + t(M)
-#		diag(M) <- diag(M)/2
-#	}else{
-#		M <- values
-#		dim(M) <- rep(nd, level)
-#	}
-#	return(M)
-#	
-#	
-#}
 
 qbin <- function(x,p = NULL, k = 5, d = 2){
 	N <- length(x)
@@ -207,6 +171,7 @@ qbin <- function(x,p = NULL, k = 5, d = 2){
 	}
 	if(!is.factor(x)){
 		qx <- quantile(x,seq(0,1,p), na.rm = TRUE)
+		qx[1] <- -Inf
 		if( length(qxx <- unique(qx)) < length(qx)){
 			simpleWarning("non-unique quantiles detected")	
 		}
@@ -217,3 +182,105 @@ qbin <- function(x,p = NULL, k = 5, d = 2){
 		}
 	}
 }
+
+
+cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqvar = NULL, diag = NULL){
+
+	nd <- ncol(x)
+	
+	if(!is.null(freqvar)){
+		fi <- which( names(x)==freqvar )
+		stopifnot(length(fi)>0)
+		wts <- x[,fi] 
+		x <- x[, -fi]
+	}else{
+		wts <- rep(1,nrow(x))
+	}
+	
+	factors <- sapply(x, is.factor)
+	
+	if(!all(factors)){
+			if(is.null(p)){
+				N <- nrow(x)
+				p <- sqrt(k/N)
+				p <- 1/floor(1/p)
+			}
+			
+			for(i in which(!factors)){
+				qx <- quantile(x[,i],seq(0,1,p),na.rm = TRUE)
+				qx[1] <- -Inf
+				
+				if( length(qxx <- unique(qx)) < length(qx)){
+					simpleWarning(paste("non-unique quantiles detected in variable ",names(x)[i]))	
+				}
+				if(length(qxx) == 2){
+						x[,i] <- as.factor(x[,i])	
+				}else{
+					x[,i] <- cut(x[,i], unique(qxx) )
+				}
+			}
+	}
+	inc <- ifelse(is.null(diag),0,1)
+		M <- matrix(0,nd,nd)
+		for(i in 1:(nd-1)){
+			for(j in (i+inc):nd){
+				if(sort){
+					M[i,j] <- M[j,i] <- crit(optile(xtabs(wts~x[,i]+x[,j]), iter = iter)) #attr(optile(table(x[,i],x[,j]), iter = iter) ,"scaled.criterion")
+				}else{
+					M[i,j] <- M[j,i] <-  crit(xtabs(wts~x[,i]+x[,j]))
+				}
+				
+			}
+		}	
+	
+		if(!is.null(diag)) diag(M) <- diag
+
+
+	
+		colnames(M) <- rownames(M) <- names(x)
+		return(M)
+}
+
+
+
+binary.bci <- function(x, sort = TRUE, crit = BCI, freqvar = NULL, diag = NULL){
+
+	nd <- ncol(x)
+	ids <- combn(1:nd,2)
+	
+	if(!is.null(freqvar)){
+		fi <- which( names(x)==freqvar )
+		stopifnot(length(fi)>0)
+		wts <- x[,fi] 
+		x <- x[, -fi]
+	}else{
+		wts <- rep(1,nrow(x))
+	}
+	inc <- ifelse(is.null(diag),0,1)
+	
+	tb <- lapply(x,table)
+	N <- nrow(x)
+	
+		M <- matrix(0,nd,nd)
+		for(i in 1:(nd-1)){
+			for(j in (i+inc):nd){
+				if(sort){
+					tt <- xtabs(wts~x[,i]+x[,j])
+					M[i,j] <- M[j,i] <- min( tt[1,1]*tt[2,2], tt[1,2]*tt[2,1] )/(prod(tb[[i]])*prod(tb[[j]]))*N^2
+					 
+				}else{
+					M[i,j] <- M[j,i] <-  tt[1,2]*tt[2,1] /(prod(tb[[i]])*prod(tb[[j]]))*N^2
+				}
+				
+			}
+		}	
+	
+	if(!is.null(diag)) diag(M) <- diag
+
+
+	
+		colnames(M) <- rownames(M) <- names(x)
+		return(M)
+}
+
+

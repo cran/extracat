@@ -4,6 +4,8 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/Utils.h> 
 
+
+
 #define MAT_ELT(x, i, j, nrow) x[(long)(i)+(long)(j)*(long)(nrow)]
 
 
@@ -22,6 +24,294 @@ int mymin(int a, int b){
 	}
 }
 
+// ----------------------------------------------------------------------------------
+
+static void quickSort (float *a, int *order, int lo, int hi)
+{
+	//  lo is the lower index, hi is the upper index
+	//  of the region of array a that is to be sorted
+    int i=lo, j=hi, ho, hi2,lo2;
+	float atmp;
+	
+    float x=a[(lo+hi)/2];
+	//	Rprintf("from %d to %d with pivot a[%d] = %f\n\n",i,j,(lo+hi)/2,x);
+    //  partition
+    do
+    {    
+        while (a[i]<x) i++; 
+        while (a[j]>x) j--;
+        if (i<=j)
+        {
+            atmp=a[i]; a[i]=a[j]; a[j]=atmp;
+			ho = order[i]; order[i]=order[j]; order[j]=ho;
+            i++; j--;
+			//Rprintf("ex %d -- %d\n\n",i,j);
+        }
+    } while (i<=j);
+	hi2 = j;
+	lo2 = i;
+    //  recursion
+    if (lo<j) quickSort(a, order, lo, hi2);
+    if (i<hi) quickSort(a, order, lo2, hi);
+	
+}
+
+
+
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
+
+
+
+
+int getindex(int dims[], int ind[], int nd){
+	
+	int i,s;
+	//int nd2 = sizeof(dims)/2;
+	for (i=0; i<nd; i++) {
+		if (ind[i] > dims[i]-1) {
+			Rprintf("invalid index!\n");
+			//for (int i2=0; i2<nd; i2++) {
+			//	Rprintf("%d vs. %d,\t",ind[i2],dims[i2]);
+			//}
+			return -1;
+		}
+	}
+	int cpx[nd];
+	cpx[0] = dims[0];
+	
+	for (i = 1; i < nd; i++) {
+		cpx[i] = cpx[i-1]*dims[i];
+	}
+	
+	
+	int k = ind[0]; 
+	
+	for (s = 1; s < nd; s++) {
+		//Rprintf(" %d + %d * %d\n",k,ind[s],cpx[s-1]);
+		k = k + ind[s]*cpx[s-1];
+	}
+	return k;
+} 
+
+
+
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
+
+
+void diagprod(int *mv1, int *mv0, float *cv, int *IM, int dims[], int index[], int step, int nd){
+	int i,j,k, s;
+	
+	//int nd = sizeof(dims)/2;
+	int val1, val2;
+	
+	int (*IX)[nd] = (int (*)[nd])IM;
+	float tmp, tmp2;
+	//Rprintf("\n welcome to diagprod\n");
+	
+	//Rprintf("step = %d\n",step);
+	//Rprintf("nd = %d\n",nd);
+	int indS[nd];
+	for (i = 0; i< nd; i++) {
+		indS[i] = index[i];
+	}
+	
+	
+	if( step == nd-1 ){ // the recursion in in the last dimension
+		int ind2[nd];
+		//Rprintf("\n IX in diagprod:\n");
+		//for (int r = 0; r < nd; r++) {
+		//	for (int t = 0; t < dims[r]; t++) {
+		//		Rprintf("%d\t",IX[t][r]);
+		//	}
+		//	Rprintf("\n");
+		//}
+		for (j = 0; j < nd-1; j++) {
+			//Rprintf("ind %d is %d\n",j,indS[j]);
+			ind2[j] = IX[indS[j]-1][j];
+			indS[j] = IX[indS[j]][j];
+			//Rprintf("and changes to %d\t",indS[j]);
+		}
+		for (s = 1; s < dims[nd-1]; s++) {
+			indS[nd-1] = IX[s][nd-1];
+			ind2[nd-1] = IX[s-1][nd-1];
+			//Rprintf("final ind:\n");
+			//for (i=0; i<nd; i++) {
+			//	Rprintf("%d\t",indS[i]);
+			//}
+			//Rprintf("\n");
+			//for (i=0; i<nd; i++) {
+			//	Rprintf("%d\t",ind2[i]);
+			//}
+			//Rprintf("\n ind1 = %d",getindex(dims,indS,nd));
+			//Rprintf("\n ind2 = %d",getindex(dims,ind2,nd));
+			//Rprintf("\n val1 = %d",mv0[ getindex(dims,indS,nd) ]);
+			//Rprintf("\n val2 = %d",mv1[ getindex(dims,ind2,nd) ]);
+			val1 = mv0[ getindex(dims,indS,nd) ];
+			val2 = (int) mv1[ getindex(dims,ind2,nd) ];
+			tmp = (float) val1*val2;
+			tmp2 = cv[0];
+			//Rprintf("\n tmp = %f",tmp);
+			cv[0] = tmp + tmp2;//((float*) val1) * ((float*) val2);
+			//Rprintf("\n cv = %f",cv[0]);
+		}
+	}else {
+		
+		for (s = 1; s < dims[step]; s++) {
+			indS[step] = s;
+			//Rprintf("temp ind:\n");
+			//for (i=0; i<nd; i++) {
+			//	Rprintf("%d\t",indS[i]);
+			//}
+			//Rprintf("\n");
+			diagprod(mv1,mv0, cv, IM, dims, indS, step+1,  nd);
+		}
+	}
+	
+}
+
+
+
+
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
+
+float mvclasscrit2(int *m0, int *IM, int dims[], int nd){
+	
+	
+	int i,ix,j, j1,j2,s, s1, s2, k, rind ,lind;
+	//int nd = sizeof(dims)/2;
+	//Rprintf("welcome to classcrit\n");
+	//Rprintf("dim = %d\n",nd);
+	
+	int (*IX)[nd] = (int (*)[nd])IM;
+	
+	
+	int cp[nd];
+	int cpr[nd];
+	cp[0] = 1;
+	cpr[nd-1] = 1;
+	
+	//for (i=0; i<nd; i++) {
+	//	Rprintf("%d\t",dims[i]);
+	//}
+	for (i = 1; i < nd; i++) {
+		cp[i] = cp[i-1]*dims[i-1];
+		cpr[nd-1-i] = cpr[nd-i]*dims[nd-i];//CHECK
+	}
+	//for (i = 0; i < nd; i++) {
+	//	Rprintf("%d\t",cp[i]);
+	//}
+	//for (i = 0; i < nd; i++) {
+	//	Rprintf("%d\t",cpr[i]);
+	//}
+	// m1 array for the cumsums
+	int ml = cp[nd-1]*dims[nd-1];
+	int m1[ ml ];
+	//int m2[ ml ];
+	for (i = 0; i < ml; i++) {
+		m1[i] = m0[i];
+		//m2[i] = m0[i];
+		//Rprintf("%d\t",m1[i]);
+	}
+	//Rprintf("m1 raw:\n");
+	//for (i=0; i<ml; i++) {
+	//	Rprintf("%d\t",m1[i]);
+	//}
+	//go through m1 and m0 with stepsize s acc. to dimension k
+	// dims is in reverse order
+	for (k = 0; k < nd; k++) {
+		s1 = cp[k];
+		s2 = cpr[k];
+		//Rprintf("s1 = %d\n",s1);
+		//Rprintf("s2 = %d\n",s2);
+		//if (dims[k] > 2) {
+		for (i = 1; i < dims[k]; i++) {
+			for (j1 = 0; j1 < s2; j1++) {
+				for (j2 = 0; j2 < s1; j2++) {
+					rind = IX[i][k]*s1 + j1*s1*dims[k] + j2;
+					lind = IX[i-1][k]*s1 + j1*s1*dims[k] + j2;
+					//Rprintf("%d\t",rind );
+					//Rprintf("%d\n",lind);
+					m1[ rind ] += m1[ lind ];
+				}
+			}
+		}
+		//m1[  j1*s1*dims[k] + j2 - 1] = m0[ j1*s1*dims[k] + j2 - 1];
+		//} 
+		
+	}
+	
+	// multiplication of m0 with m1[ ind -1 ] via diagprod
+	float cv = 0.0;
+	int *m1p = &m1[0];
+	float *cvp = &cv;
+	int init[nd];
+	for (i=0; i<nd; i++) {
+		init[i] = 0;
+	}
+	diagprod(m1p,m0,cvp,IM,dims,init,0, nd);
+	//Rprintf("crit = %f\n",cv);
+	return cv;
+}
+
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
+
+SEXP simmich(SEXP P, SEXP Q, SEXP n, SEXP N){
+	int i,j;
+	int m = INTEGER(n)[0];
+	int M = INTEGER(N)[0];
+	//Rprintf("%d, %d\n\n",M,m);
+	double *Pv = calloc(M,sizeof(double));
+	double *Qv = calloc(M,sizeof(double));
+	
+	double sp = 0.0;
+	for (i = 0; i < m; i++) {
+		Pv[i] = REAL(P)[i];
+		Qv[i] = REAL(Q)[i];
+	}
+	//Rprintf("%f\n",M_PI);
+	//Rprintf("%f\n\n\n",log(M_PI));
+	for (i = m; i < M; i++) {
+		Pv[i] = 1/(M_PI*i);
+		Qv[i] = Pv[i];
+		for (j = 0; j < i; j++) {
+			Qv[i] -= Qv[j]*Pv[i-j-1];
+		}
+		//Rprintf("%f\n",Qv[i]);
+	}
+	//Rprintf("%f, %f",Pv[M-1],Qv[M-1]);
+	double b = 0.0;
+	for (i = 0; i < M; i++) {
+		b += Qv[i] * log(i+1);
+		sp += Qv[i];
+	}
+	//Rprintf("%f\n\n\n",b);
+	b -= M_PI*log(log(M));
+	
+	SEXP ret = allocVector(REALSXP,2);
+	REAL(ret)[0] = b ;
+	REAL(ret)[1] = sp ;
+	free(Pv);
+	free(Qv);
+		
+	return ret;
+
+}
 
 
 SEXP hammdist(SEXP dset){
@@ -307,6 +597,213 @@ SEXP simplecrit(SEXP M, SEXP dims){
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 
 
+SEXP barysort(SEXP M, SEXP dims, SEXP pv , SEXP vs){
+	
+	int i,j,i2,j2, ki, kj, rd, cd;
+	
+	
+	int n = INTEGER(dims)[0];
+	int m = INTEGER(dims)[1];
+	int nd = 2;
+	
+	
+	//int MX[n][m];
+	int nm = mymax(n,m);
+	int IX[nm][2];
+	int TX[nm][2];
+	
+	float rw[n];
+	float cw[m];
+	
+	
+	int dimv[nd];
+	for (i=0; i<nd; i++) {
+		dimv[i] = INTEGER(dims)[i];
+	}
+	int *mv = &INTEGER(M)[0];
+    int *IXp = &IX[0][0];
+	int *TXp = &TX[0][0];
+	
+	int tix[n];
+	int tjx[m];
+	
+	
+	
+    //float* MX = calloc(n*m,sizeof(float));
+    // one unnecessary copy here...
+	
+	float v[nm];
+	int no[nm];
+	int no2[nm];
+	
+	float* iv = &v[0];
+	int* ptix = &tix[0];
+	int* ptjx = &tjx[0];
+	
+	for (i = 0; i < n; i++) {
+		rw[i] = 0;
+	}
+	
+	for (j = 0; j < m; j++) {
+		//MAT_ELT(IX,j,1,n) = j;
+		//MAT_ELT(TX,j,1,n) = j;
+		IX[j][1] = j;
+		TX[j][1] = j;
+		tjx[j] = j;
+		cw[j] = 0;
+		for (i = 0; i < n; i++) {
+			//MAT_ELT(IX,i,2,n) = i;
+			//MAT_ELT(TX,i,2,n) = i;
+			IX[i][0] = i;
+			TX[i][0] = i;
+			tix[i] = i;
+			//MAT_ELT(MX,i,j,n) = REAL(M)[i+j*n];//INTEGER
+			cw[j] += mv[i+j*n];   //MAT_ELT(MX,i,j,n);
+			rw[i] += mv[i+j*n]; //MAT_ELT(MX,i,j,n);
+		}
+	}
+	int opt = 0;
+	float crt0, crt1;
+	float crt = 0;
+	int row = 0;
+	
+	while(opt == 0){
+		opt = 1;
+		for (i=0; i < n; i++) {
+			v[i] = 0;
+			for (j = 0; j < m; j++) {
+				//v[i] += MAT_ELT(MX,   MAT_ELT(IX,i,1,n), MAT_ELT(IX,j,2,n),n)*j;
+				v[i] += mv[tix[i]+tjx[j]*n]*j;   //MAT_ELT(MX,   tix[i], tjx[j],n)*j;
+			}
+			v[i] = v[i]/rw[tix[i]];
+		}
+
+		
+		
+					
+		
+		// get new row order
+		quickSort(iv,ptix,0,n-1);
+		
+
+		
+		for (j=0; j < m; j++) {
+			v[j] = 0;
+			for (i = 0; i < n; i++) {
+				v[j] += mv[tix[i]+tjx[j]*n]*i;//MAT_ELT(MX,   tix[i], tjx[j],n)*i;
+			}
+			v[j] = v[j]/cw[tjx[j]];
+		}
+			
+		// get new column order given the new row order
+		quickSort(iv,ptjx,0,m-1);
+		
+				
+		for (i = 0; i < n; i++) {
+			TX[i][0] = tix[i];
+		}
+		// compute BCC after row order changes
+		crt0 = mvclasscrit2( mv, TXp, dimv, nd);
+		
+		for (j = 0; j < m; j++) {
+			TX[j][1] = tjx[j];
+		}
+		// compute BCC after row AND column order changes
+		crt1 = mvclasscrit2( mv, TXp, dimv, nd);
+		
+		
+		
+		if (crt0 > crt) {
+			opt = 0;
+			crt = crt0;
+			for (i=0; i<n; i++) {
+				IX[i][0] = tix[i];
+			}
+			row = 1;
+		}
+		if (crt1 > crt) {
+			opt = 0;
+			crt = crt1;
+			for (j=0; j<m; j++) {
+				IX[j][1] = tjx[j];
+			}
+			row = 0;
+		}
+		
+		//if (crt1 > crt | crt0 > crt) {
+			//better than before... keep it and go on.
+		//	opt = 0;
+		//	crt = crt1;
+		//	for (j=0; j<m; j++) {
+				//MAT_ELT(IX,j,1,n) = MAT_ELT(TX,j,1,n);
+				//MAT_ELT(IX,j,2,n) = MAT_ELT(TX,j,2,n);
+		//		IX[j][1] = tjx[j];
+		//	}
+		//	for (i=0; i<n; i++) {
+				//MAT_ELT(IX,j,1,n) = MAT_ELT(TX,j,1,n);
+				//MAT_ELT(IX,j,2,n) = MAT_ELT(TX,j,2,n);
+				//IX[i][0] = tix[i];
+		//	}
+		//}else {
+			// do nothing and break;
+		//}
+		if( (crt1 < crt) & (crt0 < crt) ){
+			// finish
+			if(row == 1){
+				for (i = 0; i < n; i++) {
+					tix[i] = IX[i][0];
+				}
+				for (j=0; j < m; j++) {
+					v[j] = 0;
+					for (i = 0; i < n; i++) {
+						v[j] += mv[tix[i]+tjx[j]*n]*i;//MAT_ELT(MX,   tix[i], tjx[j],n)*i;
+					}
+					v[j] = v[j]/cw[tjx[j]];
+				}
+				
+				// get new column order given the new row order
+				quickSort(iv,ptjx,0,m-1);
+				for (j=0; j<m; j++) {
+					IX[j][1] = tjx[j];
+				}
+			}else{
+				// get best column order
+				for (j = 0; j < m; j++) {
+					tjx[j] = IX[j][1];
+				}
+				for (i=0; i < n; i++) {
+					v[i] = 0;
+					for (j = 0; j < m; j++) {
+						//v[i] += MAT_ELT(MX,   MAT_ELT(IX,i,1,n), MAT_ELT(IX,j,2,n),n)*j;
+						v[i] += mv[tix[i]+tjx[j]*n]*j;   //MAT_ELT(MX,   tix[i], tjx[j],n)*j;
+					}
+					v[i] = v[i]/rw[tix[i]];
+				}
+				// reorder rows
+				quickSort(iv,ptjx,0,m-1);
+				for (i=0; i<n; i++) {
+					IX[i][0] = tix[i];
+				}
+			}
+		}
+		
+		
+		
+	}
+	
+	SEXP out = allocVector(REALSXP,n+m+1);
+	for( i = 0; i < n;i++ ){
+		//REAL(out)[i] = MAT_ELT(IX,i,1,n);
+		REAL(out)[i] = IX[i][0];
+	}
+	for (j = 0; j < m; j++) {
+		//REAL(out)[j+n] = MAT_ELT(IX,j,2,n);
+		REAL(out)[j+n] = IX[j][1];
+	}
+	REAL(out)[m+n] = crt;
+	return out;
+	
+}
 
 
 
@@ -320,15 +817,14 @@ SEXP simplecrit(SEXP M, SEXP dims){
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 
-
-
+	
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 // __________________________________________________________________________________________________________________________________________________________________________________________________________________________//
 
 
 
-SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
+SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method, SEXP singlesplit){
 	
 	int i,j,i2,j2, ki, kj, rd, cd;
 	
@@ -337,24 +833,35 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 	int n = INTEGER(dims)[0];
 	int m = INTEGER(dims)[1];
 	
+	
+	
 	//int MX[n][m];
-    int* MX = calloc(n*m,sizeof(int));
+    float* MX = calloc(n*m,sizeof(float));
     // one unnecessary copy here...
 	for (j = 0; j < m; j++) {
 		for (i = 0; i < n; i++) {
-			MAT_ELT(MX,i,j,n) = INTEGER(M)[i+j*n];
+			MAT_ELT(MX,i,j,n) = REAL(M)[i+j*n];//INTEGER
 		}
 	}
 	
 	float currtau;
 	float currbest;
-	long  a, b, c, d;
+	//long  a, b, c, d;
+	float  a, b, c, d;
 	float nn, zz;
 	float p0, pc;
 	int k = 0;
 	int ncl = 1;
 	int colcuts[m];
 	int rowcuts[n];
+	float tauval[n];
+	int cutno[n];
+	
+	tauval[0] = 1;
+	tauval[1] = 1;
+	cutno[0] = 0;
+	cutno[1] = 0;
+	
 	colcuts[0] = 0;
 	rowcuts[0] = 0;
 	colcuts[1] = m;
@@ -373,10 +880,10 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 	//int NW[n][m];
 	//int SE[n][m];
 	//int SW[n][m];
-    int* NE = calloc(n*m,sizeof(int));
-    int* NW = calloc(n*m,sizeof(int));
-    int* SE = calloc(n*m,sizeof(int));
-    int* SW = calloc(n*m,sizeof(int));
+    float* NE = calloc(n*m,sizeof(float));
+    float* NW = calloc(n*m,sizeof(float));
+    float* SE = calloc(n*m,sizeof(float));
+    float* SW = calloc(n*m,sizeof(float));
 	
 	for (j = 0; j < m; j++) {
 		MAT_ELT(NE,0,j,n) = MAT_ELT(MX,0,j,n);
@@ -409,10 +916,10 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 	//-------//
 	// c | d //
 	///////////
-	
-	while (k < ncl) {
-		currbest = -0.001;
-		
+	float rs1,rs2,cs1,cs2;
+	while ( (k < ncl) ) {
+		//currbest = -0.001;
+		currbest = -1.0001;
 		rd = rowcuts[k+1]-rowcuts[k];
 		cd = colcuts[k+1]-colcuts[k];
 		
@@ -441,15 +948,29 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 					}
 					//Rprintf(" a = %d, b = %d, c = %d, d = %d\n",a,b,c,d);
 				if(v == 1){	
+					//kendalls
 					zz = a*d - b*c;
 					nn = pow((a+b)*(c+d),0.5)*pow((a+c)*(b+d),0.5);
 				}
 				if(v == 2){	
+					//kappa
 					pc = (float)((a+b)*(a+c)+(c+d)*(b+d))/(a+b+c+d)/(a+b+c+d);
 					p0 = (float)(a+d)/(a+b+c+d);
 				  zz = p0-pc;
 				  nn = 1-pc;
 				}
+					if(v == 3){	
+						//WBCI
+						rs1 = a+b;
+						rs2 = c+d;
+						cs1 = a+c;
+						cs2 = b+d;
+						pc = (float)(c*(a+d+2*b) + a*b + d*b);
+						p0 = (float)( rs2*cs1*( rs1*cs1 +rs2*cs2 + 2*rs1*cs2  ) + rs1*cs1*rs1*cs2 + rs2*cs2*rs1*cs2  )/(rs1+rs2)/(rs1+rs2);
+						zz = p0 - pc;
+						nn = p0;
+					}	
+					
 				   //Rprintf(" zz = %f, nn = %f\n",zz,nn);
 					
 					currtau = zz/nn;
@@ -465,17 +986,25 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 				}
 			}
 			//Rprintf("best crit = %f at x = %d and y = %d\n",currbest,kj,ki);
+			
 			if(currbest >= REAL(tau0)[0]){
 				ncl++;
 			
 				for (i = ncl; i > k+1; i--) {
 					colcuts[i] = colcuts[i-1];
+					tauval[i] = tauval[i-1];
+					cutno[i] = cutno[i-1];
 				}
 				colcuts[k+1] = kj;
+				tauval[k+1] = currbest;
+				cutno[k+1] = mymax(cutno[k+2],cutno[k])+1;
 				for (i = ncl; i > k+1; i--) {
 					rowcuts[i] = rowcuts[i-1];
 				}
 				rowcuts[k+1] = ki;
+				if(ncl == INTEGER(singlesplit)[0]+1){
+					k = ncl;
+				}
 			}else {
 				k++;
 			}
@@ -489,10 +1018,12 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 		
 	}
 	
-	SEXP out = allocVector(REALSXP,2*k);
+	SEXP out = allocVector(REALSXP,4*k);
 	for( i = 0; i < k;i++ ){
 		REAL(out)[i] = rowcuts[i+1];
 		REAL(out)[i+k] = colcuts[i+1];
+		REAL(out)[i+2*k] = tauval[i+1];
+		REAL(out)[i+3*k] = cutno[i+1];
 	}
 	return out;
 	
@@ -504,206 +1035,6 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method){
 // --------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------- //
 
-
-
-
-int getindex(int dims[], int ind[], int nd){
-
-	int i,s;
-	//int nd2 = sizeof(dims)/2;
-	for (i=0; i<nd; i++) {
-		if (ind[i] > dims[i]-1) {
-			Rprintf("invalid index!\n");
-				//for (int i2=0; i2<nd; i2++) {
-				//	Rprintf("%d vs. %d,\t",ind[i2],dims[i2]);
-				//}
-			return -1;
-		}
-	}
-	int cpx[nd];
-	cpx[0] = dims[0];
-	
-	for (i = 1; i < nd; i++) {
-		cpx[i] = cpx[i-1]*dims[i];
-	}
-	
-	
-	int k = ind[0]; 
-	
-	for (s = 1; s < nd; s++) {
-		//Rprintf(" %d + %d * %d\n",k,ind[s],cpx[s-1]);
-		k = k + ind[s]*cpx[s-1];
-	}
-	return k;
-} 
-
-
-
-
-// --------------------------------------------------------------------------------------- //
-// --------------------------------------------------------------------------------------- //
-// --------------------------------------------------------------------------------------- //
-
-
-void diagprod(int *mv1, int *mv0, float *cv, int *IM, int dims[], int index[], int step, int nd){
-	int i,j,k, s;
-	
-	//int nd = sizeof(dims)/2;
-	int val1, val2;
-	
-	int (*IX)[nd] = (int (*)[nd])IM;
-	float tmp, tmp2;
-	//Rprintf("\n welcome to diagprod\n");
-	
-	//Rprintf("step = %d\n",step);
-	//Rprintf("nd = %d\n",nd);
-	int indS[nd];
-	for (i = 0; i< nd; i++) {
-		indS[i] = index[i];
-	}
-	
-	
-	if( step == nd-1 ){ // the recursion in in the last dimension
-		int ind2[nd];
-		//Rprintf("\n IX in diagprod:\n");
-		//for (int r = 0; r < nd; r++) {
-		//	for (int t = 0; t < dims[r]; t++) {
-		//		Rprintf("%d\t",IX[t][r]);
-		//	}
-		//	Rprintf("\n");
-		//}
-		for (j = 0; j < nd-1; j++) {
-			//Rprintf("ind %d is %d\n",j,indS[j]);
-			ind2[j] = IX[indS[j]-1][j];
-			indS[j] = IX[indS[j]][j];
-			//Rprintf("and changes to %d\t",indS[j]);
-		}
-		for (s = 1; s < dims[nd-1]; s++) {
-			indS[nd-1] = IX[s][nd-1];
-			ind2[nd-1] = IX[s-1][nd-1];
-			//Rprintf("final ind:\n");
-			//for (i=0; i<nd; i++) {
-			//	Rprintf("%d\t",indS[i]);
-			//}
-			//Rprintf("\n");
-			//for (i=0; i<nd; i++) {
-			//	Rprintf("%d\t",ind2[i]);
-			//}
-			//Rprintf("\n ind1 = %d",getindex(dims,indS,nd));
-			//Rprintf("\n ind2 = %d",getindex(dims,ind2,nd));
-			//Rprintf("\n val1 = %d",mv0[ getindex(dims,indS,nd) ]);
-			//Rprintf("\n val2 = %d",mv1[ getindex(dims,ind2,nd) ]);
-			val1 = mv0[ getindex(dims,indS,nd) ];
-			val2 = (int) mv1[ getindex(dims,ind2,nd) ];
-			tmp = (float) val1*val2;
-			tmp2 = cv[0];
-			//Rprintf("\n tmp = %f",tmp);
-			cv[0] = tmp + tmp2;//((float*) val1) * ((float*) val2);
-			//Rprintf("\n cv = %f",cv[0]);
-		}
-	}else {
-		
-		for (s = 1; s < dims[step]; s++) {
-			indS[step] = s;
-			//Rprintf("temp ind:\n");
-			//for (i=0; i<nd; i++) {
-			//	Rprintf("%d\t",indS[i]);
-			//}
-			//Rprintf("\n");
-			diagprod(mv1,mv0, cv, IM, dims, indS, step+1,  nd);
-		}
-	}
-	
-}
-
-// --------------------------------------------------------------------------------------- //
-// --------------------------------------------------------------------------------------- //
-// --------------------------------------------------------------------------------------- //
-
-
-float mvclasscrit2(int *m0, int *IM, int dims[], int nd){
-		
-	
-	int i,ix,j, j1,j2,s, s1, s2, k, rind ,lind;
-	//int nd = sizeof(dims)/2;
-	//Rprintf("welcome to classcrit\n");
-	//Rprintf("dim = %d\n",nd);
-	
-	int (*IX)[nd] = (int (*)[nd])IM;
-	
-	
-	int cp[nd];
-	int cpr[nd];
-	cp[0] = 1;
-	cpr[nd-1] = 1;
-	
-	//for (i=0; i<nd; i++) {
-	//	Rprintf("%d\t",dims[i]);
-	//}
-	for (i = 1; i < nd; i++) {
-		cp[i] = cp[i-1]*dims[i-1];
-		cpr[nd-1-i] = cpr[nd-i]*dims[nd-i];//CHECK
-	}
-	//for (i = 0; i < nd; i++) {
-	//	Rprintf("%d\t",cp[i]);
-	//}
-	//for (i = 0; i < nd; i++) {
-	//	Rprintf("%d\t",cpr[i]);
-	//}
-	// m1 array for the cumsums
-	int ml = cp[nd-1]*dims[nd-1];
-	int m1[ ml ];
-	//int m2[ ml ];
-	for (i = 0; i < ml; i++) {
-		m1[i] = m0[i];
-		//m2[i] = m0[i];
-		//Rprintf("%d\t",m1[i]);
-	}
-	//Rprintf("m1 raw:\n");
-	//for (i=0; i<ml; i++) {
-	//	Rprintf("%d\t",m1[i]);
-	//}
-	//go through m1 and m0 with stepsize s acc. to dimension k
-	// dims is in reverse order
-	for (k = 0; k < nd; k++) {
-		s1 = cp[k];
-		s2 = cpr[k];
-		//Rprintf("s1 = %d\n",s1);
-		//Rprintf("s2 = %d\n",s2);
-		//if (dims[k] > 2) {
-			for (i = 1; i < dims[k]; i++) {
-				for (j1 = 0; j1 < s2; j1++) {
-						for (j2 = 0; j2 < s1; j2++) {
-							rind = IX[i][k]*s1 + j1*s1*dims[k] + j2;
-							lind = IX[i-1][k]*s1 + j1*s1*dims[k] + j2;
-						//Rprintf("%d\t",rind );
-						//Rprintf("%d\n",lind);
-						m1[ rind ] += m1[ lind ];
-					}
-				}
-			}
-			//m1[  j1*s1*dims[k] + j2 - 1] = m0[ j1*s1*dims[k] + j2 - 1];
-		//} 
-		
-	}
-
-	// multiplication of m0 with m1[ ind -1 ] via diagprod
-	float cv = 0.0;
-	int *m1p = &m1[0];
-	float *cvp = &cv;
-	int init[nd];
-	for (i=0; i<nd; i++) {
-		init[i] = 0;
-	}
-	diagprod(m1p,m0,cvp,IM,dims,init,0, nd);
-	//Rprintf("crit = %f\n",cv);
-	return cv;
-}
-
-
-// --------------------------------------------------------------------------------------- //
-// --------------------------------------------------------------------------------------- //
-// --------------------------------------------------------------------------------------- //
 
 
 
@@ -1025,45 +1356,15 @@ SEXP mvclass(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 
 
 
-// ----------------------------------------------------------------------------------
-
-static void quickSort (float *a, int *order, int lo, int hi)
-{
-	//  lo is the lower index, hi is the upper index
-	//  of the region of array a that is to be sorted
-    int i=lo, j=hi, ho, hi2,lo2;
-	float atmp;
-	
-    float x=a[(lo+hi)/2];
-	//	Rprintf("from %d to %d with pivot a[%d] = %f\n\n",i,j,(lo+hi)/2,x);
-    //  partition
-    do
-    {    
-        while (a[i]<x) i++; 
-        while (a[j]>x) j--;
-        if (i<=j)
-        {
-            atmp=a[i]; a[i]=a[j]; a[j]=atmp;
-			ho = order[i]; order[i]=order[j]; order[j]=ho;
-            i++; j--;
-			//Rprintf("ex %d -- %d\n\n",i,j);
-        }
-    } while (i<=j);
-	hi2 = j;
-	lo2 = i;
-    //  recursion
-    if (lo<j) quickSort(a, order, lo, hi2);
-    if (i<hi) quickSort(a, order, lo2, hi);
-	
-}
-
 
 
 
 
 // this function will perform permutations for the categories until a local optimum is reached
-SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
+SEXP preclass(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP sym){
 	
+	
+	//Rprintf("SYM = %d\n",INTEGER(sym)[0]);
 	
 	int r,s,t,i,j,k,ii,jj,kk, tmp, d;
 	int nd = LENGTH(dims);
@@ -1146,7 +1447,10 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 	
 	//int* m1ip = &m1i[0];
 	
-	
+	int ndt = nd;
+	if(INTEGER(sym)[0] == 1){
+		ndt = 1;
+	}
 	
 	int ds, s1, s2, s1t, s2t, j1, j2, rind, lind;
 	int tmpdimv[nd];
@@ -1157,7 +1461,7 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 	while (opt == 0) {
 		//////Rprintf("hoi\n\n");
 		opt = 1;
-		for (d = 0; d < nd; d++) {
+		for (d = 0; d < ndt; d++) {
 			
 			
 			if (INTEGER(pv)[d] == 1) {
@@ -1201,6 +1505,7 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 				//temporary dimv
 				ds = 1;
 				tmpdimv[0] = 2;
+				
 				for (s = 0; s < 2; s++) {
 					TIM[s][0] = s;
 				}
@@ -1258,21 +1563,54 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv ){
 			
 						
 			oldcrit = mvclasscrit2(mv, IX, dimv, nd);//here we had the old mvclasscrit
-			//////Rprintf("\n\ndim = %d, old crit = %f\n", d,oldcrit);
+			//Rprintf("\n\ndim = %d, old crit = %f\n\n", d,oldcrit);
+			//Rprintf("c(");
+			//for (i = 0; i < dimv[d]-1; i++) {
+			//	Rprintf("%d ,",CIM[i][d]);
+			//}
+			//Rprintf("%d )\n\n",CIM[dimv[d]-1][d]);
+			
+			if(INTEGER(sym)[0] == 1){
+				for (j = 0; j < nd; j++) {
+					for (i = 0; i < dimv[j]; i++) {
+						CIM[i][j] = ord[i];
+					}
+				}
+			}
+			
 			newcrit = mvclasscrit2(mv, CIMp, dimv, nd);
+			
 			if (newcrit > bestcrit) {
 				bestcrit = newcrit;
 				//////Rprintf("new best crit = %f", bestcrit);
-				for (s = 0; s < dimv[d]; s++) {
-					IM[s][d] = CIM[s][d];
+				
+				if(INTEGER(sym)[0] == 1){
+					for (j = 0; j < nd; j++) {
+						for (i = 0; i < dimv[j]; i++) {
+							IM[i][j] = CIM[i][j];
+						}
+					}
+				}else{
+					for (s = 0; s < dimv[d]; s++) {
+						IM[s][d] = CIM[s][d];
+					}
 				}
 				opt = 0;
 			}else {
 				//////Rprintf("newcrit = %f stop", newcrit);
 				// ????
-				for (s = 0; s < dimv[d]; s++) {
-					CIM[s][d] = IM[s][d];
+				if(INTEGER(sym)[0] == 1){
+					for (j = 0; j < nd; j++) {
+						for (i = 0; i < dimv[j]; i++) {
+							CIM[i][j] = IM[i][j];
+						}
+					}
+				}else{
+					for (s = 0; s < dimv[d]; s++) {
+						CIM[s][d] = IM[s][d];
+					}
 				}
+				
 			}
 		}
 	}
@@ -3512,4 +3850,355 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 // --------------------------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------------------------- //
 // --------------------------------------------------------------------------------------------------------- //
+
+
+
+
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+
+SEXP symmtile(SEXP M, SEXP dims, SEXP pv){
+	
+	// M is byrow
+	int n = INTEGER(dims)[0];
+	int m = INTEGER(dims)[1];
+	
+	//int px = INTEGER(pv)[1];
+	//int py = INTEGER(pv)[0];
+	
+	
+	//Rprintf("%d\t%d\t%d\t%d\t%d\t",n,m,px,py);
+	
+	int i,j,i2,j2,k,tmp;
+	
+	
+	// index vectors with initial values 0..n-1 and 0..m-1 containing the actual orders
+	//int RI[n];
+	int CI[m];
+	//for (i = 0; i < n; i++) {
+	//	RI[i] = i;
+	//}
+	for (j = 0; j < m; j++) {
+		CI[j] = j;
+	}
+	
+	// Delta matrices for rows and columns
+	// crit( i -> i2 ) - crit( i2 -> i ) if i < i2 and -(...) else
+	// i.e. this is 'lost' when putting i to i2
+	
+	
+	
+	// Sum of delta matrices 
+	
+	
+	float *DC2 = calloc(m*m,sizeof(float));
+	
+	//float *DR2 = calloc(n*n,sizeof(float));
+	float *DC = calloc(m*m,sizeof(float));
+	
+	//float *DR = calloc(n*n,sizeof(float));
+	
+	int *MS = calloc(n*m,sizeof(int));	
+	int *MT = calloc(n*m,sizeof(int));	
+	
+	
+	
+	
+		//for (i = 0; i < n; i++) {
+		//	MAT_ELT(DR2,i,i,n) = 0;
+		//	for (i2 = 0; i2 < n; i2++) {
+		//		MAT_ELT(DR,i,i2,n) = 0;
+		//	}
+		//}
+	
+	
+		for (j = 0; j < m; j++) {
+			MAT_ELT(DC2,j,j,m) = 0;
+			
+			for (j2 = 0; j2 < m; j2++) {
+				MAT_ELT(DC,j,j2,m) = 0;
+			}
+		}
+	
+	
+	//Rprintf("check02");
+	// the criterion
+	float crtv = 0;
+	
+	float td;
+	float tmp1, tmp2;
+	float crc = 0;
+	
+	//an marray pointer to M
+	
+	//int* mv = &INTEGER(M)[0];
+	//int (*MT)[m] = (int (*)[m])mv;
+	//for (i = 0; i < n; i++) {
+	//	for (j = 0; j < m; j++) {
+	//	Rprintf("%d\t", MT[i][j]);
+	//}
+	//Rprintf("\n");
+	//}
+	
+	for (j = 0; j < m; j++) {
+		for (i = 0; i < n; i++) {
+			MAT_ELT(MT,i,j,n) = INTEGER(M)[i+j*n];
+		}
+	}
+	
+	
+	
+	// --------------------- compute the initial delta values --------------------- //
+	
+	// cumsum by columns
+	for (j = 0; j < m; j++) {
+		MAT_ELT(MS,0,j,n) = MAT_ELT(MT,0,j,n);
+	}
+	for (i = 1; i < n; i++) {
+		for (j = 0; j < m; j++) {
+			MAT_ELT(MS,i,j,n) = MAT_ELT(MT,i,j,n) + MAT_ELT(MS,i-1,j,n);
+		}
+	}
+	
+	// delta C
+	
+	for (j = 0; j < m-1; j++) {
+		for (j2 = j+1; j2 < m; j2++) {
+			for (i = 1; i < n; i++) {
+				td = MAT_ELT(MT,i,j,n) * MAT_ELT(MS,i-1,j2,n);
+				crtv += td;
+				//DC[j][j2] += ( MT[i][j]*MS[i-1][j2] - MT[i][j2]*MS[i-1][j] ); // loss
+				MAT_ELT(DC,j,j2,m) += ( td - MAT_ELT(MT,i,j2,n) * MAT_ELT(MS,i-1,j,n) ); // loss
+			}
+			MAT_ELT(DC,j,j2,m) = 2*(MAT_ELT(DC,j,j2,m) + MAT_ELT(MT,j,j,n) * MAT_ELT(MT,j2,j2,n) - MAT_ELT(MT,j,j2,n) * MAT_ELT(MT,j2,j,n));
+           // MAT_ELT(DC,j,j2,m) = 2*( MAT_ELT(DC,j,j2,m));
+			MAT_ELT(DC,j2,j,m) = - MAT_ELT(DC,j,j2,m);
+		}
+	}
+   // Rprintf("\n");
+	//for (i=0; i<m; i++) {
+      //  for (j=0; j<m; j++) {
+        //    Rprintf("%f\t",MAT_ELT(DC,i,j,m));
+        //}
+        //Rprintf("\n");
+    //}
+    //Rprintf("\n");
+	
+	
+//	Rprintf("\n\nstart crtv = %f\n\n",crtv);
+//Rprintf("Symmetric");
+	// --------------------- start the main algorithm --------------------- //	
+	
+	
+	// look for the minimum among all cumulative sums in DC and DR starting from the diagonal (put i to i2)
+	// 'best' is the decrease in crtv, r1, r2, c1, c2 are the corresp. indices
+	float bestc = 0;
+	//float bestr = 0;
+	float best = 0;
+	int c1 = 0;
+	int c2 = 0;
+	int opt = 0;
+	int steps = 0;
+	
+	while( opt == 0 ){	
+		
+		
+			//if (px == 1) {
+			for (j = 0; j < m-1; j++) {
+				for (j2 = j+1; j2 < m; j2++) {
+					tmp1 = 0;
+					tmp2 = 0;
+					if (j2-j > 1) {
+						for (i = j+1; i < j2; i++) {
+							tmp1 += MAT_ELT(MT, CI[i] , CI[j] ,m);
+							tmp2 += MAT_ELT(MT, CI[i] , CI[j2] ,m);
+						}
+						tmp1 = tmp1 *  MAT_ELT(MT, CI[j] , CI[j2] ,m);
+						tmp2 = tmp2 * MAT_ELT(MT, CI[j] , CI[j] ,m);
+					}
+					MAT_ELT(DC2,j,j2,m) = MAT_ELT(DC2,j,j2-1,m)+ MAT_ELT(DC, CI[j] , CI[j2] ,m) - 4*tmp1 + 4*tmp2;
+					if (MAT_ELT(DC2,j,j2,m) > bestc) {
+						bestc = MAT_ELT(DC2,j,j2,m);
+						c1 = j;
+						c2 = j2;
+					}
+				}
+				
+			}
+			
+			for (j = 1; j < m; j++) {
+				for (j2 = j-1; j2 >= 0; j2--) {
+					tmp1 = 0;
+					tmp2 = 0;
+					if (j-j2 > 1) {
+						for (i = j2+1; i < j; i++) {
+							tmp1 += MAT_ELT(MT, CI[i] , CI[j2] ,m);
+							tmp2 += MAT_ELT(MT, CI[i] , CI[j] ,m);
+						}
+						tmp1 = tmp1 * MAT_ELT(MT, CI[j] , CI[j] ,m);
+						tmp2 = tmp2 * MAT_ELT(MT, CI[j2] , CI[j] ,m);
+					}
+					
+					
+					MAT_ELT(DC2,j,j2,m) = MAT_ELT(DC2,j,j2+1,m)+ MAT_ELT(DC, CI[j2] , CI[j] ,m) + 4*tmp1 - 4*tmp2;
+					if (MAT_ELT(DC2,j,j2,m) > bestc) {
+						bestc = MAT_ELT(DC2,j,j2,m);
+						c1 = j;
+						c2 = j2;
+					}
+				}
+				
+			}
+		//}
+		
+		
+
+		// reset bestc and bestr
+		//if( bestc > 0 || bestr > 0 ){	
+			if( bestc > 0 ){
+			
+				best = bestc;
+				
+				if (c1 < c2) {
+					// cumulative partial rowsums
+					for (i = 0; i < n; i++) {
+						MAT_ELT(MS,i, CI[c2] ,n) = MAT_ELT(MT,i, CI[c2] ,n);
+					}
+					if (c1+1 < c2) { // not neighboring
+						for (k = c2-1; k > c1; k--) {
+							for (i = 0; i < n; i++) {
+								MAT_ELT(MS,i, CI[k] ,n) = MAT_ELT(MT,i, CI[k] ,n) + MAT_ELT(MS,i, CI[k+1] ,n);
+							}
+						}
+					}
+					
+					// symmetric matrix: 
+										
+					// changes to DC = DR+DC
+					for (i = 0; i < n-1; i++) {
+						for (i2 = i+1; i2 < n; i2++) {
+                            
+                            MAT_ELT(DC,i,i2,n) -= 4*(  (float)MAT_ELT(MT,i2, CI[c1] ,n) * MAT_ELT(MS,i, CI[c1+1] ,n) -  (float)MAT_ELT(MT,i, CI[c1] ,n) * MAT_ELT(MS,i2, CI[c1+1] ,n) );
+                            if(i == CI[c1]){
+                                for (j= c1+1; j <= c2; j++) {
+                                    if(CI[j] == i2){
+                                        MAT_ELT(DC,i,i2,n) += 4*( (float)MAT_ELT(MT,i2, i ,n) * MAT_ELT(MT, i, i2 ,n)- (float)MAT_ELT(MT,i, i ,n) * MAT_ELT(MT, i2, i2 ,n));
+                                    }
+                                }
+                            }
+                           
+                            MAT_ELT(DC,i2,i,n) = -MAT_ELT(DC,i,i2,n);
+						}
+					}
+                    
+					
+									
+					// index vector CI changes
+					tmp = CI[c1];
+					for (i = c1; i < c2; i++) {
+						CI[i] = CI[i+1];
+					}
+					CI[c2] = tmp;
+					//Rprintf("------------M-------------\n");
+					
+					//for (i = 0; i < n; i++) {
+					//	for (j = 0; j < m; j++) {
+					//		Rprintf("%d\t",MT[ RI[i] ][ CI[j] ]);
+					//	}
+					//	Rprintf("\n");
+					//}
+					
+					//Rprintf("----------------------------\n");
+					
+				}
+				if(c1 > c2) {
+					// cumulative partial rowsums
+					for (i = 0; i < n; i++) {
+						MAT_ELT(MS,i, CI[c2] ,n) = MAT_ELT(MT,i, CI[c2] ,n);
+					}
+					if (c2+1 < c1) { // not neighboring
+						for (k = c2+1; k < c1; k++) {
+							for (i = 0; i < n; i++) {
+								MAT_ELT(MS,i, CI[k] ,n) = MAT_ELT(MT,i, CI[k] ,n) + MAT_ELT(MS,i, CI[k-1] ,n);
+							}
+						}
+					}
+						
+					for (i = 0; i < n-1; i++) {
+						for (i2 = i+1; i2 < n; i2++) {
+							MAT_ELT(DC,i,i2,n) -= 4*(  (float)MAT_ELT(MT,i, CI[c1] ,n) * MAT_ELT(MS,i2, CI[c1-1] ,n) - (float)MAT_ELT(MT,i2, CI[c1] ,n) * MAT_ELT(MS,i, CI[c1-1] ,n) ); // neg. of c1 < c2
+							if(i2 == CI[c1]){
+                                for (j= c1-1; j >= c2; j--) {
+                                    if(CI[j] == i){
+                                        MAT_ELT(DC,i,i2,n) += 4*( (float)MAT_ELT(MT,i2, i ,n) * MAT_ELT(MT, i, i2 ,n)- (float)MAT_ELT(MT,i, i ,n) * MAT_ELT(MT, i2, i2 ,n));
+                                    }
+                                }
+                            }
+                           
+                            MAT_ELT(DC,i2,i,n) = -MAT_ELT(DC,i,i2,n);
+						}
+					}
+                   
+					
+					// index vector CI changes
+					tmp = CI[c1];
+					for (i = c1; i > c2; i--) {
+						CI[i] = CI[i-1];
+					}
+					CI[c2] = tmp;
+				}
+				
+			
+			
+			// reset
+			bestc = 0;
+			
+			
+			//Rprintf("\n#c1 = %d,c2 = %d\n",c1,c2);
+			crtv -= best;
+				crc -= best;
+  
+			
+			best = 0;
+		}else { // best <= 0
+			opt = 1;
+		}
+if( steps > 2*m ){
+	opt = 1;
+}
+		steps++;
+        
+
+        
+			
+	}
+	
+	
+	
+	SEXP out = allocVector(REALSXP,n+m+1);
+	for( i = 0; i < n;i++ ){
+		REAL(out)[i] = CI[i]; //+1
+	}
+	for( j = 0; j < m;j++ ){
+		REAL(out)[n+j] = CI[j]; //+1
+	}
+	
+	REAL(out)[n+m] = crtv;
+	free(DC2);
+	
+	free(DC);
+	
+	free(MS);
+	free(MT);
+	//Rprintf("\nOptimization ended after %d steps with crtv=%f\n",steps,crtv);
+	return out;
+}
+
+
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------------------------- //
+
 

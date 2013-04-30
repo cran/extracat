@@ -1,7 +1,8 @@
 useDynLib(extracat, .registration = TRUE)
 export(tfluctile, rmb, cpcp,subtable, spread, untableSet, dendro,  resort, listen, optile, fluctile, cfluctile, subtree, tfluctile, fluctile3d, arsim, rmbmat, 
-innerval, quickfechner, hexpie, regmax, regmin, boxplot2g, wdcor,approx.dcor, kendalls, imat, idat, Burt, barysort,BCC,BCI,WBCI, BCImat, qBCI)
-import(reshape,grid, colorspace, ggplot2, plyr)
+innerval, quickfechner, hexpie, regmax, regmin, boxplot2g, wdcor,approx.dcor, kendalls, imat, idat, Burt, barysort,BCC,BCI,WBCI, cmat, qBCI, combcl,cfcl, cohen, ME, optME,
+ sortandcut, heattile, getIs, getIs2)
+import(plyr,reshape,grid, colorspace, ggplot2, TSP)
 importFrom(scales, alpha)
 importFrom(hexbin, hexbin)
 

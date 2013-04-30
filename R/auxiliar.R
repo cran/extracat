@@ -20,9 +20,15 @@ Burt = function(x){
 	}
 	   fi <- which(names(x) == "Freq")
 	   nd <- ncol(x)-1
-	Z <- as.data.frame(do.call(cbind, sapply(x[, 
-											 1:nd], imat, simplify = FALSE)))
+	Z <- do.call(cbind, sapply(x[, 1:nd], imat, simplify = FALSE))
+	rownames(Z)<- NULL
+	Z <- as.data.frame(Z)
 	Z <- t(Z * x[, fi]) %*% as.matrix(Z)
+	if(length(unique(rownames(Z))) < length(rownames(Z)) ){
+		nlvl <- sapply(x[,-fi],function(z) nlevels(as.factor(z)))
+		rn <- paste( rep(names(x)[-fi],nlvl), rownames(Z), sep=":")	
+		rownames(Z) <- colnames(Z) <- rn
+	}
 return(Z)
 }
 
@@ -36,14 +42,15 @@ idat = function(x, allcat = FALSE){
 		s <- NULL	
 	}
 	if(allcat){
-		ret<-sapply(x,imat)
+		ret<-lapply(x,imat)
 	}else{
-		ret<-sapply(x,function(z){
+		ret<-lapply(x,function(z){
 			y<-imat(z)
 			y <- y[,-ncol(y),drop=FALSE]
 		})
 	}
 	ret <- as.data.frame(do.call(cbind,ret))
+	
 	if(!is.null(s)){
 		ret$Freq <- s	
 	}
@@ -66,5 +73,25 @@ for(i in 1:nd){
 		}
 		B2 <- rbind(B2,B1)
 } 
+
+if(length(unique(rownames(B2))) < length(rownames(B2)) ){
+		
+		rn <- paste( rep( names(attr(x,"dimnames")) , dim(x) ), rownames(B2), sep=":")	
+		rownames(B2) <- colnames(B2) <- rn
+	}
+
 return(B2)
+}
+
+
+isSymMat <- function(x,tol = 1e-12){
+	if(length(dim(x)) != 2) return(FALSE)
+	
+	if(diff(dim(x)) != 0) return(FALSE)
+	
+	err <- sum(abs(x-t(x)))
+	if(err<tol){
+		return(TRUE)
+	}
+	return(FALSE)
 }

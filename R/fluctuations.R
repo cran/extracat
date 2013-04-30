@@ -1,6 +1,6 @@
 
 
-fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.prop = 0.1, border = NULL, label = TRUE, lab.opt = list(abbrev = 3, lab.cex = 1.2), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",  ...  ){
+fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.prop = 0.1,border = NULL, label = TRUE, lab.opt = list(), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",  ...  ){
 	#tab <- t(tab)
 	dm <- dim(tab)
 	maxv <- max(tab)
@@ -22,21 +22,28 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
         switch(j, t="top", b = "bottom", c = "center", r = "right", l = "left", NULL)
     })
     if("abbrev" %in% names(lab.opt)){
-        abbrev <- lab.opt$abbrev
+        abbrev <- rep(lab.opt$abbrev,nd)[1:nd]
     }else{
-        abbrev <- 3
+        abbrev <- rep(40,nd)
     }
     if("lab.cex" %in% names(lab.opt)){
         lab.cex <- lab.opt$lab.cex
     }else{
         lab.cex = 1.2
     }
+      if("rot" %in% names(lab.opt)){
+        rot <- lab.opt$rot
+    }else{
+        rot = 65
+    }
+    
 	data <- as.data.frame(as.table(tab))
+	
 	
 	
 # logical vector for the split directions
 	if(length(hsplit) == 1){
-		hsp <- rep( c(hsplit,!hsplit),ncol(data) )[1:(ncol(data)-1)] 
+		hsp <- rep( c(hsplit,!hsplit),ncol(data) )[1:nd] 
 		hsplit <- hsp
 	}else{
 		hsp <- hsplit
@@ -47,11 +54,32 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 	tab <- xtabs(Freq~., data = data)
 	
 # prepare for border and labs
-	nx <- min(sum(hsp*label),2)
-	ny <- min(sum(!hsp*label),2)
+
+	
+	label <- rep(label,nd)[1:nd]
+	rot <- rep(rot,2)[1:2]
+	lab.cex <- rep(lab.cex,2)[1:2]
+	
+	
+	abbrev <- abbrev * as.integer(label)
+
+	
+	
+	nx <- max(sum(hsp*label),1) # min 2
+	ny <- max(sum( (!hsp)*label),1)
+	
+
 	if(is.null(border)){
-		border <- 	0.05* c( (nx+1), (ny+1) )
+		border <- 0.1
 	}
+	if(length(border) == 1){
+		border <- 	border * c( nx/(nx+1),1/(nx+1),1/(ny+1), ny/(ny+1) )
+	}
+	if(length(border) == 2){
+		border <- 	c( border[1] * c( nx/(nx+1),1/(nx+1)) , border[2] * c( ny/(ny+1),1/(ny+1)) )
+	}
+	
+	
 	
 	wph <- dm[2]/dm[1]
 #dev.new( width = 1000*(1-gap.prop)*wph + gap.prop*1000, height = 1000 )
@@ -59,7 +87,7 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 		#dev.new()
 		grid.newpage()
 	}
-	vp0 = viewport(x = border[1]*nx/(nx+1) + (1-border[1])/2 , y = border[2]/(ny+1) + (1-border[2])/2, width = 1-border[1], height = 1-border[2],name="base")
+	vp0 = viewport(x = border[1] + (1-border[1]-border[2])/2 , y = border[3] + (1-border[3]-border[4])/2, width = 1-border[1]-border[2], height = 1-border[3]-border[4],name="base")
 	if(length(dm)==2){
 		
 		pushViewport(vp0)
@@ -84,9 +112,10 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 		popViewport()
 		
 # add labels
-		if(label){
-			rn <- abbreviate(dimnames(tab)[[1]],abbrev)
-			cn <- abbreviate(dimnames(tab)[[2]],abbrev)
+		if(any(label)){
+			
+			rn <- abbreviate(dimnames(tab)[[1]],abbrev[1])
+			cn <- abbreviate(dimnames(tab)[[2]],abbrev[2])
 			
 			m <- dm[2]
 			xc <- seq(0.5,m-0.5) / m
@@ -100,14 +129,31 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 			yc <- yc/(1 - gap.prop/(n-1))
 			
 			
-			vpR <- viewport(x = border[1]/4, y = 0.5, width = border[1]/2, height = 1-border[2],name="rowlabs")
+			vpR <- viewport(x = border[1]/2, y = border[3] + (1-border[3] -border[4])/2, width = border[1], height = 1-border[3]-border[4],name="rowlabs")
 			pushViewport(vpR)
-			grid.text(rn, x = 0.5, y = yc, gp = gpar(cex=lab.cex), rot = 65)
+			
+			
+			if(rot[1] == 0){
+				y0 <- 0.1
+				yjust = "left"
+			}else{
+				y0<-0.5
+				yjust <- "centre"
+			}
+			if(rot[2] == 0){
+				x0 <- 0.9
+				xjust = "right"
+			}else{
+				x0<-0.5
+				xjust <- "centre"
+			}
+			
+			grid.text(rn, x = x0, y = yc, gp = gpar(cex=lab.cex[1]), rot = rot[1], just <- xjust)
 			popViewport()
 			
-			vpC <- viewport(x = border[1]/2 + (1-border[2])/2, y = 1-border[2]/4, width = 1-border[1], height = border[2]/2,name="collabs")
+			vpC <- viewport(x = border[1] + (1-border[1]-border[2])/2, y = 1-border[4]/2, width = 1-border[1]-border[2], height = border[4],name="collabs")
 			pushViewport(vpC)
-			grid.text(cn, x = xc, y = 0.5,rot = 25, gp = gpar(cex=lab.cex))
+			grid.text(cn, x = xc, y = y0,rot = 90-rot[2], gp = gpar(cex=lab.cex[2]),just = yjust)
 			
 			popViewport()
 		}
@@ -155,19 +201,24 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 #######################################################################################################	
 # -------------------------------------------- LABELING  -------------------------------------------- #
 #
-		labs <- lapply(data[,-(nd+1)],function(s) abbreviate(levels(as.factor(s)),abbrev))
+		#labs <- lapply(data[,-(nd+1)],function(s) abbreviate(levels(as.factor(s)),abbrev))
+		labs <- mapply( function(y,z) abbreviate(levels(y),z)  ,y = data[,-(nd+1)], z = as.list(abbrev), SIMPLIFY = FALSE)
 		
-		vp1 <- viewport(x = border[1]*nx/(nx+1)/2, y = border[2]/(ny+1) + (1-border[2])/2, width = border[1]*nx/(nx+1), height = 1-border[2],name="ylab")
+		ind <- label & (!hsp)
+		if(any(ind)){
+			
+			
+		vp1 <- viewport(x = border[1]/2, y = border[3] + (1-border[3]-border[4])/2, width = border[1], height = 1-border[3]-border[4],name="ylab")
 		pushViewport(vp1)
 #grid.rect(0.5,0.5,1,1,gp=gpar(fill=rgb(0,0,0,alpha=0.1)))
 		
-		suppressWarnings( label <- label & rep( TRUE, nd ))
-		
+				
 # create labels for the y-axis
 		
-		ind <- which(label & !hsp)
+	
+		ind <- which(ind)
 		rpt <- c(1,cumprod( dim(tab)[ind] ))
-		
+
 		nlvl <- dim(tab)[ind]
 		gaps <- 0
 		blocksize <- 1
@@ -177,11 +228,9 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 			currvp <- viewport( x = 1/ny/2+ (i-1)/ny, y = 0.5, width = 1/ny, height = 1)
 			pushViewport(currvp)
 			
-			labs <- rep(levels(data[, ind[i]]), rpt[i])
-            if(abbrev != FALSE){
-                labs <- sapply(labs, function(l) abbreviate(l,abbrev))
-            }
-			nl <- length(labs)
+			rlabs <- rep(labs[[ ind[i] ]], rpt[i])
+            
+			nl <- length(rlabs)
 			
 # the gaps for the new dimension
 			newgaps <- c(0:(nlvl[i]-1)) * blocksize * gap.prop / (nlvl[i]-1)
@@ -197,7 +246,7 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 				y <- rep(y,each = nlvl[i]) + newgaps - max(newgaps)/2 + (1-gap.prop)*blocksize * rep(seq(1/nlvl[i]/2,1-1/nlvl[i]/2,1/nlvl[i])-0.5, rpt[i])
 			}
 			
-			grid.text(labs, x = x, y = y , rot = 65, gp = gpar(cex=1.5))
+			grid.text(rlabs, x = x, y = y , rot = rot[1], gp = gpar(cex=lab.cex[1]))
 #grid.points( x = rep(x,length(y)), y = y , gp = gpar(col="red"))
 			popViewport()
 			
@@ -205,11 +254,15 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 		}
 		popViewport()
 		
-		vp2 <- viewport(x = border[1]*nx/(nx+1) + (1-border[1])/2, y = 1 - border[2]*ny/(ny+1)/2, width = 1-border[1], height = border[2]*ny/(ny+1),name="xlab")
+		vp2 <- viewport(x = border[1] + (1-border[1]-border[2])/2, y = 1 - border[4]/2, width = 1-border[1]-border[2], height = border[4],name="xlab")
 		pushViewport(vp2)
 #grid.rect(0.5,0.5,1,1,gp=gpar(fill=rgb(0,0,0,alpha=0.1)))
+		} # any ind
+		ind <- label & hsp
+		if(any(ind)){
+		ind <- which(ind)
 		
-		ind <- which(label & hsp)
+		
 		rpt <- c(1,cumprod( dim(tab)[ind] ))
 		
 		nlvl <- dim(tab)[ind]
@@ -222,8 +275,9 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 			currvp <- viewport( x = 0.5, y = 1 - 1/nx/2 - (i-1)/nx, width = 1, height = 1/nx)
 			pushViewport(currvp)
 			
-			labs <- rep(levels(data[, ind[i]]), rpt[i])
-			nl <- length(labs)
+			#labs <- rep(levels(data[, ind[i]]), rpt[i])
+			clabs <- rep(labs[[ ind[i] ]], rpt[i])
+			nl <- length(clabs)
 			
 			
 			newgaps <- c(0:(nlvl[i]-1)) * blocksize * gap.prop / (nlvl[i]-1)
@@ -238,17 +292,18 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 				x <- rep(x,each = nlvl[i]) + newgaps - max(newgaps)/2 + (1-gap.prop)*blocksize * rep(seq(1/nlvl[i]/2,1-1/nlvl[i]/2,1/nlvl[i])-0.5, rpt[i])
 			}
 #cat( "lab.x = ",x)
-			grid.text(labs, x = x, y = y , rot = 25, gp = gpar(cex=1.5))
+			grid.text(clabs, x = x, y = y , rot = 90-rot[2], gp = gpar(cex=lab.cex[2]))
 #grid.points( x = x, y = rep(y,length(x)) , gp = gpar(col="red"))
 			popViewport()
 			
 			blocksize <- blocksize * (1-gap.prop) / nlvl[i]
 		}
+}# and ind
 #
 # -------------------------------------------- LABELING  -------------------------------------------- #
 #######################################################################################################	
 		
-		return(ss)
+		return(invisible(ss))
 	}
 }	
 
@@ -331,13 +386,19 @@ fluctree <- function(dims,parent, hsplit, gap.prop, env, ...){
 			env$k <- env$k+1
 			children[[i]] <- viewport( x[i],y[i],w[i],h[i],just="centre" , name = env$vpn[env$k])
 		}
-		return(vpTree(parent,children))
+		return(invisible(vpTree(parent,children)))
 	}
 	
 	
 }
 
-gridfluc <- function(tab,dir = "b", just = "c", shape = "r", gap.prop = 0.1, maxv = NULL,vp = NULL, col = NULL, bg = NULL, ...){
+gridfluc <- function(tab,dir = "b", just = "c", shape = "r", gap.prop = 0.1, maxv = NULL,vp = NULL, col = NULL, bg = NULL, border = NA,...){
+	
+	if(shape != "r" ){
+		just <- "centre"
+		dir <- "b"
+	}
+	if(just == "c") just <- "centre"
 	
 	if( is.null(bg) ){
 		bg <- NA
@@ -403,23 +464,30 @@ if(dir == "n"){
 }
 	if(shape == "r"){
 		draw2(ht, wt,  t(replicate(n,x)), replicate(m,y), border = NA,bg=col, vp=vp, just = just)
-	}else{
-		if(shape == "c"){
-			angles <- seq(0,360,0.5)/180*pi
-		}
+	}
+	
+	#if(shape == "c"){
+	#	draw3(R = ht/2* (min(n,m)/max(m,n)), t(replicate(n,x)), replicate(m,y), border = NA,bg=col, vp=vp, just = just)
+	#}
+	if(shape %in% c("o", "d", "c")){
 		if(shape == "o"){
 			angles <- seq(22.5,360,45)/180*pi
+			wt <- wt / cos(pi/8)
+			ht <- ht / cos(pi/8)
 		}
 		if(shape == "d"){
 			angles <- seq(0,360,90)/180*pi
 		}
+		if(shape == "c"){
+			angles <- seq(0,360,1)/180*pi
+		}
 		corners <-  cbind( cos(angles), sin(angles))
-		mapply(function(x,y,h,w){
-			   grid.polygon(x = x+corners[,1]*w/2, y = y+corners[,2]*h/2, gp = gpar(fill= col, col = NA))
-			   }, x = t(replicate(n,x)), y = replicate(m,y), h = ht, w = wt)
-	
+		mapply(function(x,y,h,w,c){
+			   grid.polygon(x = x+corners[,1]*w/2, y = y+corners[,2]*h/2, gp = gpar(col = border, fill = c, alpha = 1))# fill= col, col = NA
+			   }, x = t(replicate(n,x)), y = replicate(m,y), h = ht, w = wt, c = rep(col,length(ht))[1:length(ht)] )
 	}
 	
+	return(invisible(TRUE))	
 }
 
 
@@ -431,7 +499,17 @@ grid.rect(x = unit(X, "npc"), y = unit(Y, "npc"), width = unit(W,
 name = NULL, gp = gpar(col = border, fill = bg, alpha = alpha), 
 draw = TRUE, vp = vp)
 }
-addrect = function( vp ,breaks, col = "red", lwd = 2, lty = 1, gap.prop = 0, rev.y = FALSE){
+
+#draw3 <- function (R, X, Y, alpha = 1, border = "black", bg = "white", 
+#vp = NULL, just = "centre") 
+#{
+#grid.circle(x = unit(X, "npc"), y = unit(Y, "npc"), r = unit(R, 
+#"npc"), default.units = "npc", 
+#name = NULL, gp = gpar(col = border, fill = bg, alpha = alpha), 
+#draw = TRUE, vp = vp)
+#}
+
+addrect = function( vp ,breaks, col = "red", lwd = 2, lty = 1, gap.prop = 0, rev.y = FALSE, fill = NULL){
 	yc <- breaks[[1]]
 	xc <- breaks[[2]]
 	
@@ -458,12 +536,12 @@ addrect = function( vp ,breaks, col = "red", lwd = 2, lty = 1, gap.prop = 0, rev
 	dxc <- diff(xc)
 	if(rev.y){
 		mapply( function(x,y,w,h){
-			   grid.rect(x,y,w,h,gp=gpar(fill=NA,col=col,lwd=lwd, lty = lty),just=c("left","top"))
+			   grid.rect(x,y,w,h,gp=gpar(fill=fill,col=col,lwd=lwd, lty = lty),just=c("left","top"))
 			   }, x = as.list( xc[-nxc] ), y = as.list( 1-yc[-nyc] ),w = as.list(dxc),h = as.list(dyc))
 		
 	}else{
 		mapply( function(x,y,w,h){
-			   grid.rect(x,y,w,h,gp=gpar(fill=NA,col=col,lwd=lwd, lty = lty),just=c("left","bottom"))
+			   grid.rect(x,y,w,h,gp=gpar(fill=fill,col=col,lwd=lwd, lty = lty),just=c("left","bottom"))
 			   }, x = as.list( xc[-nxc] ), y = as.list( yc[-nyc] ),w = as.list(dxc),h = as.list(dyc))
 	}
 	
@@ -473,16 +551,40 @@ addrect = function( vp ,breaks, col = "red", lwd = 2, lty = 1, gap.prop = 0, rev
 }
 
 
-
-cfluctile <- function(x, tau0 = NULL, method="Kendall", col ="red", lwd = 2, lty = 1, gap.prop = 0.2, 
-floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", ...){
+cfluctile <- function(x, tau0 = NULL, method="Kendall", nsplit = NULL, maxsplit = NULL,  trafo = I, gap.prop = 0.2, 
+floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", plot = TRUE ,rect.opt = list(), border = NULL, label = TRUE, lab.opt = list(), tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey", ...){
+	
 	stopifnot(inherits(x,"table") | inherits(x,"matrix") )
 	stopifnot( length(dim(x)) == 2 )
     
-    if(kendalls(x) < 0){
-        x <- x[,ncol(x):1]
-        print("Reversed column category order...")
-    }
+    # get parameters for rectangles
+    if( "lwd" %in% names(rect.opt) ){
+		lwd <- rect.opt$lwd
+	}else{
+		lwd <- 2
+	}
+	 if( "lty" %in% names(rect.opt) ){
+		lty <- rect.opt$lty
+	}else{
+		lty <- 1
+	}
+	
+	if( "col" %in% names(rect.opt) ){
+		col <- rect.opt$col
+	}else{
+		col <- "red"
+	}
+	if( "fill" %in% names(rect.opt) ){
+		fill <- rect.opt$fill
+	}else{
+		fill <- alpha(col,0.05)
+	}
+    
+     
+    #if(kendalls(x) < 0){
+    #    x <- x[,ncol(x):1]
+    #    print("Reversed column category order...")
+    #}
 
 	if( method %in% c("Kendall","kendall","tau",1) ){
 		method <- as.integer(1)	
@@ -490,39 +592,145 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", ...){
 	if( method %in% c("kappa","Cohen",2) ){
 		method <- as.integer(2)	
 	}
+	if( method %in% c("WBCI","wbci","WBCC",3) ){
+		method <- as.integer(3)	
+	}
+	ret.int <- ( storage.mode(x) == "integer" )
+	storage.mode(x) <- "numeric"
+	
+	
 	
 	n <- nrow(x)
 	m <- ncol(x)
-	storage.mode(x) <- "integer"
+	if(is.null(maxsplit)){
+		maxsplit <- min(n,m)+1
+	}
+	if(!is.null(nsplit)){
+		stopifnot(nsplit <= maxsplit)
+		tau0 <- -1
+		maxsplit <- nsplit
+	}
+	if(maxsplit == 1){
+		singlesplit <- 1
+	}else{
+		singlesplit <- min(n,m)+1
+	}
+	
+	#storage.mode(x) <- "integer"
 	if(is.null(tau0)){
 		if(method == 1){
 			tau0 <- kendalls(x)
-		}else{
-			tau0 <- 0	
+		}
+		if(method == 2){
+			tau0 <- cohen(x)
+		}
+		if(method == 3){
+			tau0 <- WBCI(x)
 		}
 	}
+	
 	if( floor > 0 ){
 		x2 <- apply(x,1:2, function(z){
 				   ifelse(z < floor, 0, z)
 				   })
-		storage.mode(x2) <- "integer"
-		cuts <- .Call("getclust",x2,as.integer(dim(x)),tau0,method)
+		#storage.mode(x2) <- "integer"
+		cuts <- .Call("getclust",x2,as.integer(dim(x)),tau0,method,as.integer(singlesplit))
 	}else{
-		cuts <- .Call("getclust",x,as.integer(dim(x)),tau0,method)
+		cuts <- .Call("getclust",x,as.integer(dim(x)),tau0,method,as.integer(singlesplit))
 	}
 
-	r <- length(cuts)/2
+
+	r <- length(cuts)/4 #/2
 	if(rev.y){
 		x <- as.table(x[nrow(x):1,]	)
 	}
-	breaks <- list(c(1,cuts[1:r]+1),c(1,cuts[(r+1):(r+r)]+1))
-	if(!add){
-		bs <- fluctile(x, gap.prop=gap.prop, shape = shape, just = just, dir = dir)
-	}else{
-		bs <- fluctile(x, gap.prop=gap.prop, bg.col=rgb(0,0,0,alpha=0),tile.col = rgb(0,0,0,alpha=0), add = TRUE, shape = shape, just = just, dir = dir)	
+	b1 <- c(1,cuts[1:r]+1)
+	b2 <- c(1,cuts[(r+1):(r+r)]+1)
+	tau.values <- cuts[(2*r+1):(3*r-1)]
+	cut.ids <- cuts[(3*r+1):(4*r-1)]
+	
+	if( r > 1 ){
+	# get cut order (tau before level!)
+	nc <- length(cut.ids)
+	xtci <- c(0,cut.ids,0)
+	lp <- rp <- NULL #left and right parent cut
+	for(i in 2:(nc+1) ){
+	lp[i-1]	<- max( which( xtci[1:(i-1)] < xtci[i]))
+	rp[i-1]	<- i + min( which( xtci[(i+1):(nc+2)] < xtci[i]))
 	}
-	addrect(bs,breaks,col, gap.prop, rev.y = !rev.y, lwd = lwd, lty = lty)
-	return(invisible(TRUE))
+	parents <- cbind(lp,rp)
+	# level of left and right parent
+	rlp <- c(0,cut.ids,0)[lp]
+	rrp <- c(0,cut.ids,0)[rp]
+	lrrp <- cbind(rlp,rrp)
+	# parent level
+	parent <- apply(lrrp,1,which.max)
+	for(i in seq_along(parent)){
+		parent[i] <- parents[i,parent[i]]
+	}
+	#parent.tau <- c(1,tau.values)[parent]
+	
+		
+	cut.rank <- rep(0,nc)
+	cut.rank[which(cut.ids==1)] <- (k<-1)
+	acc.parents <- c(TRUE,rep(FALSE,nc))
+	acc.parents[which(cut.ids==1)+1] <- TRUE
+	while(!all(acc.parents)){
+		# candidates: parent accepted and not an acc. parent already
+		(candidates <- which( acc.parents[parent] & !acc.parents[-1]))
+		(best <- candidates[ which.max( tau.values[candidates])])
+		acc.parents[best+1] <- TRUE
+		cut.rank[best] <- (k<-k+1)
+		
+	}
+	}else{
+		# r == 1
+		cut.rank <- 1
+	}
+	#cut.rank <- rank(tau.values+cut.ids) # old: this used level before tau
+	exclude <- cut.rank > maxsplit
+
+	if( any( exclude) ){
+		exclude <- which(exclude)
+		b1 <- b1[-(exclude+1)]
+		b2 <- b2[-(exclude+1)]
+		cut.rank <- cut.rank[-exclude]
+		tau.values <- tau.values[-exclude]
+		cut.ids <- cut.ids[-exclude]
+	}
+	breaks <- list(b1,b2)
+	r <- length(b1)-1
+	row.list = list()
+	col.list = list()
+	#cat("r= ",r)
+	#print(b1)
+	for(i in 1:r){
+		row.list[[i]] <- rownames(x)[ b1[i]:(b1[i+1]-1) ]
+		col.list[[i]] <- colnames(x)[ b2[i]:(b2[i+1]-1) ]
+		#row.list[[i]] <-paste("'R",i,"' = list('",	paste(c(rownames(x)[ b1[i]:(b1[i+1]-1) ]),collapse="','"),"')",sep="")
+		#col.list[[i]] <-paste("'C",i,"' = list('",	paste(c(colnames(x)[ b2[i]:(b2[i+1]-1) ]),collapse="','"),"')",sep="")
+		
+	}
+		
+	#list1 <- paste("list(",paste(row.list,collapse = ","),")",sep="")
+	#list2 <- paste("list(",paste(col.list,collapse = ","),")",sep="")
+	
+	if(plot){
+		class(x) <- "matrix"
+	if(!add){
+		bs <- fluctile(trafo(x), gap.prop=gap.prop, shape = shape, just = just, dir = dir, tile.col = tile.col, bg.col = bg.col, label = label, lab.opt = lab.opt, border = border)
+	}else{
+		bs <- fluctile(trafo(x), gap.prop=gap.prop, bg.col=rgb(0,0,0,alpha=0),tile.col = rgb(0,0,0,alpha=0), add = TRUE, shape = shape, just = just, dir = dir, label = label, lab.opt = lab.opt, border = border)	
+	}
+	addrect(bs, breaks, col, gap.prop, rev.y = !rev.y, lwd = lwd, lty = lty, fill = fill)
+	}
+				
+	ret <- list(row.list,col.list)
+	attr(ret,"orders") <- list( lapply(row.list, function(w) match(w,rownames(x))), lapply(col.list, function(w) match(w,colnames(x)))  )
+	attr(ret,"tau.values") <- tau.values
+	attr(ret,"level") <- cut.ids
+	attr(ret,"cut.rank") <- cut.rank
+	return(invisible(ret))
 }
 
 

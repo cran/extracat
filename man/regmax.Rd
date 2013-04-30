@@ -6,7 +6,7 @@
 Regular maximality
 }
 \description{
-Checks whether or not a matrix fulfills the regular maximality or minimality.
+Checks whether or not a matrix fulfills the regular maximality or minimality condition.
 }
 \usage{
 regmax(x)

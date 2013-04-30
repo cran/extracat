@@ -29,8 +29,9 @@ cat.ord = NULL,  freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = N
  \item{x}{ Either a table or a model of class \code{"glm"} and family \code{"poisson"} or \code{"binomial"}.
  A table must be either of class \code{table} or of class \code{ftable}. The latter also implicitly defines the the order in which the variables will be added to the plot. The arguments formula and data will be omitted. Please note that the model based version is still beta and will be improved in a future release.
  }
-  \item{formula}{The \code{\link[stats]{formula}} specifying the variables in their given order with the last variable being the target variable. The left hand is either empty or denotes the frequency variable.}
-  \item{data}{The dataset in form of a frequency table (see \code{\link[stats]{ftable}} or \code{\link[extracat]{subtable}} for more information) with a column named \code{"Freq"} or in raw format (that is the rows represent the cases and the columns represent the variables). }
+  \item{formula}{The \code{\link[stats]{formula}} specifying the variables in their given order with the last variable being the target variable. The left hand side defines a weighting variable. If the weights are frequencies in a variable called \code{"Freq"} this is detected automatically if no other variable is defined. }
+  \item{data}{The dataset as a  data.frame or \code{\link[stats]{ftable}}.}
+  
   \item{col.vars}{Logical vector with split directions where \code{TRUE} stands for horizontal splitting. The last (target) variable is always arranged on the x-axis. }
   \item{spine}{If \code{TRUE} a spineplot will be drawn instead of each barchart. This is recommended for binary target variables.}
  \item{circular}{ If \code{TRUE} a piechart will be drawn instead of each barchart. \code{spine} is set to \code{FALSE}.}
@@ -83,7 +84,7 @@ cat.ord = NULL,  freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = N
       	 \code{boxes} \tab Should the labels be surrounded by boxes?	\cr
          \code{lab.tv} \tab Should the target variable be included in the labeling?		\cr
          \code{varnames} \tab Should the variable names be shown as labels?	\cr
-         \code{abbrev} \tab 	An integer value specifying the number of characters to which the labels will automatically be abbreviated. The logical \code{TRUE} leads to 3-character-abbreviations. \cr
+         \code{abbrev} \tab 	An single integer value or a vector of integer values specifying the number of characters to which the labels will automatically be abbreviated. \cr
          	 \code{lab.cex} \tab The fontsize multplier.	\cr
         }
 }
@@ -125,7 +126,7 @@ Germany
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, spine = TRUE, 
         cat.ord = 1, mult = 2, col.vars = c(1,3,4), 
         freq.trans = list("sqrt",3),  label.opt = list(abbrev = 2))
-    
+  \dontrun{  
     # a generalized spineplot with all categories highlighted 
     # in a changed order
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, spine = TRUE,
@@ -135,7 +136,7 @@ Germany
     # the barchart version only for categories 1 and 3
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, 
         cat.ord = c(1,3), gap.mult = 2, col.vars = c(TRUE,FALSE,TRUE,TRUE),
-        freq.trans = "sqrt",  label.opt = list(abbrev = 3))
+        freq.trans = "sqrt",  label.opt = list(abbrev = c(4,1,1,1)))
         
         
     # with equal widths
@@ -195,7 +196,7 @@ Germany
       # ----- the numeric mode and cuts ----- #   
      data(olives)
      # only three cuts to show how it works
-     rmb(~palmitoleic+stearic+Region, data = olives, cut = 3)
+     rmb(~palmitoleic+stearic+Region, data = olives, cut = c(3,3,0))
      
      require(ggplot2)
      data(diamonds)
@@ -215,5 +216,6 @@ Germany
       rmb(~lcarat+lprice+color, data = diamonds,
       cut = c(24,24,0), col = "rgb", num.mode = TRUE,
        freq.trans="sqrt", eqwidth=TRUE, max.scale=0.5)
+       }
 }
 

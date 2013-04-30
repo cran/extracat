@@ -7,7 +7,7 @@ Quantile BCI
 }
 \description{
 Bins numeric variables according to their quantiles and computes the Bertin Classification Index \link[extracat]{BCI}.
-The \code{data.frame} method computes the multivariate qBCI and not the pairwise values (c.f. \link[extracat]{BCImat}).
+The \code{data.frame} method computes the multivariate qBCI and not the pairwise values (c.f. \link[extracat]{cmat}).
 }
 \usage{
 qBCI(x, ...)
@@ -50,12 +50,14 @@ Alexander Pilhoefer
 }
 
 \seealso{
-\link[extracat]{BCI},\link[extracat]{kendalls}, \link[extracat]{wdcor}, \link[extracat]{BCImat}
+\link[extracat]{BCI},\link[extracat]{kendalls}, \link[extracat]{wdcor}, \link[extracat]{cmat}
 }
 \examples{
 \dontrun{
 qBCI(rnorm(100),runif(100))
 
+
+# non-functional relationship:
 x1 <- runif(500,0,10)
 x2 <- runif(500,0,10)
 y1 <- x1+rnorm(500,sd=1) 
@@ -63,6 +65,8 @@ y2 <- 10-x2+rnorm(500,sd=1)
 
 x <- c(x1,x2)
 y <- c(y1,y2)
+
+plot(x,y, pch = 19)
 
 wdcor(x,y)
 1 - qBCI(x,y)
@@ -74,8 +78,25 @@ y2 <- 10-x2+rnorm(500,sd=0.1)
 x <- c(x1,x2)
 y <- c(y1,y2)
 
+plot(x,y, pch = 19)
+
 wdcor(x,y)
 1 - qBCI(x,y)
+
+# or a quadratic curve:
+test <- sapply(seq(0,4,0.2),function(s){
+x <- runif(200,-1,1)
+y <- 5+12*x^2+rnorm(200,sd=s)
+return(c(cor(x,y),
+wdcor(x,y),
+1 - qBCI(x,y)))
+})
+
+
+plot(test[3,],type="l", ylim=c(-0.2,1))
+lines(test[1,], col = 2, lwd = 2)
+
+lines(test[2,], col = 3, lwd = 2)
 
 }
 

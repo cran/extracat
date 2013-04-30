@@ -27,9 +27,7 @@ Department for Computer Oriented Statistics and Data Analysis\cr
 University of Augsburg\cr
 Germany
 }
-\note{
-This function will be advanced in the future to support more than two dimensions.
-}
+
 
 \examples{
  M = matrix(1:12, ncol=4)

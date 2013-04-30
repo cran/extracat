@@ -1,14 +1,14 @@
 
-optile = function(x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, ...){
+optile = function(x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1,  
+freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, sym = FALSE, ...){
 	UseMethod("optile")	
 }
 #optile = function(x,...){
 #UseMethod("optile")	
 #}
 
-optile.default = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-    freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, ...){
+optile.default = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+    freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, sym = FALSE, ...){
 
 
 
@@ -67,13 +67,16 @@ if( fun %in% c("casort","rmca","ca")){
 }
 if( fun %in% c("preclass","presort","IBCC") ){
 	presort <- FALSE	
+	
+		args <- c(args,as.integer(sym))
+		
 }
 if( fun %in% c("hamming","hamm","WBCC") ){
 	if(nd == 2){
 		fun = "quickhamm2d"
 		foreign=".Call"
 	}else{
-		simpleWarning("hamming for more than 2 dimensions is under construction. code is still erroneous. Will use the unweighted BCC instead.")	
+		simpleWarning("WBCC for more than 2 dimensions is still under construction. Using the unweighted BCC instead.")	
 		fun <- "mvclass"
 		#vs <- as.integer(1)
 	}
@@ -97,7 +100,13 @@ if( fun %in% c("quickmv","quickhamm","quickmv2") ){
 }
 neg <- 1
 if( nd == 2 & fun %in% c("class","quickmv","BCC") & vs < 1 ){
-	fun <- "quicktile"
+
+	if(sym){
+		fun <- "symmtile"
+	}else{
+		fun <- "quicktile"
+	}
+	
 	foreign <- ".Call"
 	neg <- -1
 }
@@ -118,6 +127,21 @@ if(!any(fi)){
 }else{
 	data <- subtable(x, 1:nd[-fi], keep.zero = FALSE, freqvar = names(data)[fi], allfactor = TRUE)	
 	fi <- nd+1
+}
+if(iter > 1){
+	origlabs <- lapply(data[,-fi],levels)
+}
+if( nd==2 & fun %in% c("symmtile","quicktile","BCC","preclass") ){
+
+	if(BCI(xtabs(Freq~.,data=data)) > 1){
+		if(sym){
+			nn <- round(nlevels(data[,1])/3)
+			data[,1] <- factor(data[,1],levels = levels(data[,1])[  c(1:nn, (2*nn+1):nlevels(data[,1]),(nn+1):(2*nn))   ]   )
+			data[,2] <- factor(data[,2],levels = levels(data[,2])[  c(1:nn, (2*nn+1):nlevels(data[,1]),(nn+1):(2*nn))   ]   )
+		}else{
+			data[,1] <- factor(data[,1],levels = rev(levels(data[,1])))
+		}
+	}	
 }
 rm(x)
 gc()
@@ -200,8 +224,12 @@ if( stepwise ){
 if ( joint ){
 	
 	# indicator matrix and Burt matrix
-	Z <- as.data.frame(do.call(cbind,sapply(data[,1:nd],imat, simplify = FALSE)))
-	Z <- t(Z * data[,fi]) %*% as.matrix(Z)
+	#Z <- do.call(cbind,sapply(data[,1:nd],imat, simplify = FALSE))
+	#rownames(Z)<-NULL
+	#Z <- as.data.frame(Z)
+	#Z <- t(Z * data[,fi]) %*% as.matrix(Z)
+	Z <- Burt(data)
+	
 	dims <- as.integer( sapply(data[,1:nd], nlevels) )
 	storage.mode(Z) = "integer"	
 
@@ -217,6 +245,7 @@ if ( joint ){
 		
 	# preparing mv optimization call
 	args <- c(list(Z,dims,perm.cat),args)
+
 }
 	
 	if(is.null(foreign)){
@@ -244,9 +273,19 @@ if ( joint ){
 	if( iter > 1 ){
 	for( h in 2:iter ){	
 		data0 <- data
-		rnd <- lapply(dims, function(s) sample(1:s))
+		if(sym){
+			sam <- sample(1:dims[1])
+			rnd <- rep(list(sam),length(dims))
+		}else{
+			rnd <- lapply(dims, function(s) sample(1:s))
+		}
 		for(i in 1:nd){
-			data0[,i] <- factor(data0[,i], levels <- levels(data0[,i])[rnd[[i]]] )	
+			if(perm.cat[i] == 1){
+				data0[,i] <- factor(data0[,i], levels <- levels(data0[,i])[rnd[[i]]] )
+			}else{
+				rnd[[i]] <- 1:dims[i]
+				
+			}	
 		}
 		if( presort & !stepwise ){
 			Z = xtabs(Freq~.,data = data0)
@@ -254,7 +293,7 @@ if ( joint ){
 			dims <- as.integer( dim(Z) )
 			cumdims <- c(0,cumsum(dims))
 		
-			res0 = .Call("preclass",Z,dims,perm.cat)
+			res0 = .Call("preclass",Z,dims,perm.cat,sym)
 		
 			for( i in 1:nd ){
 				preorders[[i]] <- res0[ (1+cumdims[i]):cumdims[i+1]]+1
@@ -279,10 +318,14 @@ if ( joint ){
 		
 		# preparing mv optimization call
 			args[[1]] <- Z
+			#if(length(args)==0){
+			#	args[[1]] <- Z
+			#}else{
+			#	args <- c(list(Z),args)
+			#}
 		}
 		
 		optcall[[1+1+!is.null(foreign)]] <- args[[1]]	
-		
 		try(
 			res0 <- eval(optcall)
 		)
@@ -321,8 +364,9 @@ if ( joint ){
 		scaled.crit <- crit/ iccrit(Z)	
 	}
 		
-		
-		
+	if(iter > 1){
+		newlabs <- lapply(data[,-fi],levels)
+	}
 	if( return.data ){
 		if(nd > 2 & return.type == "matrix"){
 			return.type <- "array"
@@ -349,6 +393,10 @@ if ( joint ){
 		if(!is.null(scaled.crit)){
 			attr(ret,"scaled.criterion") <- scaled.crit
 		}
+		if(iter > 1){
+			# this is a patchwork fix -- change
+			orders <- mapply(function(y,z){ match(z,y) }, y = origlabs, z = newlabs,SIMPLIFY = FALSE)
+		}
 		attr(ret, "orders") <- orders
 		return(ret)
 	}else{
@@ -360,48 +408,62 @@ if ( joint ){
 
 
 
-optile.matrix = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-    freqvar = NULL, return.data = TRUE, return.type = "matrix", vs = 0, tree = NULL, ...){
+optile.matrix = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+    freqvar = NULL, return.data = TRUE, return.type = "matrix", vs = 0, tree = NULL, sym = FALSE, ...){
 	
 	dx <- dim(x)
 	
+	#if(length(dx) == 2){
+	#	sym <- isSymMat(x)
+	#}else{
+	#	sym <- FALSE
+	#}
+	if(sym){
+		stopifnot(length(dx) == 2)
+		stopifnot(isSymMat(x))
+	}
 	x <- as.data.frame(as.table(x))
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, past = past, scale = scale, 
-    freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree)
+	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, 
+    freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree, sym = sym)
 } 
 
-optile.array = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-    freqvar = NULL, return.data = TRUE, return.type = "array", vs = 0, tree = NULL, ...){
+optile.array = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+    freqvar = NULL, return.data = TRUE, return.type = "array", vs = 0, tree = NULL, sym = FALSE, ...){
 	
 	dx <- dim(x)
 	
 	x <- as.data.frame(as.table(x))
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, past = past, scale = scale, 
+	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,  
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
 } 
 
-optile.table = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-    freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, ...){
+optile.table = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+    freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, sym = FALSE,...){
 #print("spectabular")
 	dx <- dim(x)
-	
+	#if(length(dx) == 2){
+	#	sym <- isSymMat(x)
+	#}else{
+	#	sym <- FALSE
+	#}
+	if(sym){
+		stopifnot(length(dx) == 2)
+		stopifnot(isSymMat(x))
+	}
 	x <- as.data.frame(x)
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, past = past, scale = scale, 
-    freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree)
+	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,  freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree, sym = sym)
 } 
 
-optile.ftable = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-    freqvar = NULL, return.data = TRUE, return.type = "ftable", vs = 0, tree = NULL, ...){
+optile.ftable = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1,     freqvar = NULL, return.data = TRUE, return.type = "ftable", vs = 0, tree = NULL, sym = FALSE, ...){
 	
 	dx <- dim(x)
 	
 	x <- as.data.frame(x)
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, past = past, scale = scale, 
-    freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
+	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
 }    
 
 # ----------------------------------------------------------------------------------------------- #
@@ -485,8 +547,8 @@ steptile = function( args ){
 				rnd1 <- sample(1:dims[1])
 				rnd2 <- sample(1:dims[2])
 				
-				data0[,1] <- factor(data0[,1], levels <- levels(data0[,1])[rnd1] )	
-				data0[,2] <- factor(data0[,2], levels <- levels(data0[,2])[rnd2] )	
+				if(perm.cat[1] == 1) data0[,1] <- factor(data0[,1], levels <- levels(data0[,1])[rnd1] )	
+				if(perm.cat[2] == 1) data0[,2] <- factor(data0[,2], levels <- levels(data0[,2])[rnd2] )	
 				
 				tab0 <- xtabs(data0$Freq~data0[,1]+data0[,2])
 				storage.mode(tab0) <- "integer"
@@ -804,7 +866,6 @@ csvd <- function(data, dims, perm.cat, ...){
 	
 	res0 <- casort(Z,dims,perm.cat)
 
-	
 	orders = list()
 	for( i in 1:nd ){
 		orders[[i]] <-  res0[ (1+cumdims[i]):cumdims[i+1]]+1 
@@ -814,16 +875,18 @@ csvd <- function(data, dims, perm.cat, ...){
 	# table in new order
 	tt <- xtabs(Freq~.,data=data)
 	
-	
 	#data <- as.data.frame(data)
 	#for( i in 1:nd ){
 	#	data[,i] <- as.factor(data[,i])	
 	#}
 
-	
+	#oldorders <- orders
 	opt <- FALSE
+	rpts <- 1
+	ppl <- 2
 	while(!opt){
 		opt <- TRUE
+		#roundtrip <- TRUE
 	for( i in 1:nd ){
 		m <- dim(tt)[i]
 		if(nd < 3){
@@ -852,37 +915,52 @@ csvd <- function(data, dims, perm.cat, ...){
 		#neworder <- do.call(order, as.data.frame(round(S$v, 12)))
 		#data[,i] = factor(data[,i],levels = levels(data[,i])[neworder])
 		coords[[i]] <- S$v
-		
 		neworder <- do.call(order, as.data.frame( round( coords[[i]], 12) ))	
 	
 		data[,i] = factor(data[,i],levels = levels(data[,i])[neworder])
 		
+		#if( !all(orders[[i]][neworder] == oldorders[[i]])){
+		#	roundtrip <- FALSE
+		#}
+	
+		
 		if( (!all(orders[[i]] == orders[[i]][neworder]))  &  (!all(orders[[i]] == orders[[i]][rev(neworder)])) ){
 			opt <- FALSE	
 		}
+		
 # maybe save the last setup for i = 1..nd and compare this ??
-		
+		#oldorders[[i]] <- orders[[i]]
 		orders[[i]] <- orders[[i]][neworder]
-		
 		tt <- xtabs(Freq~.,data=data)
 		pp<-BCI(tt)
+		
+		ppl <- c(pp,ppl)
+		rpts <- max(rpts,sum((ppl-pp)<1e-12))
+		#print(pp)
 		if(pp > 1){
 			orders[[i]] <- rev(orders[[i]])
 			data[,i] = factor(data[,i],levels = rev(levels(data[,i])))
 			tt <- xtabs(Freq~.,data=data)
-			pp<-neg3t(tt)
+			pp<-BCI(tt)
 		}
 	
 		
-	}	
 	}
-	
+	if(rpts > 4){
+		opt <- TRUE
+	}
+		#if(roundtrip){
+		#	opt <- TRUE
+		#}	
+	}
 	# handle reverse orders
 	tt2 <- xtabs(data$Freq~data[,1]+data[,2])
 	if( (tt2[1,dims[2]] + tt2[dims[1],1]) > (tt2[1,1] + tt2[dims[1],dims[2]]) ){
 		orders[[1]] <- rev(orders[[1]])	
 	}
-	
+	if(rpts > 4){
+		simpleWarning("Algorithm did not converge. Loop detected.")
+	}
 	return(c(unlist(orders)-1,0))
 }
 
@@ -1100,14 +1178,16 @@ untree <- function(x,y, ind = FALSE){
 	return(ret)
 }
 
-optile.list = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, past = NULL, scale = FALSE, 
-    freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, k = NULL, h = NULL, ...){
+optile.list = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+    freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, sym = FALSE, k = NULL, h = NULL, ...){
 	
 	#stopifnot( all(labels(ncl) %in% c("h","k", "")) )
 	#if(!is.null(k) & !is.null(h)){
 	#	warning("k is used before h")	
 	#}
-	
+	if(sym){
+		simpleWarning("sym = TRUE is not implemented for the optile algorithm with hierarchical category structures (trees). Ignoring it.")
+	}
 	if(is.null(h)){
 			h <- rep(NA,length(x))
 		}
@@ -1164,238 +1244,15 @@ optile.list = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = 
 						return(ret)
 					}
 				}, z = x, kh = ncl, SIMPLIFY = FALSE) 
-	#print(mp)						
+						
 	treelist <- lapply(mp, function(z) attr(z,"tree"))
 	data <- do.call(cbind,mp)
 # how to get the trees out?
-	#print(sapply(data,levels))
 	x <- subtable(data, 1:ncol(data), allfactor=TRUE)
-	#print(x)
-	#args[[ length(args)+1 ]] <- treelist
-	#print(treelist)
-	#names(args)[[ length(args) ]] <- "treelist"
+
 	
-	NextMethod("optile",object = x, fun = "TBCC", presort = FALSE, foreign = NULL, args = args, perm.cat = perm.cat, method = NULL, iter = iter, past = past, scale = scale, 
+	NextMethod("optile",object = x, fun = "TBCC", presort = FALSE, foreign = NULL, args = args, perm.cat = perm.cat, method = NULL, iter = iter, 
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = treelist )
 }
-
-
-subtree = function(tree, k = NULL, h = NULL){
-	
-	data <- tree$order 
-	itr <- untree(tree$merge, tree$order, ind = TRUE)
-	
-	if( is.null(k) & is.null(h) ){
-		stop("Neither k nor h specified")	
-	}
-	if( !is.null(k) & !is.null(h) ){
-		stop("Unclear specification: found both k and h.")	
-	}
-	if(!is.null(h)){
-		k <- sum(tree$height > h)	
-	}
-	
-	nit <- length(itr)
-	
-	itr <- itr[ (nit-k+2):nit ]
-	mrg <- tree$merge[(nit-k+2):nit,,drop=FALSE]
-	
-	#compute level order
-	
-	tmrg <- t(mrg)
-	mins <- sapply(itr,function(x) sapply(x, min))
-	#mins[tmrg < (nit-k+2)] <- rank(mins[tmrg < (nit-k+2)])
-	#tmrg[tmrg < (nit-k+2)] <- -c(1:k)
-	#ord <- rank(mins[tmrg < (nit-k+2)])
-	tmrg[tmrg < (nit-k+2)] <- -rank(mins[tmrg < (nit-k+2)])
-	tmrg[tmrg >= (nit-k+2)] <- tmrg[tmrg >= (nit-k+2)] - nit + k - 1
-	mrg <- t(tmrg)
-	rm(tmrg)
-	
-	# TODO: better solution than a loop?
-	#s <- 1
-	for( i in 1:(k-1) ){
-		i1 <- mrg[i,1]
-		if( i1 < 0 ){
-			data[ itr[[i]][[1]] ] <- -i1 #-s
-			#s <- s+1
-		}
-		i2 <- mrg[i,2]
-		if( i2 < 0 ){
-			data[ itr[[i]][[2]] ] <- -i2 #-s
-			#s <- s+1
-		}
-	}
-	# CHECK
-	labs <- as.vector(t(mrg))
-	labs <- labs[labs < 0]
-	labs <- match(1:k, -labs)
-	# CHECK
-	
-	ret <- new("list")
-	ret$merge <- mrg
-	ret$order <- 1:k
-	ret$labels <- labs
-	#ret$data <- factor(data[ order(tree$order) ], levels <- ord)
-	ret$data <- factor(data[ order(tree$order) ])
-	ret$height <- tree$height[ (nit-k+2):nit ]
-	class(ret) <- "hclust"
-	return(ret)
-}
-
-
-
-
-noderange <- function(mrg,ord, xval = NULL, ind = FALSE){
-	stopifnot(ncol(mrg) == 2)
-	ng <- nrow(mrg)
-	
-	ind1 <- lapply(1:ng,function(z) c(ng+2,0))
-	ind2 <- ind1
-	for(i in 1:ng){
-		if(mrg[i,1] < 0){
-			ind1[[i]][2] <- max( match(abs(mrg[i,1]),ord), ind1[[i]][2] )
-			ind1[[i]][1] <- min( match(abs(mrg[i,1]),ord), ind1[[i]][1] )
-		}else{
-			ind1[[i]][1] <- min( ind1[[i]][1] , ind1[[ mrg[i,1] ]][1], ind2[[ mrg[i,1] ]][1])
-			ind1[[i]][2] <- max( ind1[[i]][2] , ind1[[ mrg[i,1] ]][2], ind2[[ mrg[i,1] ]][2])
-		}
-		if(mrg[i,2] < 0){
-			ind2[[i]][2] <- max( match(abs(mrg[i,2]),ord), ind2[[i]][2] )
-			ind2[[i]][1] <- min( match(abs(mrg[i,2]),ord), ind2[[i]][1] )
-		}else{
-			ind2[[i]][1] <- min( ind2[[i]][1] , ind1[[ mrg[i,2] ]][1], ind2[[ mrg[i,2] ]][1])
-			ind2[[i]][2] <- max( ind2[[i]][2] , ind1[[ mrg[i,2] ]][2], ind2[[ mrg[i,2] ]][2])
-		}
-	}	
-	
-	ret <- mapply(function(x,y) list( x,y ), x = ind1,y=ind2, SIMPLIFY =FALSE)	
-	return(ret)
-}
-
-nodexc <- function(mrg,ord, xval = NULL, ind = FALSE){
-	stopifnot(ncol(mrg) == 2)
-	ng <- nrow(mrg)
-
-	cnt <- as.list(rep(0,ng))
-	
-	for(i in 1:ng){
-		if(mrg[i,1] < 0){
-			a <-  (match(abs(mrg[i,1]),ord)-0.5)/(ng+1)
-		}else{
-			a <- cnt[[mrg[i,1]]][3]	
-		}
-		if(mrg[i,2] < 0){
-			b <-  (match(abs(mrg[i,2]),ord)-0.5)/(ng+1)
-		}else{
-			b <- cnt[[mrg[i,2]]][3]	
-		}
-		cnt[[i]] <- c(a,b,(a+b)/2)
-	}	
-
-	return(cnt)
-}
-
-
-
-nodeheight <- function(mrg,ord,ht){
-	stopifnot(ncol(mrg) == 2)
-	ng <- nrow(mrg)
-	#ind1 <- vector(mode="list",length=ng)
-	#ind2 <- vector(mode="list",length=ng)
-	LH <- as.list(ht)
-	RH <- LH
-	for(i in 1:ng){
-		if(mrg[i,1] > 0){
-			LH[[i]] <- LH[[i]] - ht[[mrg[i,1]]]
-		}
-		if(mrg[i,2] > 0){
-			RH[[i]] <- RH[[i]] - ht[[mrg[i,2]]]
-		}
-	}	
-
-	ret <- mapply(function(x,y) list( x,y ), x = LH,y=RH, SIMPLIFY =FALSE)	
-	return(ret)
-}
-
-drawt = function(tree, vertical = FALSE, vp = NULL, ... ){
-	if(is.null(tree)){
-		return(invisible(TRUE))	
-	}
-	ng <- length(tree$order)
-	maxht <- max(tree$height)
-	nht <- nodeheight( tree$merge, tree$order, tree$height/maxht	)
-	#nrg <- noderange( tree$merge, tree$order )
-	#nleft <- lapply(nrg, function(z) mean(z[[1]])/ng )
-	#nright <- lapply(nrg, function(z) mean(z[[2]])/ng )
-	nxc <- nodexc(tree$merge, tree$order)
-	if( !vertical ){
-	mapply( function(x,hlr, h){
-		grid.lines( x = c(x[1],x[2]), y = c(h,h), vp = vp )
-		grid.lines( x = c(x[1],x[1]), y = c(h-hlr[[1]],h), vp = vp )
-		grid.lines( x = c(x[2],x[2]), y = c(h-hlr[[2]],h) , vp = vp)
-		}, x = nxc , hlr = nht, h = as.list(tree$height/maxht))
-	}else{
-		mapply( function(x,hlr, h){
-		grid.lines( y = 1-c(x[1],x[2]), x = 1-c(h,h) , vp = vp)
-		grid.lines( y = 1-c(x[1],x[1]), x = 1-c(h-hlr[[1]],h) , vp = vp)
-		grid.lines( y = 1-c(x[2],x[2]), x = 1-c(h-hlr[[2]],h) , vp = vp)
-		}, x = nxc , hlr = nht, h = as.list(tree$height/maxht))
-	}
-invisible(TRUE)
-	
-}
-
-
-tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, tile.col= hsv(0.1,0.1,0.1,alpha=0.6),
- bg.col = NULL, vp = NULL, ... ){
-	stopifnot( !is.null( attr(x,"tree") ) | !is.null(tree) )
-	
-	
-	if(is.null(border)){
-		border <- 0.05	
-	}
-	if( !is.null(tree) ){
-		tree1 <- tree[[ dims[1] ]]	
-		tree2 <- tree[[ dims[2] ]]	
-	}else{
-		tree1 <- attr(x,"tree")[[ dims[1] ]]	
-		tree2 <- attr(x,"tree")[[ dims[2] ]]
-	}
-	if(length(dim(x)) > 2){
-		x <- as.data.frame(as.table(x))
-		x <- xtabs(x$Freq~x[,dims[1]]+x[,dims[2]])
-	}
-	lefts <- ifelse( all(is.na(tree1)), 0, tw )
-	tops <- ifelse( all(is.na(tree2)), 0, tw )
-	
-	if(is.null(vp)){
-		grid.newpage()	
-	}else{
-		pushViewport(vp)	
-	}
-	
-	vp00 <- viewport(x=lefts,y=1-tops, just=c("left","top"), width = 1-lefts, height = 1-tops)
-	
-	if(!all(is.na(tree1))){
-	vp0L <- viewport(x=0,y=1-tops, just=c("left","top"), width = lefts, height = (1-tops))
-	pushViewport(vp0L)
-	pushViewport( viewport(0.5,0.5,0.96,1-2*border) )
-	drawt(tree1,vertical=TRUE, vp = NULL)
-	upViewport(2)
-	}
-	if(!all(is.na(tree2))){
-	vp0T <- viewport(x=lefts,y=1, just=c("left","top"), width = (1-lefts), height = tops)	
-	pushViewport(vp0T)
-	pushViewport( viewport(0.5,0.5,1-2*border,0.96) )
-	drawt(tree2,vertical=FALSE, vp = NULL)
-	upViewport(2)
-	}
-	pushViewport(vp00)
-	fluctile(x, add = TRUE, tile.col = tile.col, bg.col = bg.col)
-	upViewport()
-	return(invisible(TRUE))
-}
-
 
 

@@ -1,4 +1,4 @@
-untableSet <-
+untableSet2 <-
 function(data, freqvar = NULL){
 	
 	data = as.data.frame(data)
@@ -22,16 +22,16 @@ function(data, freqvar = NULL){
 	X = rbind(X,as.matrix(data[c(1:m)[-c(zero,zind)],ind]))
 	return(suppressWarnings(data.frame(X)))
 }
-untableSet2 <- function(data, freqvar = NULL){
-	data = as.data.frame(data)
-	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar = "Freq" }
+untableSet <- function(data, freqvar = NULL){
+	data <- as.data.frame(data)
+	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar <- "Freq" }
 	
 	stopifnot(freqvar %in% names(data))
 	ind = which(names(data) != freqvar)
 	fi = which(names(data) == freqvar)
-	names(data)[fi] = "Freq"
-	n = ncol(data)
-	m = nrow(data)
+	names(data)[fi] <- "Freq"
+	n <- ncol(data)
+	m <- nrow(data)
 	lvls <- lapply(data[,-fi],function(z) levels(as.factor(z)))
 	
 	lol <- apply(data,1,function(z){

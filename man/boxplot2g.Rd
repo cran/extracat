@@ -59,10 +59,11 @@ Please note that I do not claim that the resulting contours have any statistical
 \link[graphics]{contour}
 }
 \examples{
+\dontrun{
 data(olives)
 boxplot2g(olives$palmitoleic,olives$oleic,olives$Region)
-
 boxplot2g(olives$palmitoleic,olives$oleic,olives$Area,
 alpha=0.5,smooth.args=list(span=0.3), colv = rainbow(9))
+}
 }
 

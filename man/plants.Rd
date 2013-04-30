@@ -11,7 +11,7 @@ Binary state variables indicating which of more than 30000 plants grow in that s
 \format{
   A data frame with 34781 observations on the following 70 variables.
   \describe{
-    \item{\code{V1}}{a factor with the names of more than 30000 plants, e.g. \code{abelia} }
+    \item{\code{V1}}{name}
     \item{\code{ab}}{a numeric vector}
     \item{\code{ak}}{a numeric vector}
     \item{\code{ar}}{a numeric vector}
@@ -83,9 +83,7 @@ Binary state variables indicating which of more than 30000 plants grow in that s
     \item{\code{fraspm}}{a numeric vector}
   }
 }
-
 \source{
-http://archive.ics.uci.edu/ml/datasets/Plants
+\url{http://archive.ics.uci.edu/ml/datasets/Plants}
 }
-
 \keyword{datasets}

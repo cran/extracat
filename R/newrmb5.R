@@ -20,6 +20,9 @@ rmb.table = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidt
  model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),...){
 	
 	vn <- names(dimnames(x))
+	if(is.null(vn)){
+		vn <- LETTERS[1:length(dim(x))]
+	}
 	if(is.numeric(col.vars)){
 			vn <- c(vn[-col.vars],vn[col.vars])
 			col.vars <- sort(seq_along(	vn ) %in% col.vars)
@@ -189,6 +192,8 @@ if( "resid.type" %in% names(model.opt) ){
 }else{
 	resid.type <- "pearson"
 }
+
+
 if( "resid.display" %in% names(model.opt) ){
 	resid.display <- model.opt$resid.display
 }else{
@@ -236,10 +241,19 @@ if( "alpha.r" %in% names(col.opt) ){
 	alpha.r <- -log(0.2)
 }
 
+
 if( "line.col" %in% names(col.opt) ){
 	line.col <- col.opt$line.col
 }else{
-	line.col <- ifelse( !spine & !circular, "darkgrey", NA)
+	if(!is.null(expected)){
+		if(spine | circular){
+			 line.col <- NA
+		}else{
+			line.col <- alpha(1,0.9)
+		}
+	}else{
+		line.col <- ifelse( !spine & !circular, "darkgrey", NA)
+	}
 }
 
 
@@ -267,7 +281,7 @@ if( "varnames" %in% names(label.opt) ){
 if( "abbrev" %in% names(label.opt) ){
 	abbrev <- label.opt$abbrev
 }else{
-	abbrev <- FALSE
+	abbrev <- NULL
 }
 if( "lab.cex" %in% names(label.opt) ){
 	lab.cex <- label.opt$lab.cex
@@ -276,7 +290,11 @@ if( "lab.cex" %in% names(label.opt) ){
 }
 
 
+tmp <- which(cut == FALSE)
+if(any(tmp)) cut[tmp] <- 0
 
+tmp <- which(cut == TRUE)
+if(any(tmp)) cut[tmp] <- 12
 
 # ----- parameter check 1 ----- #
 		
@@ -294,7 +312,7 @@ if( "lab.cex" %in% names(label.opt) ){
 			stop(simpleError("Wrong alpha specification! [0,1]"))
 		}
 		
-		stopifnot(is.logical(abbrev)|is.numeric(abbrev))
+	
 		stopifnot(is.logical(label)|is.numeric(label))
 		
 		#if( !("base.alpha" %in% ls()) ){
@@ -312,7 +330,7 @@ if( "lab.cex" %in% names(label.opt) ){
 int.vars <- sapply(fterms, function(z){ 
 
 v <- data[,match(z,names(data))]
-if(is.numeric(z)){
+if(is.numeric(v)){
 	all( (v%%1)==0 )
 }else{
 	FALSE	
@@ -323,16 +341,27 @@ if(length(cut) > 1){
 	int.vars[cut>0] <- FALSE	
 }
 
+# integer variables will not be cut unless the value of cut at this particular position is positive.
+# cut variable i iff cut[i] > 0 and Vi is numeric.
 
 num.vars <- sapply(fterms, function(z) is.numeric(data[,match(z,names(data))]))
+
+
+
+
+cuttf <- (cut > 0) & ( !int.vars   & num.vars )
 
 if(is.null(cut)){
 	cut <- rep(12,nv)	
 }	
 if(length(cut) == 1){
-	cut <- rep(cut, nv)	
+	cut <- rep(cut, nv)
 }
-cuttf <- (cut > 0) & ( !int.vars   & num.vars )
+if(length(cut) < nv){
+	cut <- c(cut, rep(0,nv-length(cut)))
+}
+
+
 
 for(i in fterms[cuttf]){
 	j <- which(names(data) == i)
@@ -447,19 +476,17 @@ if(!use.na){
 				label <- rep(FALSE,nv)	
 			}
 	}
-	
-	if(is.numeric(abbrev)){
-			abbr <- TRUE
-	}else{
-			abbr <- abbrev	
+	if(length(abbrev) < length(ind)){
+		abbrev <- rep(abbrev,length(ind))[seq_along(ind)]
 	}
+		
 	
 	
-	
-	if(!abbr){
+	if(is.null(abbrev)){
 		rclabs <- lapply(dset[,ind],function(x) levels(as.factor(x)))
 	}else{
-		rclabs <- lapply(dset[,ind],function(x) abbreviate(levels(as.factor(x)),abbrev))
+		#rclabs <- lapply(dset[,ind],function(x) abbreviate(levels(as.factor(x)),abbrev))
+		rclabs <- mapply(function(y,z) abbreviate(levels(y),z),y = dset[,ind], z = as.list(abbrev),SIMPLIFY = FALSE)
 	}
 	lab.tv <- ifelse(spine,FALSE,lab.tv)
 
@@ -473,7 +500,12 @@ if(!use.na){
 	
 #	orig.labs <- lapply(dset[,ind],function(x) levels(as.factor(x)))
 	if( length(terms(f)) > 2 ){
-		names(dset)[which( suppressWarnings(names(dset) == terms(f)[[2]]))] <- "Freq"
+		
+		fi <- which( suppressWarnings(names(dset) == terms(f)[[2]]))
+		if("Freq" %in% names(dset)[-fi]){
+			names(dset)[ which(names(dset) == "Freq") ] <- "Freq2"
+		}
+		names(dset)[fi] <- "Freq"
 	}
 	dset <- subtable(dset,ind,keep.zero=FALSE,allfactor=TRUE)
 	
@@ -587,7 +619,7 @@ if(num.mode.x){
 				
 		# ------ logit response residuals ----- #
 		if(mod.type == "polr"){ 
-			if(resid.type != "response"){
+			if(! (resid.type %in% c("response","prob","prop","rat"))){
 				print(simpleWarning("Argument resid.type ignored. Only response residuals are implemented for polr models."))
 				resid.type<-"response"	
 			}
@@ -605,15 +637,18 @@ if(num.mode.x){
 			pred <- predict(mod,newdata = subtable(dset,c(1:(nv-1)),keep.zero=F),type="probs")
 			fit.values <- as.vector(t(pred))
 			tt1r <- ftable(tapply(fit.values,as.list(dset[,1:nv]),sum),col.vars=which(col.vars))
-			resid.mat <- (H-tt1r)
+			resid.mat <- (H - tt1r)
+			
+						
 			p.value<-anova(mod,modS)[2,7]
 			
 			if( use.expected.values ){
-				H0 <- tt1r/tt2
+				H0 <- tt1r#/tt2
 				H00 <- H
 				H <- H0
+				resid.mat <- -resid.mat
 			}else{
-				H00 <- tt1r/tt2
+				H00 <- tt1r#/tt2
 				# H <- H
 			}
 			
@@ -628,9 +663,20 @@ if(num.mode.x){
 			mod.formula <- paste("Freq~",single.terms,"+",interaction.terms,sep="")
 			
 			mod <- glm( as.formula(mod.formula),data = dset,  family = "poisson")
-		    mod.residuals <- residuals(mod,type=resid.type)
+			if(resid.type %in% c("prob","rat","prop")){
+				mod.residuals <- residuals(mod,type="response")
+				resid.mat <- ftable(xtabs(mod.residuals~.,data=dset[,1:nv]),col.vars=which(col.vars))
+				resid.mat <- resid.mat / tt2
+				resid.type <- "response"
+			}else{
+				mod.residuals <- residuals(mod,type=resid.type)
+				resid.mat <- ftable(xtabs(mod.residuals~.,data=dset[,1:nv]),col.vars=which(col.vars))
+			}
+		    
+			
+
 			#resid.mat <-  ftable(tapply(mod.residuals,as.list(dset[,1:nv]),sum),col.vars=which(col.vars))
-			resid.mat <- ftable(xtabs(mod.residuals~.,data=dset[,1:nv]),col.vars=which(col.vars))
+			
 			Df  <- mod$df.residual
 			Dev <- mod$deviance
 			p.value <- 1-pchisq(Dev,Df)
@@ -643,11 +689,13 @@ if(num.mode.x){
 				H0 <- pred.mat/tt2
 				H00 <- H
 				H <- H0
+				resid.mat <- -resid.mat
 			}else{
 				H00 <-  pred.mat/tt2
-				
 			}
 		}
+	
+		
 		if(mod.type == "gen"){
 			
 			p.value <- 1
@@ -669,6 +717,7 @@ if(num.mode.x){
 				H0 <- pred.mat/tt2
 				H00 <- H
 				H <- H0
+				resid.mat <- -resid.mat
 			}else{
 				H00 <-  pred.mat/tt2
 			}
@@ -795,9 +844,15 @@ if( is.list(freq.trans) ){
 			if(is.null(expected) | res.val.only ){
 				
 				#has any color rule been defined?
-				if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge") %in% col)){
+				if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge","d","s","h","t","heat","ht","ter","terrain") %in% col)){
 				#num.col <- ntc0^(spine | !eqwidth | (eqwidth & circular))
 				num.col <- ntc0
+				
+				if(!("sample" %in% labels(col.opt))){
+						sample <- FALSE
+					}else{
+						sample <- col.opt$sample
+					}
 				
 				if( col %in% c("hsv","rgb") ){
 					col.def <- formals(rainbow)
@@ -816,6 +871,8 @@ if( is.list(freq.trans) ){
 					if(!("alpha" %in% labels(col.opt))){
 						col.opt$alpha <- eval(col.def$alpha)
 					}
+					
+					
 					colv <- rainbow(num.col,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, alpha = col.opt$alpha)
 					}
 				if( col == "hcl" ){
@@ -833,8 +890,11 @@ if( is.list(freq.trans) ){
 						col.opt$end <- 360 * (num.col - 1)/num.col
 					}
 				colv <- rainbow_hcl(num.col,c = col.opt$c, l = col.opt$l, start = col.opt$start, end = col.opt$end)
+				if("alpha" %in% names(col.opt)){
+					colv <- alpha(colv,col.opt$alpha)
 				}
-				if( col %in% c("seq","sqt","sqn","sequential") ){
+				}
+				if( col %in% c("seq","sqt","sqn","sequential","s") ){
 					col.def <- formals(sequential_hcl)
 					if(!("h" %in% labels(col.opt))){
 						col.opt$h <- eval(col.def$h)
@@ -850,7 +910,7 @@ if( is.list(freq.trans) ){
 					}
 					colv <- rev(sequential_hcl(num.col,h = col.opt$h, c. = col.opt$c, l = col.opt$l, power = col.opt$power))
 				}
-				if( col %in% c("div","diverging","diverge") ){
+				if( col %in% c("div","diverging","diverge","d") ){
 					col.def <- formals(diverge_hcl)
 					if(!("h" %in% labels(col.opt))){
 						col.opt$h <- eval(col.def$h)
@@ -865,7 +925,52 @@ if( is.list(freq.trans) ){
 						col.opt$power <- eval(col.def$power)
 					}
 					colv <- diverge_hcl(num.col,h = col.opt$h, c = col.opt$c, l = col.opt$l, power = col.opt$power)
-					
+					if("alpha" %in% names(col.opt)){
+						colv <- alpha(colv,col.opt$alpha)
+					}
+				}
+				
+				
+				if( col %in% c("heat","ht","h") ){
+					col.def <- formals(heat_hcl)
+					if(!("h" %in% labels(col.opt))){
+						col.opt$h <- eval(col.def$h)
+					}
+					if(!("c." %in% labels(col.opt))){
+						col.opt$c. <- eval(col.def$c.)
+					}
+					if(!("l" %in% labels(col.opt))){
+						col.opt$l <- eval(col.def$l)
+					}
+					if(!("power" %in% labels(col.opt))){
+						col.opt$power <- eval(col.def$power)
+					}
+					colv <- heat_hcl(num.col,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
+					if("alpha" %in% names(col.opt)){
+						colv <- alpha(colv,col.opt$alpha)
+					}
+				}
+				if( col %in% c("terrain","ter","t") ){
+					col.def <- formals(terrain_hcl)
+					if(!("h" %in% labels(col.opt))){
+						col.opt$h <- eval(col.def$h)
+					}
+					if(!("c." %in% labels(col.opt))){
+						col.opt$c. <- eval(col.def$c.)
+					}
+					if(!("l" %in% labels(col.opt))){
+						col.opt$l <- eval(col.def$l)
+					}
+					if(!("power" %in% labels(col.opt))){
+						col.opt$power <- eval(col.def$power)
+					}
+					colv <- terrain_hcl(num.col,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
+					if("alpha" %in% names(col.opt)){
+						colv <- alpha(colv,col.opt$alpha)
+					}
+				}
+				if(sample){
+					colv <- sample(colv)
 				}
 			
 				}else{
@@ -920,10 +1025,10 @@ if( is.list(freq.trans) ){
 				resid.mat[resid.mat > resid.max]  <-  resid.max
 				rmax <- ifelse(abs(resid.max) < 10^{-6},1,resid.max)
 				
-				if( !use.expected.values ){
-					resid.mat <- -resid.mat	
-				}
-				
+				#if( !use.expected.values ){
+				#	resid.mat <- -resid.mat	
+				#}
+		
 				alf <- 0.05
 				
 				col.Mat <- apply(resid.mat,2,function(x){
@@ -948,26 +1053,18 @@ if( is.list(freq.trans) ){
 						}
 					
 					})
-				colv.grey <- hsv(h=1, s = 0, v = seq(0.9,0.6,-0.3/(ntc0-1)))#spine, eqwidth, circular?
+				colv.grey <- hsv(h=1, s = 0, v = seq(0.9,0.6,-0.3/(ntc0-1))) #spine, eqwidth, circular?
 				grey.Mat <- spread( t(rep(colv.grey , nc/ntc)),nrow=nr)
 				
-#				dev.new()
-#				plot(1, xlim=c(0,nrow(col.Mat)), ylim = c(0,ncol(col.Mat)))
-#				
-#				for(i in 1:nrow(col.Mat)){
-#					for(j in 1:ncol(col.Mat)){
-#						rect(i-1,j-1,i,j,col = col.Mat[i,j])
-#					}
-#				}
-#				dev.new()
+
 				if( both ){
 					col.Mat2 <- col.Mat
 					col.Mat3 <- grey.Mat
 					col.Mat4 <- grey.Mat
-					col.Mat[resid.mat >= 0] <- hsv(0,0,0,alpha=0) # red remains
-					col.Mat2[resid.mat <= 0] <- hsv(0,0,0,alpha=0) # blue remains
-					col.Mat3[resid.mat < 0] <- hsv(0,0,0,alpha=0) # grey for nonreds remains
-					col.Mat4[resid.mat > 0] <- hsv(0,0,0,alpha=0) # grey for nonblues remains
+					col.Mat2[resid.mat >= 0] <- hsv(0,0,0,alpha=0) # red remains
+					col.Mat[resid.mat <= 0] <- hsv(0,0,0,alpha=0) # blue remains
+					col.Mat4[resid.mat < 0] <- hsv(0,0,0,alpha=0) # grey for nonreds remains
+					col.Mat3[resid.mat > 0] <- hsv(0,0,0,alpha=0) # grey for nonblues remains
 				}else{
 					col.Mat2 <- col.Mat	
 				}
@@ -1017,7 +1114,7 @@ if( circular ){
 		ratMat <- apply(ratMat,1:2, function(z) min(max.rat, z))
 		sc <- dim(W3)
 		if(eqwidth){
-			R1 = matrix(1,ncol = ncol(W3)*ntc0, nrow = nrow(W3)/2*(1-gap.prop)) # 0?, ncol
+			R1 = matrix(1,ncol = ncol(W3)*ntc0, nrow = nrow(W3)) # 0?, ncol, ??? 
 			mv <- 1
 		}else{
 			R1 = spread(W3/2*(1-gap.prop),ncol=ntc0)# /ncol(W3)
@@ -1025,7 +1122,7 @@ if( circular ){
 			#maximal value/ratio?
 			mv <- 1/2*(1-gap.prop)#/max(sc) #ncol
 		}
-			
+	
 			R2 <- R1 * ratMat
 			rscf <- max(R2[ratMat <= max.rat], na.rm = TRUE) * 2/(1-gap.prop)# * max(sc) #ncol(W3)
 			if(rscf < 1){
@@ -1139,7 +1236,7 @@ if( circular ){
 
 
 	draw(H2/nrow(H2)*(1-row.gap.prop),( W2trans/ncol(W2trans)*(1-col.gap.prop) + (round(W2trans,digits=7) > 0)*width.cor )/rscf,X2,Y2,alpha = 1, bg = col2, border = ifelse(eqwidth, NA, line.col))
-	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 0.2, bg = bgs, border = line.col)
+	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = line.col)
 
 	if( spine ){
 		for( i in 1:length(cat.ord) ){
@@ -1224,6 +1321,7 @@ if( circular ){
 	
 	
 	if(lab){
+		lab.cex <- rep(lab.cex,nv)[1:nv]
 			if(any(col.vars*label)){
 	# ----- labeling the x-axis ----- #	
 
@@ -1241,7 +1339,7 @@ if( circular ){
 			
 			#vpXXb <- viewport(x = 0.5, y = 0, width = 1, height = 0.1, just = "centre", name = "vpXXb")
 		#pushViewport(vpXXb)
-			my.grid.axis(x0=0,y0=0.1,len=1,ticks= signif(seq(min.tick,max.tick,(max.tick - min.tick)/cut[cind[i]]),5), rot=0)
+			my.grid.axis(x0=0,y0=0.1,len=1,ticks= signif(seq(min.tick,max.tick,(max.tick - min.tick)/cut[cind[i]]),5), rot=0, lab.cex = lab.cex[cind[i]])
 			
 			#grid.xaxis(at = seq(0,1,1/cut[cind[i]]), label = round(seq(min.tick,max.tick,(max.tick - min.tick)/cut[cind[i]]),digits = 3), main = FALSE,
 			#edits = NULL, name = NULL,
@@ -1254,7 +1352,7 @@ if( circular ){
 			}
 			#z <- (nlvl[cind])[i]*cur
 			z <- zc[i]
-			grid.text(  rep( clabs[[i]] ,cur), x = X[1,seq(1,nc,nc/z)] + (X[1,seq(nc/z,nc,nc/z)] - X[1,seq(1,nc,nc/z)] +1/nc*(1-col.gap.prop))/2, y = 1/3, just = "centre",gp=gpar(cex=lab.cex)) 
+			grid.text(  rep( clabs[[i]] ,cur), x = X[1,seq(1,nc,nc/z)] + (X[1,seq(nc/z,nc,nc/z)] - X[1,seq(1,nc,nc/z)] +1/nc*(1-col.gap.prop))/2, y = 1/3, just = "centre",gp=gpar(cex=lab.cex[ cind[i] ])) 
 			if( boxes ){
 				grid.rect(  y = 1/3 , x = X[1,seq(1,nc,nc/z)] , just = c("left","centre"), width = X[1,seq(nc/z,nc,nc/z)] - X[1,seq(1,nc,nc/z)] +1/nc*(1-col.gap.prop), height = 1/2, gp = gpar(fill="transparent"))
 			}
@@ -1286,7 +1384,7 @@ if( circular ){
 			#grid.yaxis(at = seq(0,1,1/cut[rind[i]]), label = round(seq(min.tick,max.tick,(max.tick - min.tick)/cut[rind[i]]),digits = 3), main = TRUE,
 			#edits = NULL, name = NULL,
 			#gp = gpar(), draw = TRUE, vp = NULL)
-			my.grid.axis(x0=0.9,y0=0,len=1,ticks=signif(seq(min.tick,max.tick,(max.tick - min.tick)/cut[rind[i]]),5), rot=90)
+			my.grid.axis(x0=0.9,y0=0,len=1,ticks=signif(seq(min.tick,max.tick,(max.tick - min.tick)/cut[rind[i]]),5), rot=90, lab.cex = lab.cex[rind[i]])
 			
 			#popViewport()
 				grid.text(  names(dset)[rind[i]],x = 1/6 , y = 0.5, just = "centre",rot=90,gp=gpar(fontface = "bold",cex=1.1*lab.cex))	
@@ -1297,7 +1395,7 @@ if( circular ){
 			}			
 			#z <- (nlvl[rind])[i]*cur
 			z <- zr[i]
-			grid.text(  rep( rlabs[[i]] ,cur), y = Y[seq(1,nr,nr/z),1] + (Y[seq(nr/z,nr,nr/z),1] - Y[seq(1,nr,nr/z),1] +1/nr*(1-row.gap.prop))/2, x = 2/3, just = "centre",rot=90,gp=gpar(cex=lab.cex)) 
+			grid.text(  rep( rlabs[[i]] ,cur), y = Y[seq(1,nr,nr/z),1] + (Y[seq(nr/z,nr,nr/z),1] - Y[seq(1,nr,nr/z),1] +1/nr*(1-row.gap.prop))/2, x = 2/3, just = "centre",rot=90,gp=gpar(cex=lab.cex[ rind[i] ])) 
 			if( boxes ){
 				grid.rect(  x = 2/3 , y = Y[seq(1,nr,nr/z),1] , just = c("centre","bottom"), height = Y[seq(nr/z,nr,nr/z),1] - Y[seq(1,nr,nr/z),1] +1/nr*(1-row.gap.prop), width = 1/2, gp = gpar(fill="transparent"))
 			}
