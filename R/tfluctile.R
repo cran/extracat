@@ -32,6 +32,9 @@ tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, sha
  bg.col = "lightgrey", vp = NULL, lab.opt = list(), ... ){
 	stopifnot( !is.null( attr(x,"tree") ) | !is.null(tree) )
 	
+	
+	
+	
 	if("lwd" %in% names(lab.opt)){
 		lwd <- lab.opt$lwd
 	}else{
@@ -57,15 +60,28 @@ tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, sha
 		x <- as.data.frame(as.table(x))
 		x <- xtabs(x$Freq~x[,dims[1]]+x[,dims[2]])
 	}
+	
+	if( !all(is.na(tree1)) ){
+		x <- x[tree1$order,]
+	}
+	if( !all(is.na(tree2)) ){
+		x <- x[,tree2$order]
+	}
+	
+	
 	lefts <- ifelse( all(is.na(tree1)), 0, tw )
 	tops <- ifelse( all(is.na(tree2)), 0, tw )
+	
+	
+	
+	
 	
 	if(is.null(vp)){
 		grid.newpage()	
 	}else{
 		pushViewport(vp)	
 	}
-	
+	border <- border/2
 	vp00 <- viewport(x=lefts,y=1-tops, just=c("left","top"), width = 1-lefts, height = 1-tops)
 	
 	if(!all(is.na(tree1))){
@@ -83,7 +99,7 @@ tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, sha
 	upViewport(2)
 	}
 	pushViewport(vp00)
-	fluctile(x, add = TRUE, tile.col = tile.col, bg.col = bg.col, lab.opt = lab.opt, shape = shape, dir = dir, just = just)
+	fluctile(x, add = TRUE, tile.col = tile.col, bg.col = bg.col, lab.opt = lab.opt, shape = shape, dir = dir, just = just, border = 2*border)
 	upViewport()
 	return(invisible(TRUE))
 }

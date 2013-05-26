@@ -7,7 +7,8 @@ Waterfall Dendrogram
 Draws an alternative to the dendrogram using cpcp coordinates. Colors according to a specific number of clusters make the interpretation easier. Also splits which follow each other within a margin of min.gap (proportion of maximum height) can be displayed by boxes.
 }
 \usage{
-dendro(x, k = 30, color.id = k - 2, label = FALSE, opts = list(), min.gap = 0.01, spline = FALSE, ...)
+dendro(x, k = 30, color.id = k - 2, label = FALSE, opts = list(),
+ min.gap = 0.01, spline = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

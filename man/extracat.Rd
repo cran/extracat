@@ -3,7 +3,7 @@
 
 \docType{package}
 \title{
-Categorical Data Visualization and Analysis
+Categorical Data Analysis and Visualization
 }
 \description{
 This package offers a variety of functions that can be used for categorical data analysis or at least have to do with categorical data. 
@@ -25,8 +25,8 @@ Among the most interesting features are
 \tabular{ll}{
 Package: \tab extracat\cr
 Type: \tab Package\cr
-Version: \tab 1.6-1\cr
-Date: \tab 2012-10-04\cr
+Version: \tab 1.6-3\cr
+Date: \tab 2013-05-27\cr
 License: \tab -\cr
 LazyLoad: \tab yes\cr
 }
@@ -41,12 +41,8 @@ Germany
 Maintainer: Alexander Pilhoefer \email{alexander.pilhoefer@math.uni-augsburg.de}
 }
 \references{
-Alexander Pilhoefer  \emph{Analysen von kategoriellen Daten}\cr Diploma Thesis 2009\cr
-\cr
-  Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
-       R-package extracat}\cr
-  Journal of Statistical Software, accepted 2011
-
+Alexander Pilhoefer, Antony Unwin (2013). New Approaches in Visualization of Categorical Data: R Package
+  extracat. Journal of Statistical Software, 53(7), 1-25. URL \url{http://www.jstatsoft.org/v53/i07/}
 }
 
 \keyword{ categorical }

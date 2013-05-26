@@ -7,7 +7,9 @@ block-structured arrays}
 Generates an array or matrix that includes k fully separated block-clusters.
 }
 \usage{
-arsim(n, dim, k, noise = 0, shuffle = TRUE, v = 0.1, minc = 1, exp.prop = NULL, min.prop = 1/dim/4, noise.type = "s",dimnames=list(LETTERS,1:max(dim)))
+arsim(n, dim, k, noise = 0, shuffle = TRUE, v = 0.1, minc = 1,
+ exp.prop = NULL, min.prop = 1/dim/4, noise.type = "s",
+ dimnames=list(LETTERS,1:max(dim)))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

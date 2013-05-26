@@ -15,15 +15,17 @@
  Additionally the \code{rmb} function allows to draw spineplots instead of the barcharts within each explanatory combination. On that score it can be seen as a generalization of Spineplots.
 }
 \usage{
-\method{rmb}{formula}(formula, data, col.vars = NULL, spine = FALSE, circular = FALSE,
- eqwidth = FALSE, cat.ord = NULL,   cut = NULL, innerval = 1,   freq.trans = NULL, 
- num.mode = FALSE, max.scale = 1,  use.na = FALSE,  expected = NULL, residuals = NULL, 
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,
-  label.opt = list(),\dots)
-\method{rmb}{ftable}(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, 
-cat.ord = NULL,  freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL,
- residuals = NULL, model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(),
-  label = TRUE,label.opt = list(),\dots)
+\method{rmb}{formula}(formula, data, col.vars = NULL, spine = FALSE,
+ circular = FALSE, eqwidth = FALSE, cat.ord = NULL,   cut = NULL,
+ innerval = 1,   freq.trans = NULL, num.mode = FALSE, max.scale = 1,
+ use.na = FALSE,  expected = NULL, residuals = NULL, model.opt = list(),
+ gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,
+  label.opt = list(),  vp = NULL, \dots)
+\method{rmb}{ftable}(x, col.vars = NULL, spine = FALSE, circular = FALSE,
+eqwidth = FALSE, cat.ord = NULL,  freq.trans = NULL, max.scale = 1,
+use.na = FALSE, expected = NULL, residuals = NULL, model.opt = list(),
+gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,
+label.opt = list(), vp = NULL, \dots)
 }
 \arguments{
  \item{x}{ Either a table or a model of class \code{"glm"} and family \code{"poisson"} or \code{"binomial"}.
@@ -88,6 +90,7 @@ cat.ord = NULL,  freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = N
          	 \code{lab.cex} \tab The fontsize multplier.	\cr
         }
 }
+ \item{vp}{An optional viewport to plot in. \code{vp = c(i, j)} can be used as a shortcut to \code{viewport(layout.pos.row = i, layout.pos.col = j)} }
    \item{\dots}{further arguments. Usually not necessary.}
 }
 \details{
@@ -97,9 +100,8 @@ cat.ord = NULL,  freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = N
  \code{invisible(TRUE)}
 }
 \references{
-  Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
-       R-package extracat}\cr
-  Journal of Statistical Software, submitted March 2010
+Alexander Pilhoefer, Antony Unwin (2013). New Approaches in Visualization of Categorical Data: R Package
+  extracat. Journal of Statistical Software, 53(7), 1-25. URL \url{http://www.jstatsoft.org/v53/i07/}
 }
 \author{
 Alexander Pilhoefer\cr

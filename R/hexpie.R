@@ -144,7 +144,7 @@ if(!is.null(random)){
 DM <- cbind(xy,data, base.rad)
 
 ntv <- ncol(DM)-3
-colv <- get.colv(col,ntv,col.opt)
+colv <- getcolors(ntv,col,col.opt)
 
 if(!is.null(decr.by.rank)){
 	ofun <- function(s) order(s, decreasing = decr.by.rank)	
@@ -289,98 +289,5 @@ return(invisible(TRUE))
 	
 }
 
-
-get.colv = function(col, n, col.opt = list()){
-	
-	if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge") %in% col)){
-								
-				
-				if( col %in% c("hsv","rgb") ){
-					col.def <- formals(rainbow)
-					if(!("s" %in% labels(col.opt))){
-						col.opt$s <- eval(col.def$s)
-					}
-					if(!("v" %in% labels(col.opt))){
-						col.opt$v <- eval(col.def$v)
-					}
-					if(!("start" %in% labels(col.opt))){
-						col.opt$start <- eval(col.def$start)
-					}
-					if(!("end" %in% labels(col.opt))){
-						col.opt$end <- max(n-1,1)/n
-					}
-					if(!("alpha" %in% labels(col.opt))){
-						col.opt$alpha <- eval(col.def$alpha)
-					}
-					colv <- rainbow(n,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, alpha = col.opt$alpha)
-					}
-				if( col == "hcl" ){
-					col.def <- formals(rainbow_hcl)
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("start" %in% labels(col.opt))){
-						col.opt$start <- eval(col.def$start)
-					}
-					if(!("end" %in% labels(col.opt))){
-						col.opt$end <- 360 * (n - 1)/n
-					}
-				colv <- rainbow_hcl(n,c = col.opt$c, l = col.opt$l, start = col.opt$start, end = col.opt$end)
-				}
-				if( col %in% c("seq","sqt","sqn","sequential") ){
-					col.def <- formals(sequential_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- rev(sequential_hcl(n,h = col.opt$h, c. = col.opt$c, l = col.opt$l, power = col.opt$power))
-				}
-				if( col %in% c("div","diverging","diverge") ){
-					col.def <- formals(diverge_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- diverge_hcl(n,h = col.opt$h, c = col.opt$c, l = col.opt$l, power = col.opt$power)
-					
-				}
-			
-				}else{
-					if( length(col < n) ){
-						col <- rep(col,n)
-					}
-					col <- sapply(col, function(z){
-						if(is.integer(z)){
-							return(ggplot2::alpha(z,1))	
-						}else{
-							return(z)
-						}	
-					})
-					colv <- col	
-					
-				}	
-	return(colv)
-	
-	
-}
 
 

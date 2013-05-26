@@ -1,5 +1,7 @@
 
 getIs <- function(biclust, dim,nstart=20, solver = "nn", adjust.dist = TRUE){
+		
+		if(inherits(biclust,"biclust")){
 		rxn <- biclust@RowxNumber
 		nxc <- biclust@NumberxCol
 		N <- biclust@Number
@@ -8,7 +10,9 @@ getIs <- function(biclust, dim,nstart=20, solver = "nn", adjust.dist = TRUE){
 		for(i in 1:N){
 			Is[[i]] <- list(  which(rxn[,i]), which(nxc[i,]))
 		}
-		
+		}else{
+			Is <- biclust	
+		}
 		Is <- OBC(Is,dim,nstart=nstart, solver = solver, adjust.dist = adjust.dist)
 		return(Is)
 }
@@ -16,6 +20,7 @@ getIs <- function(biclust, dim,nstart=20, solver = "nn", adjust.dist = TRUE){
 
 getIs2 <- function(bic, dim, nstart=20, solver = "nn", cpr = FALSE, cpc = TRUE, adjust.dist = FALSE){
 	
+	if(inherits(bic,"biclust")){
 		rxn <- bic@RowxNumber
 		nxc <- bic@NumberxCol
 		N <- bic@Number
@@ -24,7 +29,9 @@ getIs2 <- function(bic, dim, nstart=20, solver = "nn", cpr = FALSE, cpc = TRUE, 
 		for(i in 1:N){
 			Is[[i]] <- list(  which(rxn[,i]), which(nxc[i,]))
 		}
-
+		}else{
+			Is <- bic	
+		}
 	ns <- length(Is)
 	
 	n <- dim[1]
@@ -173,127 +180,6 @@ heattile <- function(x, biclust = NULL, Is = NULL, shape = "r",
  
 
 
-
-
-getcolors <- function(N, palette, col.opt){
-	require(colorspace)
-	
-	if(!("sample" %in% labels(col.opt))){
-						sample <- FALSE
-					}else{
-						sample <- col.opt$sample
-					}
-				
-	
-	if( palette %in% c("hsv","rgb") ){
-					col.def <- formals(rainbow)
-					if(!("s" %in% labels(col.opt))){
-						col.opt$s <- eval(col.def$s)
-					}
-					if(!("v" %in% labels(col.opt))){
-						col.opt$v <- eval(col.def$v)
-					}
-					if(!("start" %in% labels(col.opt))){
-						col.opt$start <- eval(col.def$start)
-					}
-					if(!("end" %in% labels(col.opt))){
-						col.opt$end <- max(N-1,1)/N
-					}
-					if(!("alpha" %in% labels(col.opt))){
-						col.opt$alpha <- eval(col.def$alpha)
-					}
-					colv <- rainbow(N,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, alpha = col.opt$alpha)
-					}
-				if( palette == "hcl" ){
-					col.def <- formals(rainbow_hcl)
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("start" %in% labels(col.opt))){
-						col.opt$start <- eval(col.def$start)
-					}
-					if(!("end" %in% labels(col.opt))){
-						col.opt$end <- 360 * (N - 1)/N
-					}
-				colv <- rainbow_hcl(N,c = col.opt$c, l = col.opt$l, start = col.opt$start, end = col.opt$end)
-				}
-				if( palette %in% c("s","seq","sqt","sqn","sequential") ){
-					col.def <- formals(sequential_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- rev(sequential_hcl(N,h = col.opt$h, c. = col.opt$c, l = col.opt$l, power = col.opt$power))
-				}
-				if( palette %in% c("d","div","diverging","diverge") ){
-					col.def <- formals(diverge_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- diverge_hcl(N,h = col.opt$h, c = col.opt$c, l = col.opt$l, power = col.opt$power)
-					
-				}
-				
-				if( palette %in% c("h","heat","heatcolors") ){
-					col.def <- formals(heat_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c." %in% labels(col.opt))){
-						col.opt$c. <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- heat_hcl(N,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
-					
-				}
-				if( palette %in% c("t","ter","terrain") ){
-					col.def <- formals(terrain_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c." %in% labels(col.opt))){
-						col.opt$c. <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- terrain_hcl(N,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
-					
-				}
-
-if(sample) colv <- sample(colv)
-
-	return(colv)
-	
-}
 
 
 

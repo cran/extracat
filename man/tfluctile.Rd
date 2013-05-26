@@ -8,7 +8,7 @@ Plots a fluctuation diagram via \link[extracat]{fluctile} and adds dendrograms f
 }
 \usage{
 tfluctile(x, tree = NULL, dims = c(1, 2), tw = 0.2, border = NULL, 
-shape = "r", dir = "b", just = "c",
+ shape = "r", dir = "b", just = "c",
 tile.col = hsv(0.1, 0.1, 0.1, alpha = 0.6), bg.col = "lightgrey", vp = NULL, 
 lab.opt = list(), \dots)
 }

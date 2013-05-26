@@ -1,11 +1,16 @@
 
 
-fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.prop = 0.1,border = NULL, label = TRUE, lab.opt = list(), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",  ...  ){
+fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.prop = 0.1,border = NULL, label = TRUE, lab.opt = list(), add = FALSE, maxv = NULL, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",  ...  ){
 	#tab <- t(tab)
 	dm <- dim(tab)
-	maxv <- max(tab)
-	nd <- length(dm)
+	if(is.null(maxv)){
+		maxv <- max(tab)
+	}
 	
+	nd <- length(dm)
+	#if(add){
+	#	bg.col = NA
+	#}
     if( dir %in% c("vh","hv","b","both")){
         dir <- "b"
     }
@@ -31,7 +36,7 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.p
     }else{
         lab.cex = 1.2
     }
-      if("rot" %in% names(lab.opt)){
+    if("rot" %in% names(lab.opt)){
         rot <- lab.opt$rot
     }else{
         rot = 65
@@ -93,7 +98,7 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.p
 		pushViewport(vp0)
 		if(!add){
 		#grid.newpage()
-			grid.rect(gp = gpar(fill=rgb(0,0,0,alpha=0.1),col=NA))
+			grid.rect(gp = gpar(fill=rgb(0,0,0,alpha=0.05),col=NA))
 		}
 # handle the last 2 dimensions
 		if( hsp[1] ){
@@ -131,22 +136,27 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.p
 			
 			vpR <- viewport(x = border[1]/2, y = border[3] + (1-border[3] -border[4])/2, width = border[1], height = 1-border[3]-border[4],name="rowlabs")
 			pushViewport(vpR)
-			
-			
-			if(rot[1] == 0){
-				y0 <- 0.1
-				yjust = "left"
-			}else{
-				y0<-0.5
+			y0<-0.5
 				yjust <- "centre"
+			x0<-0.5
+				xjust <- "centre"
+				
+			if(rot[1] == 90){
+				x0 <- 0.7
+			}
+			if(rot[1] == 0){
+				x0 <- 0.9
+				xjust <- "right"
 			}
 			if(rot[2] == 0){
-				x0 <- 0.9
-				xjust = "right"
-			}else{
-				x0<-0.5
-				xjust <- "centre"
+				y0 <- 0.1
+				yjust <- "left"
 			}
+			if(rot[2] == 90){
+				y0 <- 0.3
+			}
+	
+			
 			
 			grid.text(rn, x = x0, y = yc, gp = gpar(cex=lab.cex[1]), rot = rot[1], just <- xjust)
 			popViewport()
@@ -166,7 +176,7 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.p
 		e1$k <- 0
 		hsplit <- !hsplit
 		ss <- fluctree(dm,parent=vp0, hsplit=hsp, gap.prop=gap.prop, env=e1)
-		grid.newpage()
+		#grid.newpage()
 		pushViewport(ss)
 		seekViewport("base")
 		
@@ -302,7 +312,7 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r",gap.p
 #
 # -------------------------------------------- LABELING  -------------------------------------------- #
 #######################################################################################################	
-		
+		try(popViewport(),silent = TRUE)
 		return(invisible(ss))
 	}
 }	
@@ -344,6 +354,7 @@ flucplot <- function(tab, gap.prop, hsplit, env, ...){
 			  })
 	}
 #
+
 	return(invisible(TRUE))
 }
 
@@ -392,13 +403,13 @@ fluctree <- function(dims,parent, hsplit, gap.prop, env, ...){
 	
 }
 
-gridfluc <- function(tab,dir = "b", just = "c", shape = "r", gap.prop = 0.1, maxv = NULL,vp = NULL, col = NULL, bg = NULL, border = NA,...){
+gridfluc <- function(tab,dir = "both", just = "centre", shape = "r", gap.prop = 0.1, maxv = NULL,vp = NULL, col = NULL, bg = NULL, border = NA,...){
 	
 	if(shape != "r" ){
 		just <- "centre"
 		dir <- "b"
 	}
-	if(just == "c") just <- "centre"
+	#if(just[1] == "c") just[1] <- "centre"
 	
 	if( is.null(bg) ){
 		bg <- NA
@@ -595,6 +606,9 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", plot 
 	if( method %in% c("WBCI","wbci","WBCC",3) ){
 		method <- as.integer(3)	
 	}
+	if( method %in% c("BCI","bci","BCC",4) ){
+		method <- as.integer(4)	
+	}
 	ret.int <- ( storage.mode(x) == "integer" )
 	storage.mode(x) <- "numeric"
 	
@@ -625,7 +639,10 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", plot 
 			tau0 <- cohen(x)
 		}
 		if(method == 3){
-			tau0 <- WBCI(x)
+			tau0 <- 1 - WBCI(x)
+		}
+		if(method == 4){
+			tau0 <- 1 - BCI(x)
 		}
 	}
 	
@@ -730,6 +747,7 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", plot 
 	attr(ret,"tau.values") <- tau.values
 	attr(ret,"level") <- cut.ids
 	attr(ret,"cut.rank") <- cut.rank
+	attr(ret,"tau0") <- tau0
 	return(invisible(ret))
 }
 

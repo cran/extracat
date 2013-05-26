@@ -66,7 +66,10 @@ x2 <- runif(N,0,40)
 x3 <- rnorm(N,mean=30,sd=4)
 x <- sample(c(x1,x2,x3),N)		
 			
-y <- rnorm(1,sd=0.0001)*(x-mean(x))^4+ rnorm(1,sd=0.01)*(x-mean(x))^3 + rnorm(1,sd=0.1)*(x-mean(x))^2 + rnorm(1)*(x-mean(x))+rnorm(N,sd=runif(N,3,10))+ runif(N,0,20)*sin(abs(scale(x))*2*pi)
+y <- rnorm(1,sd=0.0001)*(x-mean(x))^4+ rnorm(1,sd=0.01)*(x-mean(x))^3
+ + rnorm(1,sd=0.1)*(x-mean(x))^2 
+ + rnorm(1)*(x-mean(x))+rnorm(N,sd=runif(N,3,10))
+ + runif(N,0,20)*sin(abs(scale(x))*2*pi)
 
 plot(x,y,pch=19,col=alpha("black",0.2))
 system.time(dd<-wdcor(x,y))

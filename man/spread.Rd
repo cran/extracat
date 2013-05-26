@@ -16,11 +16,7 @@ Replaces each element of a matrix with a submatrix (containing this element) wit
 \value{
   A matrix.
 }
-\references{
-  Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
-       R-package extracat}\cr
-  Journal of Statistical Software, submitted March 2010
-}
+
 \author{
 Alexander Pilhoefer\cr
 Department for Computer Oriented Statistics and Data Analysis\cr

@@ -970,7 +970,14 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method, SEXP singlesplit){
 						zz = p0 - pc;
 						nn = p0;
 					}	
-					
+				
+					if(v == 4){	
+						//BCI
+						
+						nn = (a+b)*(c+d)*(a+c)*(b+d);
+						nn = nn / ( (a+b+c+d)*(a+b+c+d) );
+						zz = nn - b*c;
+					}
 				   //Rprintf(" zz = %f, nn = %f\n",zz,nn);
 					
 					currtau = zz/nn;
@@ -3470,8 +3477,8 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 	// (i.e. the difference between the criterion when cat. 1 is before or after cat. 2)
 	// DMC contains the cumulative sums over rows of DM starting from the diagonal outwards
 	
-	int *DM = calloc(ml*ml,sizeof(int));
-	int *DMC = calloc(ml*ml,sizeof(int));
+	float *DM = calloc(ml*ml,sizeof(float));
+	float *DMC = calloc(ml*ml,sizeof(float));
 	
     // best is the best movement delta value from DMC
     // ii and jj are the corresp. indices
@@ -3628,10 +3635,12 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 			// note that DM is in the original order, DMC is in IX order
 			
 			// improvement must be better than eps to proceed
+			int stepcount = 0;
 			imp = eps + 1;
 			while( imp > eps ){
 				
 				if(tl[d] > 0){
+					//Rprintf("imp = %f for step = %d and dim = %d\n",imp,stepcount++,d);
 					imp = 0; //best = 0;
 					// ---------------- TREE STEP ---------------- //
 					// there is a tree for dimension d	
@@ -3679,7 +3688,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 							g0 = TM[ g*3 + 0][d];
 							g1 = TM[ g*3 + 1][d];
 							g2 = TM[ g*3 + 2][d];
-							
+						//	Rprintf("turning branch %d with imp = %f",g,MAT_ELT(DMC,0,g,ml));
 							ll = g1-g0; //PX[g1][d]-PX[g0][d];
 							lr = g2-g1+1; //PX[g2][d]-PX[g1][d]+1;
 							

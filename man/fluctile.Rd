@@ -8,7 +8,9 @@ fluctuation diagrams
 Create a fluctuation diagram from a multidimensional table.
 }
 \usage{
-fluctile(tab, dir = "b", just = "c", hsplit = FALSE, shape ="r", gap.prop = 0.1,  border = NULL, label = TRUE, lab.opt = list(), add = FALSE, tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",...  )
+fluctile(tab, dir = "b", just = "c", hsplit = FALSE, shape ="r", gap.prop = 0.1,
+   border = NULL, label = TRUE, lab.opt = list(), add = FALSE, maxv = NULL,
+   tile.col = hsv(0.1,0.1,0.1,alpha=0.6), bg.col = "lightgrey",...  )
 }
 
 \arguments{
@@ -41,6 +43,9 @@ A list with options for the labels. Currently \code{lab.cex} and \code{abbrev} w
 }
   \item{add}{
 Whether to create a new plot or add it to an existing one.
+}
+  \item{maxv}{
+The maximum value for the scale. Default is equivalent to \code{maxv = max(x)}.
 }
   \item{tile.col}{
 The color of the tiles.

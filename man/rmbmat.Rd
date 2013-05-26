@@ -7,7 +7,12 @@ Pairwise RMB-Plots
 This function generates a matrix with RMB-plots of all pairs of variables with a specified target variable. Both catagorical and numerical variables are accepted and the latter will be binned. This makes the graphic useful for a mixture of variable types and the binning avoids overplotting and color mash as it occurs in (colored) scatterplots of large datasets.
 }
 \usage{
-rmbmat(x, tv, cut = 20, freqvar = NULL, plot.tv = FALSE, num.mode = TRUE, mode = "circular", eqwidth = FALSE, freq.trans = "sqrt", innerval = 1, allocation = I,max.scale = 1, use.na = FALSE, expected = FALSE, model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl", col.opt = list(), label = FALSE, label.opt = list(), diag.opt = list(), lower.opt = list(), upper.opt = list(), rc.opt = list(), factor.opt = list(), ...)
+rmbmat(x, tv, cut = 20, freqvar = NULL, plot.tv = FALSE, num.mode = TRUE,
+ mode = "circular", eqwidth = FALSE, freq.trans = "sqrt", innerval = 1,
+  allocation = I,max.scale = 1, use.na = FALSE, expected = FALSE,
+  model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl", col.opt = list(),
+  label = FALSE, label.opt = list(), diag.opt = list(), lower.opt = list(), 
+  upper.opt = list(), rc.opt = list(), factor.opt = list(), ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -32,7 +37,8 @@ Whether or not to use the numeric mode (no gaps and a numeric axis) for numeric 
   \item{mode}{
 One of \code{"circular"}, \code{"pie"}, \code{"piechart"}, \code{"p"} or \code{"c"} for piecharts, \code{"spine"} or \code{"s"} for spineplots, \code{"bars"}, \code{"bar"} or \code{"b"} for barcharts. 
 
-NOT YET IMPLEMENTED: \code{"rect"} or \code{"r"} for nested rectangles. \code{"nested.circles"} are abbreviated by \code{"nc"} or \code{"ncircles"}.
+NOT YET IMPLEMENTED: \code{"rect"} or \code{"r"} for nested rectangles.
+ \code{"nested.circles"} are abbreviated by \code{"nc"} or \code{"ncircles"}.
 }
   \item{eqwidth}{
 See  \link[extracat]{rmb}.
@@ -131,10 +137,13 @@ data(olives)
 
 rmbmat(olives, tv=2, mode = "s")
 
-rmbmat(olives[,1:5], tv=2, col ="div", plot.tv = TRUE, lower.opt = list(tv2 = 1, col ="rgb"))
+rmbmat(olives[,1:5], tv=2, col ="div", plot.tv = TRUE,
+ lower.opt = list(tv2 = 1, col ="rgb"))
 
-rmbmat(olives[,c(1:5,11)], tv=2, upper.opt=list(mode="s", eqwidth = TRUE), 
-rc.opt = list( c5 = list(eqwidth=FALSE,mode="s"), r5 = list(eqwidth=TRUE, mode="s")),allocation=NULL)
+rmbmat(olives[,c(1:5,11)], tv=2,
+upper.opt=list(mode="s", eqwidth = TRUE), 
+rc.opt = list( c5 = list(eqwidth=FALSE,mode="s"),
+r5 = list(eqwidth=TRUE, mode="s")),allocation=NULL)
 }
 
 }

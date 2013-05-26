@@ -47,11 +47,13 @@ Alexander Pilhoefer
 # for instance the computation of dcor for a random sample with 4000 observations
 # takes pretty long but drawing samples of 500, 1000 or even 2000 observations
 # leads to relatively big errors.
-# The approximation via approx.dcor is very fast and for n = 50 or n=100 the results are very close to the truth
+# The approximation via approx.dcor is very fast and for 
+# n = 50 or n=100 the results are very close to the truth
 
 require(energy)
 x<- rnorm(4000,mean=10,sd=3)
-y <- rnorm(1,sd=0.01)*(x-10)^3 + rnorm(1,sd=0.1)*(x-10)^2 + rnorm(1)*(x-10)+rnorm(4000,sd=4)
+y <- rnorm(1,sd=0.01)*(x-10)^3 + rnorm(1,sd=0.1)*(x-10)^2
+ + rnorm(1)*(x-10)+rnorm(4000,sd=4)
 
 system.time(dd <- dcor(x,y))
 system.time(dd0 <- wdcor(x,y))[[3]]
@@ -65,7 +67,8 @@ da100-dd0
 test<-replicate(100,{
 N <- 1000
 x<- rnorm(N,mean=10,sd=3)
-y <- rnorm(1,sd=0.01)*(x-10)^3 + rnorm(1,sd=0.1)*(x-10)^2 + rnorm(1)*(x-10)+rnorm(N,sd=4)
+y <- rnorm(1,sd=0.01)*(x-10)^3 + rnorm(1,sd=0.1)*(x-10)^2 
++ rnorm(1)*(x-10)+rnorm(N,sd=4)
 
 dd <- wdcor(x,y)
 dd25 <- approx.dcor(x,y,25)
@@ -82,12 +85,14 @@ c(2*dd, dd25, dd50, dd75, dd100, dd25c, dd50c, dd75c, dd100c)-dd
 
 rm<-apply(test,1,mean)
 
-plot( seq(25,100,25), rm[2:5],type="l", ylim= c(min(rm),abs(min(rm))), xlab = "No. of bins per axis",ylab = "error")
+plot( seq(25,100,25), rm[2:5],type="l",
+ ylim= c(min(rm),abs(min(rm))), xlab = "No. of bins per axis",ylab = "error")
 points( seq(25,100,25), rm[2:5],pch=19)
 points( seq(25,100,25), rm[6:9],type="l", col=2)
 points( seq(25,100,25), rm[6:9],pch=19,col=2)	
 abline(h=0,lwd=3)
-legend( 25,abs(min(rm)),legend=c("raw value after binning","corrected value"),col=1:2,lwd=3)
+legend( 25,abs(min(rm)),legend=c("raw value after binning","corrected value"),
+col=1:2,lwd=3)
 }
 }
 

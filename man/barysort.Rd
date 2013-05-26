@@ -33,10 +33,12 @@ BCI(a3)
 
 
 \dontrun{
-	a <- arsim(64000,c(256,256),16, noise=0.4)
-	s1 <- system.time( bci1 <- BCI(a1<-optile(a, fun = "barysort", foreign=".Call", iter = 1)) )[[3]]
-	s2 <- system.time( bci2 <- BCI(a2<-optile(a, iter=1)) )[[3]]
-	s3 <- system.time( bci3 <- BCI(a3<-optile(a, fun="IBCC",iter=1)) )[[3]]
+a <- arsim(64000,c(256,256),16, noise=0.4)
+s1 <- system.time( bci1 <- BCI(a1<-optile(a, fun = "barysort", 
+foreign=".Call", iter = 1)) )[[3]]
+
+s2 <- system.time( bci2 <- BCI(a2<-optile(a, iter=1)) )[[3]]
+s3 <- system.time( bci3 <- BCI(a3<-optile(a, fun="IBCC",iter=1)) )[[3]]
 }
 
 }

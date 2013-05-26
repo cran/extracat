@@ -2,6 +2,32 @@
 # -------------------------------------------------------------------------------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------------- #
 
+#wijfmat <- matrix( c(
+#92, 107, 247,
+#255, 89, 89,
+#92, 203, 92,
+#255, 177, 17,
+#170, 97, 187,
+#255,255,95,
+#255,137,235,
+#145, 101, 62,
+#193,193,193,
+#92, 229, 214,
+#201, 255, 135,
+#255, 224, 204,
+#173,45,92,
+#227, 196, 239,
+#226, 212, 149,
+#204, 241, 255,
+#87, 142, 82
+#), ncol=3, byrow = TRUE)
+
+#wf <- apply(wijfmat,1,function(z){
+#	rgb(z[1]/255,z[2]/255,z[3]/255)
+#})
+wijffelaars <- c("#5C6BF7", "#FF5959", "#5CCB5C", "#FFB111", "#AA61BB", "#FFFF5F", "#FF89EB", "#91653E", "#C1C1C1", "#5CE5D6", "#C9FF87",
+ "#FFE0CC", "#AD2D5C", "#E3C4EF", "#E2D495", "#CCF1FF", "#578E52")
+
 draw = function(H,W,X,Y,alpha = 1,border = "black",bg = "white",vp=NULL, lwd = 1){
 	grid.rect(x =  unit(X, "npc"), y = unit(Y, "npc"),
           width = unit(W, "npc"), height = unit(H, "npc"),
@@ -17,7 +43,7 @@ rmb = function(x,...){
 }
 rmb.table = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
                 freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),...){
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),vp = NULL,...){
 	
 	vn <- names(dimnames(x))
 	if(is.null(vn)){
@@ -35,12 +61,12 @@ rmb.table = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidt
 			 eqwidth = eqwidth, cat.ord = cat.ord, freq.trans = freq.trans, max.scale = max.scale,
 			 use.na = use.na, expected = expected, residuals = residuals, model.opt = model.opt, 
 			 gap.prop = gap.prop, gap.mult = gap.mult, col = col,col.opt = col.opt, label = label,
-			 label.opt = label.opt)
+			 label.opt = label.opt, vp = vp)
 }
 
 rmb.ftable = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
                 freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),...){
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),vp = NULL,...){
 	
 	rv <- names(attr(x,"row.vars"))
 	cv <- names(attr(x,"col.vars"))
@@ -54,13 +80,13 @@ rmb.ftable = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwid
 			 eqwidth = eqwidth, cat.ord = cat.ord, freq.trans = freq.trans, max.scale = max.scale,
 			 use.na = use.na, expected = expected, residuals = residuals, model.opt = model.opt, 
 			 gap.prop = gap.prop, gap.mult = gap.mult, col = col,col.opt = col.opt, label = label,
-			 label.opt = label.opt)
+			 label.opt = label.opt,vp = vp)
 }
 
 
 rmb.glm = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
                 freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),...){
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),vp = NULL,...){
 	
 	model.family <- x$family$family
 	stopifnot(model.family %in% c("poisson","binomial"))
@@ -116,7 +142,7 @@ rmb.glm = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth 
 			 eqwidth = eqwidth, cat.ord = cat.ord, freq.trans = freq.trans, max.scale = max.scale,
 			 use.na = use.na, expected = expected, residuals = residuals, model.opt = model.opt, 
 			 gap.prop = gap.prop, gap.mult = gap.mult, col = col,col.opt = col.opt, label = label,
-			 label.opt = label.opt)
+			 label.opt = label.opt, vp = vp)
 }
 
 
@@ -160,11 +186,22 @@ rmb.glm = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth 
 
 rmb.formula = function(formula, data, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidth = FALSE, cat.ord = NULL, 
              cut = NULL, innerval = 1,   freq.trans = NULL, num.mode = FALSE, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
- model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),...){
+ model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(), vp = NULL,...){
 	
 # use.expected.values = FALSE, mod.type = "poisson", resid.type = "pearson",
 # resid.display = "both",max.rat = 2.0, resid.max = NULL, cut.rs = 5
 # boxes = TRUE, lab.tv = FALSE, varnames = TRUE, abbrev = FALSE, lab.cex = 1.2, yaxis = TRUE
+
+if(!is.null(vp)){
+	if(!inherits(vp,"viewport")){
+		stopifnot(length(vp)>1)
+		
+		vp=viewport(layout.pos.row = vp[1], layout.pos.col = vp[2])
+	}
+	
+	pushViewport(vp)
+}
+
 
 min.alpha <- 0.1
 
@@ -229,6 +266,8 @@ col2 <- alpha("grey",0.25)
 }
 
 
+
+
 if( "bgs" %in% names(col.opt) ){
 	bgs <- col.opt$bgs
 }else{
@@ -256,6 +295,11 @@ if( "line.col" %in% names(col.opt) ){
 	}
 }
 
+if( "rect" %in% names(col.opt) ){
+rect <- col.opt$rect
+}else{
+rect <- bgs
+}
 
 # ----- get label parameters from label.opt or use defaults ------ #
 if( "yaxis" %in% names(label.opt) ){
@@ -758,6 +802,11 @@ if( is.list(freq.trans) ){
 			tfn <- exp(1)
 			check <- TRUE
 		}
+		if( tfreq %in% c("1","c","const","eq","equal") ){
+			tfreq <- "const"
+			tfn <- 1
+			check <- TRUE
+		}
 	}
 	if(!check){
 		stop(simpleError("Wrong freq.trans specification!"))	
@@ -797,6 +846,35 @@ if( is.list(freq.trans) ){
 	}else{
 		width.cor <- 0
 	}
+	
+	if( eqwidth ){
+		W2trans <- W2
+		if( tfreq == "const" ){
+			W2trans <- 1*(W2>0)
+		}
+		if( tfreq == "log" ){
+			W2trans <- log(tt3+1)/max(log(tt3+1))
+		}
+		if( tfreq == "sqrt" ){
+			W2trans <- tt3^(1/tfn) / max(  tt3^(1/tfn) )
+		}
+		W3 <- W
+		X3 <- X
+	}else{
+		if( tfreq == "const" ){
+			W2trans <- 1*(tt3>0)
+		}
+		if( tfreq == "log" ){
+			W2trans <- log(tt3+1)/max(log(tt3+1))
+		}
+		if( tfreq == "sqrt" ){
+			W2trans <- tt3^(1/tfn) / max(  tt3^(1/tfn) )
+		}
+		W3 <- spread(W2trans,ncol=ntc)
+		X3 <- spread(X[,seq(1,nc,ntc),drop=FALSE],ncol=ntc) + t( t(W3) * c(0:(ntc-1)) )/ncol(X)*(1-col.gap.prop) 
+	}
+
+	
 # ----- ---------------- ----- #	
 # ----- plotting section ----- #	
 # ----- ---------------- ----- #
@@ -842,9 +920,11 @@ if( is.list(freq.trans) ){
 	
 
 			if(is.null(expected) | res.val.only ){
-				
+				wijffelaars <- c("#5C6BF7", "#FF5959", "#5CCB5C", "#FFB111", "#AA61BB", "#FFFF5F", "#FF89EB", "#91653E", "#C1C1C1", "#5CE5D6", "#C9FF87",
+ "#FFE0CC", "#AD2D5C", "#E3C4EF", "#E2D495", "#CCF1FF", "#578E52")
 				#has any color rule been defined?
-				if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge","d","s","h","t","heat","ht","ter","terrain") %in% col)){
+				if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge",
+				"d","s","h","t","heat","ht","ter","terrain","Wijffelaars", "w", "q17") %in% col)){
 				#num.col <- ntc0^(spine | !eqwidth | (eqwidth & circular))
 				num.col <- ntc0
 				
@@ -973,6 +1053,17 @@ if( is.list(freq.trans) ){
 					colv <- sample(colv)
 				}
 			
+				if( col %in% c("Wijffelaars","w", "q17") ){
+					colv <- wijffelaars[1:num.col]
+					if("alpha" %in% names(col.opt)){
+						colv <- alpha(colv,col.opt$alpha)
+					}
+				}
+				if(sample){
+					colv <- sample(colv)
+				}
+			
+			
 				}else{
 					if( length(col < ntc0) ){
 						col <- rep(col,ntc0)
@@ -1076,20 +1167,8 @@ if( is.list(freq.trans) ){
 # 	>>> in spine mode, the target categories will be plotted one after another (see the for-loop)
 # 	>>> the 3 diff. draw-function add the rectangles for the relative frequencies, the weights and the background respectively
 
-if( eqwidth ){
-	W2trans <- W2
-	W3 <- W
-	X3 <- X
-}else{
-	if( tfreq == "log" ){
-		W2trans <- log(tt3+1)/max(log(tt3+1))
-	}
-	if( tfreq == "sqrt" ){
-		W2trans <- tt3^(1/tfn) / max(  tt3^(1/tfn) )
-	}
-	W3 <- spread(W2trans,ncol=ntc)
-	X3 <- spread(X[,seq(1,nc,ntc),drop=FALSE],ncol=ntc) + t( t(W3) * c(0:(ntc-1)) )/ncol(X)*(1-col.gap.prop) 
-}
+# here were the transformations
+
 
 if( circular ){
 		
@@ -1101,7 +1180,7 @@ if( circular ){
 		#W3 = spread(W2sqrt,ncol=ntc)
 		
 		arat <- ncol(W3)/nrow(W3)
-	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = NA)
+	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = rect)
 	
 	
 	if( disp.res ){ 
@@ -1236,7 +1315,7 @@ if( circular ){
 
 
 	draw(H2/nrow(H2)*(1-row.gap.prop),( W2trans/ncol(W2trans)*(1-col.gap.prop) + (round(W2trans,digits=7) > 0)*width.cor )/rscf,X2,Y2,alpha = 1, bg = col2, border = ifelse(eqwidth, NA, line.col))
-	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = line.col)
+	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = rect)
 
 	if( spine ){
 		for( i in 1:length(cat.ord) ){
@@ -1444,13 +1523,18 @@ if( circular ){
 		grid.text( label=resid.type, y = 0.5, x = 0.2, just = "centre",rot=90,gp=gpar(cex=lab.cex*1.2))
 		grid.text( label="residuals", y = 0.5, x = 0.4, just = "centre",rot=90,gp=gpar(cex=lab.cex*1.2))
 		grid.text( label=paste("p.value =",format(p.value,digits=2)), y = 0.5, x = 0.7, just = "centre",rot=90,gp=gpar(cex=lab.cex*1.1))
+		upViewport()
 	}
 	
+	#op <- options()
+	#options(show.error.messages = FALSE)
+	#try( upViewport(), silent = TRUE)
 	upViewport()
-	op <- options()
-	options(show.error.messages = FALSE)
-	try(upViewport())
-	options(op)
+	if(!is.null(vp)){
+		try( upViewport(), silent = TRUE )
+	}
+	#options(op)
+	
 	return(invisible(TRUE))
 }
 

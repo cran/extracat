@@ -30,9 +30,8 @@ Can also be called indirectly by \link{listen}.
 No return value.
 }
 \references{
-  Alexander Pilhoefer \emph{ New approaches in visualization of categorical data:
-       R-package extracat}\cr
-  Journal of Statistical Software, submitted March 2010
+Alexander Pilhoefer, Antony Unwin (2013). New Approaches in Visualization of Categorical Data: R Package
+  extracat. Journal of Statistical Software, 53(7), 1-25. URL \url{http://www.jstatsoft.org/v53/i07/}
 }
 \author{
 Alexander Pilhoefer\cr

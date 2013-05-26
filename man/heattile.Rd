@@ -8,7 +8,11 @@ Heatmap with Biclusters
 Draws a heatmap using \link[extracat]{fluctile} as the workhorse and offers the possibility to add rectangles which visualize the biclusters.
 }
 \usage{
-heattile(x, biclust = NULL, Is = NULL,  shape = "r", gap.prop = 0, border = c(0.05, 0.03, 0.03, 0.05), label = c(TRUE,FALSE) , lab.opt = list(abbrev = 24, lab.cex = 1, rot = 0), bg.col = "lightgrey", breaks = 20, clust.col = NULL, clust.palette = "rgb", hm.palette = "div", clust.col.opt = list(), hm.col.opt = list())
+heattile(x, biclust = NULL, Is = NULL,  shape = "r", gap.prop = 0,
+ border = c(0.05, 0.03, 0.03, 0.05), label = c(TRUE,FALSE) ,
+ lab.opt = list(abbrev = 24, lab.cex = 1, rot = 0), bg.col = "lightgrey",
+ breaks = 20, clust.col = NULL, clust.palette = "rgb", hm.palette = "div",
+ clust.col.opt = list(), hm.col.opt = list())
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -112,16 +116,19 @@ heattile(M, hm.palette = "seq")
 	SEY <- SEY[o1,o2]
 	
 	# A plaid model with row effects
-	b1 <- biclust(SEY,method=BCPlaid(),row.release=0.4, col.release=0.4, fit.model = y ~ m + a )
+	b1 <- biclust(SEY,method=BCPlaid(),row.release=0.4,
+	 col.release=0.4, fit.model = y ~ m + a )
 
 	# index sets from b1
 	Is2 <- getIs(b1,dim(SEY), nstart = 1)
 
 	# clusters in seriated matirx:
-	heattile(SEY,biclust=b1,clust.palette="hsv",hm.palette="div", label = TRUE, border = c(0.1,0.01,0.03,0.03))
+	heattile(SEY,biclust=b1,clust.palette="hsv",hm.palette="div",
+	 label = TRUE, border = c(0.1,0.01,0.03,0.03))
 
 	#clusters in optimized matrix
-	heattile(SEY,Is=Is2,clust.palette="hsv",hm.palette="div", label = TRUE, border = c(0.1,0.01,0.03,0.03))
+	heattile(SEY,Is=Is2,clust.palette="hsv",hm.palette="div",
+	 label = TRUE, border = c(0.1,0.01,0.03,0.03))
 }
 
 
