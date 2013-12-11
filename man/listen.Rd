@@ -36,13 +36,10 @@ Germany
 }
 \examples{
 \dontrun{
+require(MASS)
 cpcp(housing,ord = c(4,3,2,1),gap.space=0.15)
 listen()
 }
 # now make your selections and see what happens.
 
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ event }
-\keyword{ listen }% __ONLY ONE__ keyword per line

@@ -8,7 +8,7 @@ Heatmap with Biclusters
 Draws a heatmap using \link[extracat]{fluctile} as the workhorse and offers the possibility to add rectangles which visualize the biclusters.
 }
 \usage{
-heattile(x, biclust = NULL, Is = NULL,  shape = "r", gap.prop = 0,
+heattile(x, biclust = NULL, Is = NULL,  shape = "r", fluct = FALSE, gap.prop = 0,
  border = c(0.05, 0.03, 0.03, 0.05), label = c(TRUE,FALSE) ,
  lab.opt = list(abbrev = 24, lab.cex = 1, rot = 0), bg.col = "lightgrey",
  breaks = 20, clust.col = NULL, clust.palette = "rgb", hm.palette = "div",
@@ -27,6 +27,10 @@ Instead of \code{biclust} one can define the indices of the clusters as a list w
 }
   \item{shape}{
 Shape of the tiles, see \link[extracat]{fluctile}.
+}
+\item{fluct}{
+Plots polygons whose sizes are proportional to their corresponding values, see \link[extracat]{fluctile}.
+If \code{FALSE} (default) a colored same-binsize plot is produced.
 }
   \item{gap.prop}{
 gaps between the tiles, see \link[extracat]{fluctile}.

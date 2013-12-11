@@ -8,7 +8,7 @@ Create a color vector
 Creates a color vector using different palettes, e.g. from the colorspace package.
 }
 \usage{
-getcolors(N, palette, col.opt)
+getcolors(N, palette, col.opt = list())
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -25,6 +25,7 @@ Palette shortcut:\cr
        \code{"h","heat","heatcolors"} \tab See \link[colorspace]{heat_hcl}	\cr
         \code{"t","ter","terrain"} \tab See \link[colorspace]{terrain_hcl}	\cr
         \code{"Wijffelaars","w","wijf", "q17"} \tab A fixed vector of 17 qualitative colors defined by Wijffelaars (2008).	\cr
+        . \tab defined by Wijffelaars (2008).	\cr
         }
 }
   \item{col.opt}{
@@ -36,10 +37,11 @@ Options for the palette. See help pages for the specific palettes.
 A color vector.
 }
 \references{
-Martijn Wijffelaars. Synthesis of Color Palettes. PhD thesis, TECHNISCHE UNIVERSITEIT EINDHOVEN, 2008.
+Martijn Wijffelaars. Synthesis of Color Palettes. PhD thesis, Technische Universiteit Eindhoven, 2008.
 }
 \examples{
 \dontrun{
+require(MASS)
 mat.layout <- grid.layout(nrow = 2 , ncol = 2)
 vp.mat <- viewport(layout = mat.layout)
 pushViewport(vp.mat)

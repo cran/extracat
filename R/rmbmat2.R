@@ -477,13 +477,13 @@ sapply(ids,function(i){
 			vp0 <- viewport(layout.pos.row = i, layout.pos.col = j)
 			pushViewport(vp0)
 			#grid.rect()
-			pushViewport(vp1)
+			#pushViewport(vp1)
 			if( use.dset ){
 				rmb.formula(as.formula(f), data=dset, cut = cut[c(i,j,tv)], col.vars = NULL, spine = spine[i, j], circular = circular[i, j], 
 					eqwidth = eqwidth[i, j], cat.ord = NULL, freq.trans = freq.trans[[i]][[j]], 
 					num.mode = num.mode[i, j], innerval = innerval, max.scale = max.scale[i, j], use.na = use.na[i, j], expected = expected[i, j], 
 					residuals = NULL, model.opt = model.opt[[i]][[j]], gap.prop = gap.prop[i, j], gap.mult = gap.mult[i, j], 
-					col = col[i, j], col.opt = col.opt[[i]][[j]], label = label[i, j], label.opt = label.opt[[i]][[j]])
+					col = col[i, j], col.opt = col.opt[[i]][[j]], label = label[i, j], label.opt = label.opt[[i]][[j]], vp = vp1)
 				
 			}else{
 #					if(mosaic[i, j]){
@@ -495,7 +495,7 @@ sapply(ids,function(i){
 					eqwidth = eqwidth[i, j], cat.ord = NULL, freq.trans = freq.trans[[i]][[j]], 
 					num.mode = num.mode[i, j], innerval = innerval, max.scale = max.scale[i, j], use.na = use.na[i, j], expected = expected[i, j], 
 					residuals = NULL, model.opt = model.opt[[i]][[j]], gap.prop = gap.prop[i, j], gap.mult = gap.mult[i, j], 
-					col = col[i, j], col.opt = col.opt[[i]][[j]], label = label[i, j], label.opt = label.opt[[i]][[j]])
+					col = col[i, j], col.opt = col.opt[[i]][[j]], label = label[i, j], label.opt = label.opt[[i]][[j]], vp = vp1)
 					#}
 			}
 			popViewport()
@@ -506,7 +506,7 @@ sapply(ids,function(i){
 			pushViewport(vp0)
 			
 			grid.rect()
-			pushViewport(vp1)
+			#pushViewport(vp1)
 			if( i != tv | !plot.tv){
 				f <- paste("~",paste(fterms[j],".1",sep=""),"+",fterms[i],"+",names(x)[tv],sep="")
 				dset <- x[, c(rep(match(fterms[i],names(x)),2),tv)]
@@ -525,7 +525,7 @@ sapply(ids,function(i){
     eqwidth = eqwidth[i, j], cat.ord = NULL, freq.trans = freq.trans[[i]][[j]], 
     num.mode = num.mode[i, j], innerval = innerval, max.scale = max.scale[i, j], use.na = use.na[i, j], expected = expected[i, j], 
     residuals = NULL, model.opt = model.opt[[i]][[j]], gap.prop = gap.prop[i, j], gap.mult = gap.mult[i, j], 
-    col = col[i, j], col.opt = col.opt[[i]][[j]], label = label[i, j], label.opt = label.opt[[i]][[j]])
+    col = col[i, j], col.opt = col.opt[[i]][[j]], label = label[i, j], label.opt = label.opt[[i]][[j]], vp = vp1)
 			grid.text(fterms[i],x=0.5,y=0.5,vp=vp0,gp=gpar(fontsize=10, col=hsv(0,0,0,alpha=0.4)))
 			
 			popViewport()

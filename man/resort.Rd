@@ -47,6 +47,7 @@ Germany
 }
 \examples{
 \dontrun{
+require(MASS)
     cpcp(V = housing, ord = c(4,3,1,2))
     # selection via console
     s = iset()

@@ -1,14 +1,16 @@
-quickfechner = function(x, x.type = "diss", scale = "-", path.op = "+", sym.op = "+", rescale = FALSE){
-	
+quickfechner = function(x, x.type = "diss", scale = "-", path.op = "+", sym.op = "+", rescale = FALSE, exclude.zero = FALSE, check = TRUE){
+	 test = FALSE
+	 
 	diss <- x.type %in% c("d","diss","dissimilarity")
 	sim <- x.type %in% c("s","sim","similarity")
 	
-	if(sim){
-		stopifnot(regmax(x))
-	}else{
-		stopifnot(regmin(x))	
+	if(check){
+		if(sim){
+			stopifnot(regmax(x))
+		}else{
+			stopifnot(regmin(x))	
+		}	
 	}	
-		
 	stopifnot(xor(diss , sim))
 	
 	scale.minus <- scale %in% c("-","add","additive","+")
@@ -33,12 +35,15 @@ quickfechner = function(x, x.type = "diss", scale = "-", path.op = "+", sym.op =
 	
 	
 	# check matrix
-	stopifnot( all(x >= 0) )
-		mx <- max(x)
+	if(check){
+		stopifnot( all(x >= 0) )
+	}
+	
+		mx <- max(abs(x))
 		
-		if(mx > 1){
+		#if(mx > 1){ # CHECK ME AGAIN
 			 x <- x/mx
-		}
+		#}
 	# perform scaling
 	if(!all(diag(x) %in% c(0,1))){
 		if(scale.minus){
@@ -91,9 +96,16 @@ quickfechner = function(x, x.type = "diss", scale = "-", path.op = "+", sym.op =
 	
 	
 	# x is now a dissimilarity matrix with all(diag == 0)
-	fx <- .Call("quickfechner",x, as.integer(dim(x)),vs)
+	if(!test){
+		fx <- .Call("quickfechner",x, as.integer(dim(x)),vs, as.integer(exclude.zero))
+	}else{
+		fx <- .Call("quickfechner2",x, as.integer(dim(x)),vs, as.integer(exclude.zero))
+	}
 	
-	dim(fx) <- dim(x)
+	nm <- prod(dim(x))
+	px <- fx[(nm+1):(2*nm)]
+	fx <- fx[-c((nm+1):(2*nm))]
+	dim(fx) <- dim(px) <- dim(x)
 	if(expected.path){
 		fx <- 1 - fx	
 	}
@@ -102,11 +114,13 @@ quickfechner = function(x, x.type = "diss", scale = "-", path.op = "+", sym.op =
 		dim(fx) <- dim(x)
 	}
 	if( sym.sum ){
-		fx <- fx+t(fx)	
+		fx <- (fx+t(fx))
 	}
+	mx2 <- max(abs(fx))
+	fx <- fx/mx2
 	
-
-	
+	attr(fx,"path.matrix") <- px
+	attr(fx,"scale.factor") <- mx*mx2
 
 	return(fx)
 	
@@ -125,3 +139,24 @@ regmin = function(x){
 	v2 <- apply(x,2,which.min)
 	return( all(order(v1)==v2 ) )
 }
+
+getpath <- function(fm, pm = NULL, from = 1, to = nrow(fm)){
+	
+	v <- attr(fm,"path.matrix")[from,]
+	if(is.null(v)&is.null(pm)){
+		simpleWarning("No path matrix.")
+		return(invisible(FALSE))
+	}
+	if(!is.null(pm)){
+		v <- pm[from,]
+	}
+	path <- to
+	k <- to
+	while(v[k] != from){
+		path <- c(v[k],path)
+		k <- v[k]
+	}
+	path <- c(from,path)
+	return(path)
+}
+

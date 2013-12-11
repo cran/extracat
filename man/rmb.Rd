@@ -57,11 +57,19 @@ label.opt = list(), vp = NULL, \dots)
  \item{residuals}{ If \code{expected} is a vector with expected values it is also possible to specify residuals. This is used internally by \code{rmb.glm}.}
  \item{ model.opt }{A list with optional parameters for model specifications. Possible parameters are:
  	\tabular{rlll}{
-         \code{use.ecpected.values}   \tab A logical specifying whether or not to use the frequencies predicted by the model instead of the observed frequencies.\cr
-      	 \code{mod.type} \tab Either \code{"poisson"} or \code{"polr"}. See \link[stats]{glm} and \link[MASS]{polr}.	\cr
-         \code{resid.type} \tab \code{"pearson"}, \code{"deviance"}, \code{working}, \code{partial}  or  \code{"response"}. For \code{polr} models only the latter is available.		\cr
-         \code{resid.display} \tab One of \code{"values", "color"} or \code{"both"}. \code{"values"} will result in bars or wedges for both expected and observed frequencies. Hence the raw residuals are shown in the graphic. \code{"color"} will set the \code{col} argument aside and use colors on a red-blue-scale to represent (pearson) residuals. \code{"both"} does both.		\cr
-         \code{max.rat} \tab 	If a model is specified and \code{resid.display = "both"} the x-scales will not be reduced to less than \code{1/max.rat}: The x-scales are reduced whenever an observed frequency exceeds the maximal scale.	\cr
+         \code{use.ecpected.values}   \tab A logical specifying whether or not to use the frequencies \cr
+         \tab predicted by the model instead of the observed frequencies.\cr
+      	 \code{mod.type} \tab Either \code{"poisson"} or \code{"polr"}.\cr
+	 \tab See \link[stats]{glm} and \link[MASS]{polr}.	\cr
+         \code{resid.type} \tab \code{"pearson"}, \code{"deviance"}, \code{working}, \code{partial} \cr
+         \tab or  \code{"response"}. For \code{polr} models only the latter is available.		\cr
+         \code{resid.display} \tab One of \code{"values", "color"} or \code{"both"}. \code{"values"} will result in bars \cr 
+         \tab or wedges for both expected and observed frequencies. Hence the raw residuals are shown in the graphic.\cr
+         \tab  \code{"color"} will set the \code{col} argument aside and use colors on a red-blue-scale \cr
+         \tab to represent (pearson) residuals. \code{"both"} does both.		\cr
+         \code{max.rat} \tab 	If a model is specified and \code{resid.display = "both"} the x-scales \cr
+         \tab will not be reduced to less than \code{1/max.rat}:\cr
+         \tab The x-scales are reduced whenever an observed frequency exceeds the maximal scale.	\cr
         }
 }
 
@@ -82,11 +90,13 @@ label.opt = list(), vp = NULL, \dots)
   \item{label}{Either a logical specifying whether or not to draw labels or a numeric vector defining which variables shall be labelled. }
  \item{ label.opt }{A list with optional parameters for label specifications. Possible parameters are:
  	\tabular{rlll}{
-         \code{yaxis}   \tab If \code{TRUE} a vertical axis will be drawn at both sides of the plot. This is recommended when changing the \code{max.scale} argument.\cr
+         \code{yaxis}   \tab If \code{TRUE} a vertical axis will be drawn at both sides of the plot. \cr
+         \tab This is recommended when changing the \code{max.scale} argument.\cr
       	 \code{boxes} \tab Should the labels be surrounded by boxes?	\cr
          \code{lab.tv} \tab Should the target variable be included in the labeling?		\cr
          \code{varnames} \tab Should the variable names be shown as labels?	\cr
-         \code{abbrev} \tab 	An single integer value or a vector of integer values specifying the number of characters to which the labels will automatically be abbreviated. \cr
+         \code{abbrev} \tab 	An single integer value or a vector of integer values specifying the number \cr
+         \tab of characters to which the labels will automatically be abbreviated. \cr
          	 \code{lab.cex} \tab The fontsize multplier.	\cr
         }
 }
@@ -114,7 +124,7 @@ Germany
   \code{\link[vcd]{mosaic}} for an implementation of mosaicplots.
 }
 \examples{
-    data(housing)
+  require(MASS)
     # simple example
     rmb(formula = ~Type+Infl+Cont+Sat, data = housing, gap.mult = 2,
         col.vars = c(FALSE,TRUE,TRUE,FALSE), label.opt = list(abbrev = 3))

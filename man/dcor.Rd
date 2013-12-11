@@ -18,9 +18,9 @@ The main application for the weights is to use frequencies according to ordinal 
 }
 \usage{
 wdcor(x,\dots)
-\method{wdcor}{default}(x,y,w = NULL,ep = 1,\dots)
+\method{wdcor}{default}(x,y,w = NULL,ep = 1, approx = FALSE, n = 50,na.rm = TRUE, \dots)
 \method{wdcor}{table}(x,ep = 1,\dots)
-\method{wdcor}{data.frame}(x,approx = TRUE,\dots)
+\method{wdcor}{data.frame}(x,approx = TRUE, n = 50,\dots)
 }
 
 \arguments{
@@ -37,7 +37,14 @@ Weights, typically frequencies. The default weights all cases the same, which le
 The euclidean (absolute) distances can be taken to the power of \code{ep}.
 }
 \item{approx}{
-Whether or not to use \link[extracat]{approx.dcor} instead of \link[extracat]{wdcor} for the \code{data.frame} method.
+Whether or not to use \link[extracat]{approx.dcor} instead of \link[extracat]{wdcor}.
+This is automatically chosen for vectors with more than 20000 entries. 
+}
+\item{n}{
+The number of bins used by \link[extracat]{approx.dcor}.
+}
+\item{na.rm}{
+Whether or nor to remove missing values.
 }
 \item{\dots}{
 dots.
@@ -46,6 +53,9 @@ dots.
 
 \value{
 The correlation value which is between 0 and 1.
+}
+\note{
+Automatically uses an approximation for vectors larger than 20000 entries!
 }
 \references{
 Szekely, G. J. Rizzo, M. L. and Bakirov, N. K. (2007). "Measuring and testing independence by correlation of distances", Annals of Statistics, 35/6, 2769-2794
@@ -67,10 +77,11 @@ x3 <- rnorm(N,mean=30,sd=4)
 x <- sample(c(x1,x2,x3),N)		
 			
 y <- rnorm(1,sd=0.0001)*(x-mean(x))^4+ rnorm(1,sd=0.01)*(x-mean(x))^3
- + rnorm(1,sd=0.1)*(x-mean(x))^2 
- + rnorm(1)*(x-mean(x))+rnorm(N,sd=runif(N,3,10))
- + runif(N,0,20)*sin(abs(scale(x))*2*pi)
+y <- y+ rnorm(1,sd=0.1)*(x-mean(x))^2 
+y <- y+ rnorm(1)*(x-mean(x))+rnorm(N,sd=runif(N,3,10))
+y <- y+ runif(N,0,20)*sin(abs(scale(x))*2*pi)
 
+require(scales)
 plot(x,y,pch=19,col=alpha("black",0.2))
 system.time(dd<-wdcor(x,y))
 
@@ -78,6 +89,33 @@ y2 <- runif(2000)
 system.time(dde<-wdcor(x,y2))
 dd
 dde
+
+\dontrun{
+y <- diamonds$price
+x <- diamonds$carat
+
+length(x) # 53940
+
+# auto approximation via approx.dcor
+wdcor(x,y) 
+
+# the weighted distance correlation is also applicable to
+# discrete data:
+
+A <- arsim(2000,c(12,12),4,0.1)
+wdcor(A)
+wdcor(optile(A))
+wdcor(optile(A, fun = "distcor"))
+
+
+# kernel density weights:
+kd <- kde2d(x,y,n=50)
+
+xy <- expand.grid(kd$x,kd$y)
+wdcor(xy[,1],xy[,2], w = kd$z)
+# this is the approximate distance correlation for the 2D density estimate
+}
+
 
 }
 

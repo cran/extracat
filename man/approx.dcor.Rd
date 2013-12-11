@@ -7,7 +7,7 @@ Distance Correlation Approximation
 Computes the distance correlation for two variables using an approximation based on binning and \link[extracat]{wdcor.table}.
 The approximation underestimates the true value by a small error depending on the number of bins. (In simulations with the default of 50 bins the average error was about 0.001.) }
 \usage{
-approx.dcor(x, y, n = 50, correct = FALSE, ep = 1)
+approx.dcor(x, y, n = 50, ep = 1, bin = "eq")
 }
 \arguments{
   \item{x}{
@@ -19,11 +19,12 @@ A numeric vector.
   \item{n}{
 The number of bins per variable.
 }
-  \item{correct}{
-Currently a correction based on empirical results. The approximation underestimates the true value on average by a small error. The error converges to zero when \code{n} goes to infinity. The ratio between the true distance correlation \code{d} and the approximated value \code{da} is \code{d/da = 1 + a} where \code{a} is roughly proportional to \code{1/n^2}. A better and theoretically sound correction is part of future work.
-}
+ 
 \item{ep}{
 The euclidean distances are taken to the power of \code{ep}.
+}
+\item{bin}{
+Either \code{"eq"} or \code{"q"} for equidistant breakpoints or quantile breakpoints.
 }
 }
 
@@ -68,7 +69,7 @@ test<-replicate(100,{
 N <- 1000
 x<- rnorm(N,mean=10,sd=3)
 y <- rnorm(1,sd=0.01)*(x-10)^3 + rnorm(1,sd=0.1)*(x-10)^2 
-+ rnorm(1)*(x-10)+rnorm(N,sd=4)
+y <- y + rnorm(1)*(x-10)+rnorm(N,sd=4)
 
 dd <- wdcor(x,y)
 dd25 <- approx.dcor(x,y,25)

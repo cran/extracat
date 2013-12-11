@@ -28,6 +28,7 @@ dataframe
 \link[extracat]{Burt}, \link[extracat]{imat}
 }
 \examples{
+require(MASS)
 idat(housing)
 }
 

@@ -39,6 +39,8 @@ Germany
 
 
 \examples{
+require(MASS)
+
 hs2 = untableSet(housing)
 summary(hs2)
 }

@@ -23,7 +23,7 @@ Which dimensions to reorder. The dimensions are reordered independently.
 The number of different starting points for the TSP solver. If \code{nstart} is greater or equal to the number of cities in a dimension, the solver uses each city once.
 }
   \item{solver}{
-Should be one of \code{"nn", "nearest_insertion", "cheapest_insertion","farthest_insertion"}. See \link[TSP]{solve_TSP}.
+Should be one of \code{"nn", "nearest_insertion", "cheapest_insertion","farthest_insertion"}.  See \link[TSP]{solve_TSP}.
 }
   \item{return.table}{
 Whether or not to return the optimized table. If \code{FALSE} only the new category orders are returned. If \code{TRUE} the new orders are attached to the table as an attribute \code{"orders"}.

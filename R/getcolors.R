@@ -1,7 +1,9 @@
 
 
-getcolors <- function(N, palette, col.opt){
-	require(colorspace)
+getcolors <- function(N, palette, col.opt=list()){
+#require(colorspace)
+	
+	colv <- NULL
 	
 	if(!("sample" %in% labels(col.opt))){
 						sample <- FALSE
@@ -12,7 +14,7 @@ getcolors <- function(N, palette, col.opt){
  "#FFE0CC", "#AD2D5C", "#E3C4EF", "#E2D495", "#CCF1FF", "#578E52")
 			
 	
-	if( palette %in% c("hsv","rgb") ){
+	if( palette[1] %in% c("hsv","rgb") ){
 					col.def <- formals(rainbow)
 					if(!("s" %in% labels(col.opt))){
 						col.opt$s <- eval(col.def$s)
@@ -31,7 +33,7 @@ getcolors <- function(N, palette, col.opt){
 					}
 					colv <- rainbow(N,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, alpha = col.opt$alpha)
 					}
-				if( palette == "hcl" ){
+				if( palette[1] == "hcl" ){
 					col.def <- formals(rainbow_hcl)
 					if(!("c" %in% labels(col.opt))){
 						col.opt$c <- eval(col.def$c)
@@ -47,7 +49,7 @@ getcolors <- function(N, palette, col.opt){
 					}
 				colv <- rainbow_hcl(N,c = col.opt$c, l = col.opt$l, start = col.opt$start, end = col.opt$end)
 				}
-				if( palette %in% c("s","seq","sqt","sqn","sequential") ){
+				if( palette[1] %in% c("s","seq","sqt","sqn","sequential") ){
 					col.def <- formals(sequential_hcl)
 					if(!("h" %in% labels(col.opt))){
 						col.opt$h <- eval(col.def$h)
@@ -63,7 +65,7 @@ getcolors <- function(N, palette, col.opt){
 					}
 					colv <- rev(sequential_hcl(N,h = col.opt$h, c. = col.opt$c, l = col.opt$l, power = col.opt$power))
 				}
-				if( palette %in% c("d","div","diverging","diverge") ){
+				if( palette[1] %in% c("d","div","diverging","diverge") ){
 					col.def <- formals(diverge_hcl)
 					if(!("h" %in% labels(col.opt))){
 						col.opt$h <- eval(col.def$h)
@@ -81,7 +83,7 @@ getcolors <- function(N, palette, col.opt){
 					
 				}
 				
-				if( palette %in% c("h","heat","heatcolors") ){
+				if( palette[1] %in% c("h","heat","heatcolors") ){
 					col.def <- formals(heat_hcl)
 					if(!("h" %in% labels(col.opt))){
 						col.opt$h <- eval(col.def$h)
@@ -98,7 +100,7 @@ getcolors <- function(N, palette, col.opt){
 					colv <- heat_hcl(N,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
 					
 				}
-				if( palette %in% c("t","ter","terrain") ){
+				if( palette[1] %in% c("t","ter","terrain") ){
 					col.def <- formals(terrain_hcl)
 					if(!("h" %in% labels(col.opt))){
 						col.opt$h <- eval(col.def$h)
@@ -117,12 +119,16 @@ getcolors <- function(N, palette, col.opt){
 				}
 
 
-				if( palette %in% c("Wijffelaars","w","wijf", "q17") ){
+				if( palette[1] %in% c("Wijffelaars","w","wijf", "q17") ){
 						colv <- wijffelaars[1:N]
 					if("alpha" %in% labels(col.opt)){
 						colv <- alpha(colv, col.opt$alpha)
 					}
 				}
+				if(is.null(colv)){
+					colv <- rep(palette,N)[1:N]
+				}
+				
 if(sample) colv <- sample(colv)
 
 	return(colv)

@@ -139,29 +139,7 @@ WBCImat <- function(x, iter = 20, freqvar = NULL, fun = "WBCC"){
 #	return(M)
 #}
 
-wdcor.data.frame = function(x, approx = TRUE, ...){
-	nmz <- names(x)
-	x <- data.matrix(x)
-	nd <- ncol(x)
-	ids <- combn(1:nd,2)
-	if(approx){
-	values <- apply(ids,2,function(id){
-		z <- na.omit(x[,id])
-		approx.dcor(z[,1],z[,2], n=100)
-	})
-	}else{
-		values <- apply(ids,2,function(id){
-		z <- na.omit(x[,id])
-		wdcor(z[,1],z[,2], n=100)
-	})
-	}
-	M <- matrix(0,nd,nd)
-	M[lower.tri(M)] <- values
-	M <- M + t(M)
-    diag(M) <- 1
-	colnames(M) <- rownames(M) <- nmz
-		return(M)
-}
+
 
 qbin <- function(x,p = NULL, k = 5, d = 2){
 	N <- length(x)
@@ -184,7 +162,7 @@ qbin <- function(x,p = NULL, k = 5, d = 2){
 }
 
 
-cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqvar = NULL, diag = NULL){
+cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqvar = NULL, diag = NULL, fun = "BCC", foreign = NULL){
 
 	nd <- ncol(x)
 	
@@ -220,12 +198,19 @@ cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqva
 				}
 			}
 	}
+	
+	x$Freq <- wts
 	inc <- ifelse(is.null(diag),0,1)
 		M <- matrix(0,nd,nd)
 		for(i in 1:(nd-1)){
 			for(j in (i+inc):nd){
 				if(sort){
-					M[i,j] <- M[j,i] <- crit(optile(xtabs(wts~x[,i]+x[,j]), iter = iter)) #attr(optile(table(x[,i],x[,j]), iter = iter) ,"scaled.criterion")
+					M[i,j] <- M[j,i] <- crit(optile(x[,c(i,j,ncol(x))], iter = iter, fun = fun, 
+						foreign = foreign,return.type = "table")) 
+										
+					#M[i,j] <- M[j,i] <- crit(optile(xtabs(wts~x[,i]+x[,j]), iter = iter, fun = fun, foreign = foreign)) 
+					
+					##attr(optile(table(x[,i],x[,j]), iter = iter) ,"scaled.criterion")
 				}else{
 					M[i,j] <- M[j,i] <-  crit(xtabs(wts~x[,i]+x[,j]))
 				}
@@ -237,7 +222,7 @@ cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqva
 
 
 	
-		colnames(M) <- rownames(M) <- names(x)
+		colnames(M) <- rownames(M) <- names(x)[1:nd]
 		return(M)
 }
 

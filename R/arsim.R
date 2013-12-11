@@ -1,30 +1,30 @@
-bloma <- function(k, ncr = 12, ar = 1){
-	Mlist = list()
-	N=0
-	M=0
-	for(i in 1:k){
-		n <- max(2,rpois(1,ncr))
-		m <- max(2,rpois(1,ar*ncr))
-		Mlist[[i]] <- extracat:::smat2(n,m,rpois(1,500))
-		N <- N+n
-		M <- M+m
-	}
-	S <- matrix(0,ncol=M,nrow=N)
-	xind <- 1:M
-	yind <- 1:N
-	
-	for(i in 1:k){
-		MS <- Mlist[[i]]
-		
-		
-		xi <- sample(xind, size = ncol(MS))	
-		yi <- sample(yind, size = nrow(MS))
-		S[yi,xi] <- MS
-		xind <- xind[-which(xind %in% xi)]
-		yind <- yind[-which(yind %in% yi)]		
-	}
-	return(S)
-}
+#bloma <- function(k, ncr = 12, ar = 1){
+#	Mlist = list()
+#	N=0
+#	M=0
+#	for(i in 1:k){
+#		n <- max(2,rpois(1,ncr))
+#		m <- max(2,rpois(1,ar*ncr))
+#		Mlist[[i]] <- smat2(n,m,rpois(1,500))
+#		N <- N+n
+#		M <- M+m
+#	}
+#	S <- matrix(0,ncol=M,nrow=N)
+#	xind <- 1:M
+#	yind <- 1:N
+#	
+#	for(i in 1:k){
+#		MS <- Mlist[[i]]
+#		
+#		
+#		xi <- sample(xind, size = ncol(MS))	
+#		yi <- sample(yind, size = nrow(MS))
+#		S[yi,xi] <- MS
+#		xind <- xind[-which(xind %in% xi)]
+#		yind <- yind[-which(yind %in% yi)]		
+#	}
+#	return(S)
+#}
 
 
 

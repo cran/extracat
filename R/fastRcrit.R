@@ -368,7 +368,7 @@ function (x, dims = NULL,nstart = 1, solver = "nearest_insertion", return.table 
     })
   
 
-    require(TSP)
+   # require(TSP)
     ords <- lapply(D, function(d) {
     	if(!inherits(d, "TSP")){
     		return(d)

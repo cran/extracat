@@ -64,7 +64,8 @@ revert the y axis.
          \code{col}   \tab The rectangle color.\cr
       	 \code{lwd} \tab The line width. Default is \code{"red"}.	\cr
          \code{lty} \tab The line type. Default is 1 (solid).	\cr
-         \code{fill} \tab The color to fill the rectangles. Defaults is \code{NULL}. A sensible choice is for instance \code{alpha(col, 0.1)}.	\cr
+         \code{fill} \tab The color to fill the rectangles. Defaults is \code{NULL}.
+          A sensible choice is for instance \code{alpha(col, 0.1)}.	\cr
         }
 }
 \item{border}{

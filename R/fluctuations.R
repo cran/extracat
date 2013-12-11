@@ -95,6 +95,15 @@ fluctile <- function(tab, dir = "b", just = "c", hsplit = FALSE,shape ="r", gap.
 	vp0 = viewport(x = border[1] + (1-border[1]-border[2])/2 , y = border[3] + (1-border[3]-border[4])/2, width = 1-border[1]-border[2], height = 1-border[3]-border[4],name="base")
 	if(length(dm)==2){
 		
+		#color workaround:
+		#if(shape %in% c("r","c")){
+			nn <- length(tab)
+			tile.col <- rep(tile.col, ceiling(nn/length(tile.col)))[1:nn]
+			dim(tile.col) <- dim(tab)
+			tile.col = tile.col[nrow(tile.col):1,]
+		#}
+		
+		
 		pushViewport(vp0)
 		if(!add){
 		#grid.newpage()
@@ -456,12 +465,12 @@ gridfluc <- function(tab,dir = "both", just = "centre", shape = "r", gap.prop = 
         ht <- as.matrix(h*tab)
         wt <- as.matrix(w*tab)
 	}
-    if(dir == "h"){
+    if(dir == "v"){
         tab <- tab/maxv
         wt <- as.matrix(w*tab^0)
         ht <- as.matrix(h*tab)
     }
-    if(dir == "v"){
+    if(dir == "h"){
         tab <- tab/maxv
         ht <- as.matrix(h*tab^0)
         wt <- as.matrix(w*tab)
@@ -477,10 +486,10 @@ if(dir == "n"){
 		draw2(ht, wt,  t(replicate(n,x)), replicate(m,y), border = NA,bg=col, vp=vp, just = just)
 	}
 	
-	#if(shape == "c"){
-	#	draw3(R = ht/2* (min(n,m)/max(m,n)), t(replicate(n,x)), replicate(m,y), border = NA,bg=col, vp=vp, just = just)
-	#}
-	if(shape %in% c("o", "d", "c")){
+	if(shape == "c"){
+		draw3(R = ht/2* (min(n,m)/max(m,n)), t(replicate(n,x)), replicate(m,y), border = NA,bg=col, vp=vp, just = just)
+	}
+	if(shape %in% c("o", "d")){
 		if(shape == "o"){
 			angles <- seq(22.5,360,45)/180*pi
 			wt <- wt / cos(pi/8)
@@ -489,13 +498,30 @@ if(dir == "n"){
 		if(shape == "d"){
 			angles <- seq(0,360,90)/180*pi
 		}
-		if(shape == "c"){
-			angles <- seq(0,360,1)/180*pi
-		}
+		#if(shape == "c"){
+		#	angles <- seq(0,360,1)/180*pi
+		#}
 		corners <-  cbind( cos(angles), sin(angles))
-		mapply(function(x,y,h,w,c){
-			   grid.polygon(x = x+corners[,1]*w/2, y = y+corners[,2]*h/2, gp = gpar(col = border, fill = c, alpha = 1))# fill= col, col = NA
-			   }, x = t(replicate(n,x)), y = replicate(m,y), h = ht, w = wt, c = rep(col,length(ht))[1:length(ht)] )
+		#mapply(function(x,y,h,w,c){
+	#					   grid.polygon(x = x+corners[,1]*w/2, y = y+corners[,2]*h/2, gp = gpar(col = border, fill = c, alpha = 1))
+	#		   }, x = t(replicate(n,x)), y = replicate(m,y), h = ht, w = wt, c = rep(col,length(ht))[1:length(ht)] )
+		ncr <- length(corners[,1])
+		colv <- rep(col,length(ht))
+		
+		x2 <- rep(x,each=n*ncr) + rep(corners[,1], n*m )*rep(wt,each=ncr)/2
+		y2 <- rep(rep(y,m),each=ncr) + rep(corners[,2], n*m )*rep(ht,each=ncr)/2
+		#grid.polygon(x2, y2 , gp = gpar(col = border, fill = rep(colv, each = ncr), alpha = 1), 
+		#id = rep(1:(m*n),each=ncr))
+		
+		uc <- unique(colv)
+		colv <- rep(colv, each = ncr)
+		idv <- rep(1:(m*n),each=ncr)
+		for(cc in uc){
+			ii <- which(colv == cc)
+			grid.polygon(x2[ii], y2[ii] , gp = gpar(col = border, fill = cc, alpha = 1), 
+				id = idv[ii])
+		}
+		
 	}
 	
 	return(invisible(TRUE))	
@@ -511,14 +537,16 @@ name = NULL, gp = gpar(col = border, fill = bg, alpha = alpha),
 draw = TRUE, vp = vp)
 }
 
-#draw3 <- function (R, X, Y, alpha = 1, border = "black", bg = "white", 
-#vp = NULL, just = "centre") 
-#{
-#grid.circle(x = unit(X, "npc"), y = unit(Y, "npc"), r = unit(R, 
-#"npc"), default.units = "npc", 
-#name = NULL, gp = gpar(col = border, fill = bg, alpha = alpha), 
-#draw = TRUE, vp = vp)
-#}
+
+
+draw3 <- function (R, X, Y, alpha = 1, border = "black", bg = "white", 
+vp = NULL, just = "centre") 
+{
+grid.circle(x = unit(X, "npc"), y = unit(Y, "npc"), r = unit(R, 
+"npc"), default.units = "npc", 
+name = NULL, gp = gpar(col = border, fill = bg, alpha = alpha), 
+draw = TRUE, vp = vp)
+}
 
 addrect = function( vp ,breaks, col = "red", lwd = 2, lty = 1, gap.prop = 0, rev.y = FALSE, fill = NULL){
 	yc <- breaks[[1]]
@@ -609,6 +637,10 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", plot 
 	if( method %in% c("BCI","bci","BCC",4) ){
 		method <- as.integer(4)	
 	}
+	if( method %in% c("R","r","res","resid","residual",5) ){
+		method <- as.integer(5)	
+	}
+	
 	ret.int <- ( storage.mode(x) == "integer" )
 	storage.mode(x) <- "numeric"
 	
@@ -644,12 +676,16 @@ floor = 0, rev.y = FALSE, add = FALSE, shape = "r", just = "c", dir = "b", plot 
 		if(method == 4){
 			tau0 <- 1 - BCI(x)
 		}
+		if(method == 5){
+			#ix <- itab(x)
+			tau0 <- 0.9 #<- 1 - exp(min( (x-ix)/sqrt(ix)  ))
+		}
 	}
 	
 	if( floor > 0 ){
 		x2 <- apply(x,1:2, function(z){
 				   ifelse(z < floor, 0, z)
-				   })
+			})
 		#storage.mode(x2) <- "integer"
 		cuts <- .Call("getclust",x2,as.integer(dim(x)),tau0,method,as.integer(singlesplit))
 	}else{
@@ -889,7 +925,7 @@ if(shape %in% c("o","oct","octahedron")){
 
 
 f3dcol = function(x, dims = c(1,2), col.fun = rainbow_hcl, col.opt = list()){
-	require(colorspace)
+#require(colorspace)
 	stopifnot( inherits(x, "array") || inherits(x, "table") )
 	nc <- prod(dim(x)[dims])
 	colv <- col.fun(nc)

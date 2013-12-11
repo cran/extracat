@@ -1,7 +1,7 @@
 
 getIs <- function(biclust, dim,nstart=20, solver = "nn", adjust.dist = TRUE){
 		
-		if(inherits(biclust,"biclust")){
+		if(inherits(biclust,"Biclust")){
 		rxn <- biclust@RowxNumber
 		nxc <- biclust@NumberxCol
 		N <- biclust@Number
@@ -20,7 +20,7 @@ getIs <- function(biclust, dim,nstart=20, solver = "nn", adjust.dist = TRUE){
 
 getIs2 <- function(bic, dim, nstart=20, solver = "nn", cpr = FALSE, cpc = TRUE, adjust.dist = FALSE){
 	
-	if(inherits(bic,"biclust")){
+	if(inherits(bic,"Biclust")){
 		rxn <- bic@RowxNumber
 		nxc <- bic@NumberxCol
 		N <- bic@Number
@@ -98,7 +98,7 @@ getIs2 <- function(bic, dim, nstart=20, solver = "nn", cpr = FALSE, cpc = TRUE, 
 }
 
 
-heattile <- function(x, biclust = NULL, Is = NULL, shape = "r", 
+heattile <- function(x, biclust = NULL, Is = NULL, shape = "r", fluct = FALSE,
     gap.prop = 0.0, border = c(0.05,0.03,0.03,0.05), label = c(TRUE, FALSE), lab.opt = list(abbrev = 24, 
         lab.cex = 1, rot = 0), bg.col = "lightgrey",breaks = 20, clust.col = NULL, clust.palette = "rgb", hm.palette = "div", clust.col.opt = list(), hm.col.opt = list()){
       
@@ -120,6 +120,11 @@ heattile <- function(x, biclust = NULL, Is = NULL, shape = "r",
  		}
   		N <- length(Is)
  	} 
+ 	if(is.null(attr(Is,"orders")) & N > 0){
+ 		# needs to be checked ... 
+ 		Is <- rapply(Is,sort,how="list")
+ 	}
+ 	
  	
  if(N > 0){		
  	# cluster colors
@@ -151,13 +156,19 @@ heattile <- function(x, biclust = NULL, Is = NULL, shape = "r",
 			o1 <- rev(attr(Is,"orders")[[1]])
 			o2 <- attr(Is,"orders")[[2]]
 	}else{
-		o1 <- nrow(x):1
+		o1 <- nrow(x):1 
 		o2 <- 1:ncol(x)
 	} 
+	if( fluct ){
+		o1 <- rev(o1) # why??? CHECK!
+	}
 	x <- x[o1, o2]
 	CM <- CM[o1, o2]
-	
-	IM <- matrix(1,nrow=nrow(x),ncol=ncol(x) )
+	if(fluct){
+		IM <- abs(x)
+	}else{
+		IM <- matrix(1,nrow=nrow(x),ncol=ncol(x) )
+	}
 		rownames(IM) <- rownames(x)
 		colnames(IM) <- colnames(x)
 		
@@ -263,3 +274,8 @@ colorit = function(ii,dim,col,vp){
 	}
 return(invisible(TRUE))
 }
+
+
+
+
+

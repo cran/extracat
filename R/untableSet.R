@@ -4,7 +4,7 @@ function(data, freqvar = NULL){
 	data = as.data.frame(data)
 	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar = "Freq" }
 	stopifnot(freqvar %in% names(data))
-	
+	data <- data[data[freqvar]>0,]
 	ind = which(names(data) != freqvar)
 	fi = which(names(data) == freqvar)
 	names(data)[fi] = "Freq"
@@ -30,6 +30,8 @@ untableSet <- function(data, freqvar = NULL){
 	ind = which(names(data) != freqvar)
 	fi = which(names(data) == freqvar)
 	names(data)[fi] <- "Freq"
+	
+		data <- data[which(data[,fi] > 0),]
 	n <- ncol(data)
 	m <- nrow(data)
 	lvls <- lapply(data[,-fi],function(z) levels(as.factor(z)))

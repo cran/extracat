@@ -13,10 +13,14 @@ subtable <- function(data, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FAL
 	if(!keep.zero){
 		if("Freq" %in% names(data)){
 			fid = which(names(data)=="Freq")
-			ss = count2(data, cols, weights = data[,fid])
+			#ss = count2(data, cols, weights = data[,fid])
+			ss = count(data, cols, wt_var = fid)
 		}else{
-			ss = count2(data, cols)
+			#ss = count2(data, cols)
+			ss = count(data, cols)
 		}
+		names(ss)[names(ss)=="freq"] <- "Freq"
+		
 		ss <- ss[ss$Freq > 0,]
 	}else{
 		if("Freq" %in% names(data)){
@@ -35,32 +39,32 @@ subtable <- function(data, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FAL
 	return(ss)
 }
 	
-count2 = function (df, vars = NULL, weights = NULL) 
-{
-    if (is.vector(df)) {
-        df <- data.frame(x = df)
-    }
-    if (!is.null(vars)) {
-        vars <- as.quoted(vars)
-        df <- quickdf(eval.quoted(vars, df))
-    }
-if(!is.null(weights)){
-    id <- plyr:::ninteraction(df, drop = TRUE)
-    u_id <- !duplicated(id)
-    labels <- df[u_id, , drop = FALSE]
-    labels <- labels[order(id[u_id]), , drop = FALSE]
-    Freq <- xtabs(weights~id)
-	class(Freq) = "vector"
-    unrowname(data.frame(labels, Freq))
-}else{
-	id <- plyr:::ninteraction(df, drop = TRUE)
-    u_id <- !duplicated(id)
-    labels <- df[u_id, , drop = FALSE]
-    labels <- labels[order(id[u_id]), , drop = FALSE]
-    Freq <- tabulate(id, attr(id, "n"))
-    unrowname(data.frame(labels, Freq))
-}
-}
+# count2 = function (df, vars = NULL, weights = NULL) 
+# {
+    # if (is.vector(df)) {
+        # df <- data.frame(x = df)
+    # }
+    # if (!is.null(vars)) {
+        # vars <- as.quoted(vars)
+        # df <- quickdf(eval.quoted(vars, df))
+    # }
+# if(!is.null(weights)){
+    # id <- plyr:::ninteraction(df, drop = TRUE)
+    # u_id <- !duplicated(id)
+    # labels <- df[u_id, , drop = FALSE]
+    # labels <- labels[order(id[u_id]), , drop = FALSE]
+    # Freq <- xtabs(weights~id)
+	# class(Freq) = "vector"
+    # unrowname(data.frame(labels, Freq))
+# }else{
+	# id <- plyr:::ninteraction(df, drop = TRUE)
+    # u_id <- !duplicated(id)
+    # labels <- df[u_id, , drop = FALSE]
+    # labels <- labels[order(id[u_id]), , drop = FALSE]
+    # Freq <- tabulate(id, attr(id, "n"))
+    # unrowname(data.frame(labels, Freq))
+# }
+# }
 
 subtable.table = function(x,cols){
 	x <- as.table(x)

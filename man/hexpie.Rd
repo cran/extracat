@@ -8,8 +8,8 @@ This function bins two continuous variables into a hexagonal grid and represents
 }
 \usage{
 hexpie(x, y = NULL, z = NULL, n = 24, shape = "hex", p.rule = "radial", 
-decr.by.rank = NULL, freq.trans = I, alpha.freq = FALSE, col = "hcl", col.opt = list(), 
-show.hex = TRUE, random = NULL, xlim = range(x),
+decr.by.rank = NULL, freq.trans = I, alpha.freq = FALSE, col = "hcl",
+col.opt = list(), show.hex = TRUE, random = NULL, xlim = range(x),
  ylim = range(y), label.opt = list(), vp = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -21,7 +21,7 @@ The variable for the horizontal axis. Should be integer or numeric.
 The variable for the vertical axis. Should be integer or numeric.
 }
   \item{z}{
-The target variable for the colors. Is handled as a factor via \code{as.integer(as.factor(z))}.
+The target variable for the colors which is handled as a factor.
 }
   \item{n}{
 The number of bins into which x is divided. See \link[hexbin]{hexbin}.
@@ -35,7 +35,8 @@ For \code{shape = "hex"} this should be one of \code{"rad"}, \code{"radius"}, \c
 For \code{shape = "circular"} it is also possible to create piecharts via \code{"angular"}, \code{"angles"} or \code{"ang"}.
 }
   \item{decr.by.rank}{
-Whether or not to sort the categories within each hexagon individually by their frequencies in decreasing order. Defaults to \code{NULL} for no reordering but may be either \code{TRUE} (decreasing order) or \code{FALSE} (increasing order). 
+Whether or not to sort the categories within each hexagon individually by their frequencies in decreasing order. 
+Defaults to \code{NULL} for no reordering but may be either \code{TRUE} (decreasing order) or \code{FALSE} (increasing order). 
 }
   \item{freq.trans}{
 A function which is used to rescale the total counts of the cells. \code{sqrt} is a common choice.
@@ -50,7 +51,7 @@ The choice of a color palette. See \link[extracat]{rmb} for further explanations
 Additional color options to replace the defaults. See \link[extracat]{rmb} for further explanations.
 }
   \item{show.hex}{
-Whether or not to draw the hexagons. Setting \code{col.opt = list(line.col.hex = NA)} leaves the lines out and draws the background only.
+Whether or not to draw the hexagons.  Setting \code{col.opt = list(line.col.hex = NA)} leaves the lines out and draws the background only.
 }
   \item{random}{
 If this is not \code{NULL} in each bin a random sample of \code{n = random} observations will be drawn (with replacement) from the corresponding data points. The resulting frequencies are then used to draw the piechart or hexagon. The main idea is to use \code{random = 1} with larger numbers of bins such as \code{n = 120} and \code{show.hex = FALSE}.
@@ -152,9 +153,10 @@ popViewport()
 
 # random samples from the data (within bins) with many bins
 # (takes some time)
+require(scales)
 grid.newpage()
 hexpie(x2,y2,z2, freq.trans=function(s) log(1+s),random=1,
-	 n=120, show.hex=FALSE, col.opt=list(bg="black"))
+	 n=240, show.hex=FALSE, col.opt=list(bg=alpha(1,0.7)),shape="c",col="rgb")
 }
 }
 

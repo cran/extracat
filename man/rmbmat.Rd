@@ -4,7 +4,7 @@
 Pairwise RMB-Plots
 }
 \description{
-This function generates a matrix with RMB-plots of all pairs of variables with a specified target variable. Both catagorical and numerical variables are accepted and the latter will be binned. This makes the graphic useful for a mixture of variable types and the binning avoids overplotting and color mash as it occurs in (colored) scatterplots of large datasets.
+This function generates a matrix with RMB-plots of all pairs of variables with a specified target variable. Both categorical and numerical variables are accepted and the latter will be binned. This makes the graphic useful for a mixture of variable types and the binning avoids overplotting and color mash as it occurs in (colored) scatterplots of large datasets.
 }
 \usage{
 rmbmat(x, tv, cut = 20, freqvar = NULL, plot.tv = FALSE, num.mode = TRUE,
@@ -97,7 +97,6 @@ The same as  \code{diag.opt} but for the upper triangular matrix. Additionally i
 A list with which it is possible to define parameters for single matrix cells (plots), columns or rows. This will overwrite all other parameters for the specified plots. It works like this:
 
 \code{ rc.opt = list( r2c12 = list(spine = FALSE), r1 = list(col="rgb"), c4 = list(col="seq") )}
-
 where the plot in row 2 and column 14 is a spineplot, the first row uses RGB colors and the fourth column a sequential color palette.
 Later arguments overwrite the preceding ones. For instance in the example the plot in row 1 and column 4 will use the sequential color palette.
 

@@ -11,6 +11,7 @@ Parallel Coordinates Plot for categorical data
 This function provides a parallel coordinates plot for categorical as well as continuous data based on the \link[iplots]{ipcp} function in the \pkg{iplots} package.
 It applies sorted numeric point sequences to the categories which indicate the relative frequencies and allow a sensible interactive highlighting.
 There are options to change the rule for the gaps between these sequences and to apply an additional ordering algorithm.
+A static version of CPCP with additional options and labeling is also available via \link[extracat]{scpcp}.
 }
 \usage{
 cpcp(x,\dots)
@@ -89,12 +90,14 @@ To receive \pkg{JGR} please visit \url{http://www.rosuda.org/software} and downl
 
 
 \seealso{
+\link[extracat]{scpcp}
 \link[iplots]{ipcp}
 \link[extracat]{listen}
 \link[extracat]{resort}
 }
 \examples{
 \dontrun{
+require(MASS)
 cpcp(x = housing)
 
 A <- arsim(1000,c(4,8,12,16),4, noise = 0.05)

@@ -22,6 +22,7 @@ matrix
 }
 
 \examples{
+require(MASS)
 imat(housing$Type)
 }
 

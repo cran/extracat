@@ -5,10 +5,12 @@
 pairwise association matrix
 }
 \description{
-Computes pairwise BCI values via \link[extracat]{qBCI}.
+Computes pairwise BCI values via \link[extracat]{qBCI}. 
 }
 \usage{
-cmat(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqvar = NULL, diag = NULL)
+cmat(x, sort = TRUE, crit = BCI, k = 5, iter = 20, 
+p = NULL,  freqvar = NULL, diag = NULL,
+fun = "BCC", foreign = NULL)
 }
 
 \arguments{
@@ -35,6 +37,12 @@ Optional weights, e.g. a frequency variable.
 }
   \item{diag}{
 An optional value for the diagonal. Avoids unnecessary function calls for the diagonal elements. E.g. \code{diag = 0} for \code{crit = BCI} or \code{diag = 1} for \code{crit = kendalls} makes sense.
+}
+  \item{fun}{
+See \link[extracat]{optile}.
+}
+  \item{foreign}{
+See \link[extracat]{optile}.
 }
 }
 \details{

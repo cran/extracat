@@ -10,7 +10,7 @@ subtree = function(tree, k = NULL, h = NULL){
 		stop("Unclear specification: found both k and h.")	
 	}
 	if(!is.null(h)){
-		k <- sum(tree$height > h)	
+		k <- sum(tree$height > h)+1	
 	}
 	
 	nit <- length(itr)

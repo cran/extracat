@@ -102,6 +102,7 @@ fluctile(M2, just ="l", dir = "v")
 # a same-binsize-plot
 fluctile(M2, dir = "n")
 
+require(MASS)
 fluctile(xtabs(Freq~Type+Infl+Cont+Sat,data=housing),dir="h",just="b", 
 lab.opt=list(lab.cex=1))
 

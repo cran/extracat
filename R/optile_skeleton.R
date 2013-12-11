@@ -1,5 +1,5 @@
 
-optile = function(x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1,  
+optile = function(x, fun = "BCC", foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1,  
 freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, sym = FALSE, ...){
 	UseMethod("optile")	
 }
@@ -7,10 +7,11 @@ freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = N
 #UseMethod("optile")	
 #}
 
-optile.default = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+optile.default = function (x, fun = "BCC", foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
     freqvar = NULL, return.data = TRUE, return.type = "data.frame", vs = 0, tree = NULL, sym = FALSE, ...){
 
-
+#depr presort option
+presort <- FALSE
 
 fi <- which(names(x) %in% c("Freq",freqvar))
 nd <- ncol(x)-any(fi)
@@ -52,7 +53,6 @@ if(nd == 2){
 	if( fun %in% c("rmca") ){
 		fun <- "casort"	
 	}
-	
 }
 
 if( fun %in% c("ca","casort") ){
@@ -65,6 +65,12 @@ if( fun %in% c("casort","rmca","ca")){
 	presort <- FALSE
 	iter <- 1	
 }
+if( fun %in% c("CSVD","CPCA","cpca")){
+	
+	presort <- FALSE
+	fun <- "csvd"	
+}
+
 if( fun %in% c("preclass","presort","IBCC") ){
 	presort <- FALSE	
 	
@@ -83,6 +89,20 @@ if( fun %in% c("hamming","hamm","WBCC") ){
 	
 		
 }
+neg <- 1
+if( nd == 2 & fun %in% c("BCC") & vs < 1 ){ #"class", "mvclass",
+
+	if(sym){
+		fun <- "symmtile"
+	}else{
+		fun <- "quicktile"
+	}
+	
+	foreign <- ".Call"
+	neg <- -1
+}
+
+
 if( (fun %in% c("class","mvclass","BCC") ) ){
 	foreign <- ".Call"
 	fun <- "quickmv"
@@ -95,21 +115,10 @@ if( (fun %in% c("class","mvclass","BCC") ) ){
 		fun <- "stepclass"
 	}
 }
-if( fun %in% c("quickmv","quickhamm","quickmv2") ){
+if( fun %in% c("quickmv","quickhamm","quickmv2","quicktile","symmtile") ){
 	args <- c( args, as.integer(0), as.integer(0), as.integer(0)) 
 }
-neg <- 1
-if( nd == 2 & fun %in% c("class","quickmv","BCC") & vs < 1 ){
 
-	if(sym){
-		fun <- "symmtile"
-	}else{
-		fun <- "quicktile"
-	}
-	
-	foreign <- ".Call"
-	neg <- -1
-}
 if( fun == "quickhamm2d" ){
 	neg <- -1	
 }
@@ -125,24 +134,15 @@ if(!any(fi)){
 	data <- subtable(x, 1:nd, keep.zero = FALSE, allfactor = TRUE)	
 	fi <- nd+1
 }else{
-	data <- subtable(x, 1:nd[-fi], keep.zero = FALSE, freqvar = names(data)[fi], allfactor = TRUE)	
+	data <- subtable(x, 1:nd, keep.zero = FALSE, freqvar = names(x)[fi], allfactor = TRUE)	
 	fi <- nd+1
 }
+
+
 if(iter > 1){
 	origlabs <- lapply(data[,-fi],levels)
 }
-if( nd==2 & fun %in% c("symmtile","quicktile","BCC","preclass") ){
 
-	if(BCI(xtabs(Freq~.,data=data)) > 1){
-		if(sym){
-			nn <- round(nlevels(data[,1])/3)
-			data[,1] <- factor(data[,1],levels = levels(data[,1])[  c(1:nn, (2*nn+1):nlevels(data[,1]),(nn+1):(2*nn))   ]   )
-			data[,2] <- factor(data[,2],levels = levels(data[,2])[  c(1:nn, (2*nn+1):nlevels(data[,1]),(nn+1):(2*nn))   ]   )
-		}else{
-			data[,1] <- factor(data[,1],levels = rev(levels(data[,1])))
-		}
-	}	
-}
 rm(x)
 gc()
 
@@ -179,17 +179,11 @@ if( is.logical(perm.cat) ){
 
 if( stepwise ){
 	
-	# a presort step is included in the steptile function
-	#if( fun == "class" ){
-	#	fun <- "quicktile"
-	#	foreign <- ".Call"	
-	#}
-	
-	# preparing for steptile( args )	
-	args <- c(list(data, dims, perm.cat, fun, foreign, return.data, return.type, presort, iter), args)
+	# preparing for steptileopt( args )	
+	args <- c(list(data, dims, perm.cat, fun, foreign, return.data, return.type, iter), args)
 	
 
-	ret <- steptile( args )
+	ret <- steptileopt( args )
 	
 	return( ret )	
 }
@@ -200,26 +194,21 @@ if( stepwise ){
 	orders <- vector(mode="list",length=nd)
 	st <- Sys.time()
 	
-	if( presort & !stepwise ){
-		Z <- xtabs(Freq~.,data = data)
-		storage.mode(Z) <- "integer"
-		dims <- as.integer( dim(Z) )
-		cumdims <- c(0,cumsum(dims))
+#	if( presort & !stepwise ){
+#		Z <- xtabs(Freq~.,data = data)
+#		storage.mode(Z) <- "integer"
+#		dims <- as.integer( dim(Z) )
+#		cumdims <- c(0,cumsum(dims))
 		
-		res0 <- .Call("preclass",Z,dims,perm.cat)
-		
-		for( i in 1:nd ){
-			orders[[i]] <- res0[ (1+cumdims[i]):cumdims[i+1]]+1
-			data[,i] <- factor(data[,i], levels = levels(data[,i])[ orders[[i]] ])	
-		}
-		# Z = xtabs(Freq~.,data = data)
-		#print(Z)
-#cat("presort time = ",Sys.time()-st)
-		st <- Sys.time()
-	}else{
+#		res0 <- .Call("preclass",Z,dims,perm.cat)
+#		
+#		for( i in 1:nd ){
+#			orders[[i]] <- res0[ (1+cumdims[i]):cumdims[i+1]]+1
+#			data[,i] <- factor(data[,i], levels = levels(data[,i])[ orders[[i]] ])	
+#		}
+#	}else{
 		orders <- lapply(dims, function(z) 1:z )
-	}
-
+#	}
 
 if ( joint ){
 	
@@ -266,7 +255,7 @@ if ( joint ){
 		res <- eval(optcall)
 	)
 	
-	
+# orders2 for the best random initial order
 	orders2 <- lapply(dims, function(s) 1:s)
 	preorders <- list()
 	
@@ -287,21 +276,21 @@ if ( joint ){
 				
 			}	
 		}
-		if( presort & !stepwise ){
-			Z = xtabs(Freq~.,data = data0)
-			storage.mode(Z) = "integer"
-			dims <- as.integer( dim(Z) )
-			cumdims <- c(0,cumsum(dims))
+		#if( presort & !stepwise ){
+		#	Z = xtabs(Freq~.,data = data0)
+		#	storage.mode(Z) = "integer"
+		#	dims <- as.integer( dim(Z) )
+		#	cumdims <- c(0,cumsum(dims))
 		
-			res0 = .Call("preclass",Z,dims,perm.cat,sym)
+		#	res0 = .Call("preclass",Z,dims,perm.cat,sym)
 		
-			for( i in 1:nd ){
-				preorders[[i]] <- res0[ (1+cumdims[i]):cumdims[i+1]]+1
-				data0[,i] <- factor(data0[,i], levels = levels(data0[,i])[ preorders[[i]] ])	
-			}
-		}else{
+		#	for( i in 1:nd ){
+		#		preorders[[i]] <- res0[ (1+cumdims[i]):cumdims[i+1]]+1
+		#		data0[,i] <- factor(data0[,i], levels = levels(data0[,i])[ preorders[[i]] ])	
+		#	}
+		#}else{
 			preorders <- lapply(dims, function(z) 1:z )
-		}
+		#}
 		if ( joint ){
 		# indicator matrix and Burt matrix
 			Z <- as.data.frame(do.call(cbind,sapply(data0[,1:nd],imat, simplify = FALSE)))
@@ -314,7 +303,7 @@ if ( joint ){
 		# multidimensional table
 			Z <- xtabs(Freq~.,data = data0)
 			dims <- as.integer( dim(Z) )
-			storage.mode(Z) = "integer"	
+			storage.mode(Z) <- "integer"	
 		
 		# preparing mv optimization call
 			args[[1]] <- Z
@@ -339,13 +328,14 @@ if ( joint ){
 	}
 		
 	}
-	
+
 		for( i in 1:nd ){
-			orders2[[i]] <-  orders2[[i]][res[ (1+cumdims[i]):cumdims[i+1]]+1] 
-			data[,i] <- factor(data[,i], levels = levels(data[,i])[ orders2[[i]] ])
+			orders2[[i]] <-  orders2[[i]][res[ (1+cumdims[i]):cumdims[i+1]]+1] # [rnd][res]
+# data[,i] <- factor(data[,i], levels = levels(data[,i])[ orders2[[i]] ])
 			orders[[i]] = 	orders[[i]][ orders2[[i]] ]
+			data[,i] <- factor(data[,i], levels = levels(data[,i])[ orders[[i]] ])
 		}
-	
+			
 	#cat("finish time = ",Sys.time()-st)
 	crit <- res[length(res)]
 	#cat("crit = ",crit)
@@ -408,7 +398,7 @@ if ( joint ){
 
 
 
-optile.matrix = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+optile.matrix = function (x, fun = "BCC", foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
     freqvar = NULL, return.data = TRUE, return.type = "matrix", vs = 0, tree = NULL, sym = FALSE, ...){
 	
 	dx <- dim(x)
@@ -424,22 +414,22 @@ optile.matrix = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args 
 	}
 	x <- as.data.frame(as.table(x))
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, 
+	NextMethod("optile",object = x, fun = fun, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter, 
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree, sym = sym)
 } 
 
-optile.array = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+optile.array = function (x, fun = "BCC", foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
     freqvar = NULL, return.data = TRUE, return.type = "array", vs = 0, tree = NULL, sym = FALSE, ...){
 	
 	dx <- dim(x)
 	
 	x <- as.data.frame(as.table(x))
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,  
+	NextMethod("optile",object = x, fun = fun, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,  
     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
 } 
 
-optile.table = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+optile.table = function (x, fun = "BCC", foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
     freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, sym = FALSE,...){
 #print("spectabular")
 	dx <- dim(x)
@@ -454,37 +444,37 @@ optile.table = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args =
 	}
 	x <- as.data.frame(x)
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,  freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree, sym = sym)
+	NextMethod("optile",object = x, fun = fun, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,  freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs , tree = tree, sym = sym)
 } 
 
-optile.ftable = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1,     freqvar = NULL, return.data = TRUE, return.type = "ftable", vs = 0, tree = NULL, sym = FALSE, ...){
+optile.ftable = function (x, fun = "BCC", foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1,     freqvar = NULL, return.data = TRUE, return.type = "ftable", vs = 0, tree = NULL, sym = FALSE, ...){
 	
 	dx <- dim(x)
 	
 	x <- as.data.frame(x)
 	
-	NextMethod("optile",object = x, fun = fun, presort = presort, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
+	NextMethod("optile",object = x, fun = fun, foreign = foreign, args = args, perm.cat = perm.cat, method = method, iter = iter,     freqvar = freqvar, return.data = return.data, return.type = return.type, vs = vs, tree = tree )
 }    
 
 # ----------------------------------------------------------------------------------------------- #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> stepwise algorithm <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
 # ----------------------------------------------------------------------------------------------- #
 
-steptile = function( args ){
+steptileopt = function( args ){
 	data <- args[[1]] 
 	dims <- as.integer(args[[2]])
 	cumdims <- c(0,cumsum(dims))
 	perm.cat <- as.integer(args[[3]])
 	return.data <- args[[6]]
 	return.type <- args[[7]]
-	presort <- args[[8]] 
-	iter <- args[[9]]
+	presort <- FALSE#args[[8]] 
+	iter <- args[[8]]#args[[9]]
 	fun <- args[[4]]
 	foreign <- args[[5]]
-	args <- args[-c(4:9)]
+	args <- args[-c(4:8)]#args[-c(4:9)]
 		
 	nd <- length(dims)	
-		#print(" CHECK steptile parameters ")
+		#print(" CHECK steptileopt parameters ")
 		#print(args)
 	if( fun %in% c("quicktile","stepclass") ){
 		fun <- "stepclass"
@@ -1014,7 +1004,7 @@ ords <- lapply(coords, function(z){
 	return(c(unlist(ords)-1,0))
 }else{
 	# TODO: better solution here
-	return(extracat:::casort(data,dims,perm.cat))	
+	return(casort(data,dims,perm.cat))	
 }
 }
 
@@ -1178,13 +1168,10 @@ untree <- function(x,y, ind = FALSE){
 	return(ret)
 }
 
-optile.list = function (x, fun = "BCC", presort = FALSE, foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
+optile.list = function (x, fun = "BCC",  foreign = NULL, args = list(), perm.cat = TRUE, method = NULL, iter = 1, 
     freqvar = NULL, return.data = TRUE, return.type = "table", vs = 0, tree = NULL, sym = FALSE, k = NULL, h = NULL, ...){
 	
-	#stopifnot( all(labels(ncl) %in% c("h","k", "")) )
-	#if(!is.null(k) & !is.null(h)){
-	#	warning("k is used before h")	
-	#}
+	presort = FALSE
 	if(sym){
 		simpleWarning("sym = TRUE is not implemented for the optile algorithm with hierarchical category structures (trees). Ignoring it.")
 	}

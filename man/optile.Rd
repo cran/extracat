@@ -3,22 +3,24 @@
 \alias{optile.list}
 
 \title{
-optimization of category orders for multiway tables and multivariate categorical datasets
+Reordering Categorical Data
 }
 \description{
-This function will take a categorical data object (\code{data.frame, table, ftable, matrix, array}) and optimize its category orders graphical representations.
-It offers an interface which will by default return the same type of object that has been passed to the function such that it is possible to
+This function will take a categorical data object (\code{data.frame, table, ftable, matrix, array}) and optimize its category orders.
+Most of the implemented techniques aim for a (pseudo-) diagonalization of the data matrix or table. This improves graphical representations (e.g. by minimizing crossings in \link[extracat]{scpcp} plots) and can also be useful to compute clusters (e.g. via \link[extracat]{cfluctile}).
+
+The function offers an interface which will by default return the same type of object that has been passed to the function such that it is possible to
 write  \code{myplot( optile(x) )} for an optimized version of \code{myplot(x)}. 
-The interface is extendible using ones own functions should they fulfill the requirements (see details).
+It is possible to use custom reordering functions (as long as they meet the requirements , see details).
 }
 
 \usage{
-optile(x, fun = "BCC", presort = FALSE, foreign = NULL,
+optile(x, fun = "BCC",  foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
  freqvar = NULL, return.data = TRUE,
   return.type = "data.frame", vs = 0, tree = NULL, sym = FALSE, \dots)
  
- \method{optile}{list}(x, fun = "BCC", presort = FALSE, foreign = NULL,
+ \method{optile}{list}(x, fun = "BCC",  foreign = NULL,
  args = list(), perm.cat = TRUE, method = NULL, iter = 1,
  freqvar = NULL, return.data = TRUE, 
  return.type = "table", vs = 0, tree = NULL,
@@ -27,17 +29,14 @@ optile(x, fun = "BCC", presort = FALSE, foreign = NULL,
 
 \arguments{
   \item{x}{
-The categorical data of one of the following classes:
+The categorical data of one of the following classes:\cr
 \code{data.frame, table, ftable, matrix, array} 
 }
   \item{fun}{
-The optimization function. Currently available are:
+The optimization function. Currently available are:\cr
 \code{BCC, WBCC, CA, csvd , rmca, symmtile, barysort} and \code{IBCC}. For more information see details. }
-  \item{presort}{
-Whether or not to use \code{IBCC} for an initial pre-ordering. This still works but using \code{optile} twice instead is the recommended alternative.
-}
   \item{foreign}{
-Where to find the optimization function \code{fun}. \code{NULL} for an R function or for instance \code{".Call"} and \code{.C} for an external function.
+Where to find the optimization function \code{fun}. \code{NULL} for an R function or for instance \code{".Call"} and \code{.C} for an external function.\cr
 E.g. \code{barysort} needs \code{foreign = ".Call"}.
 }
   \item{args}{
@@ -87,7 +86,7 @@ The most important points to know are
 The function by default returns the same type of object as was passed in the function call.\cr
 It is possible to specify custom optimization functions via \code{fun} and \code{foreign}.\cr
 The function is able to handle tree objects which specify a hierarchical tree graph on the categories.\cr
-The function can pass either multidimensional tables, the corresponding Burt matrix (\code{method = "joint"}) or a hierarchical series of tables (\code{method = "stepwise"}) to the optimization functions.\cr
+The function can pass either multidimensional tables, \cr the corresponding Burt matrix (\code{method = "joint"}) \cr or a hierarchical series of tables (\code{method = "stepwise"}) to the optimization functions.\cr
 }
 
 How to add a custom optimization function:
@@ -111,9 +110,9 @@ The default \code{method = NULL} indicates that \code{fun} accepts a multidimens
 
 If \code{method = "joint"} a Burt matrix is computed and passed to \code{fun} (c.f. \link[extracat]{Burt}). For instance \code{"fun=casort"} uses this data representation.
 
-\code{method = "stepwise"} or \code{method = "sw"} passes \code{fun, data, foreign} as well as any \code{args} to a function called \code{steptile} which initially builds a 2-way table of the first pair of variables, passes it to fun and stores the computed category orders. Afterwards the other variables are added one by one. i.e. in a step for the k-th variable the function passes a k-way table to \code{fun} and a new category order for this variable is computed given the (already fixed) category orders of the variables 1 to k-1. This version is well suited for hierarchical visualizations like classical mosaicplots.
+\code{method = "stepwise"} or \code{method = "sw"} passes \code{fun, data, foreign} as well as any \code{args} to a function called \code{steptile} which initially builds a 2-way table of the first pair of variables, passes it to fun and stores the computed category orders. Afterwards the other variables are added one by one. i.e. in a step for the k-th variable the function passes a k-way table to \code{fun} and a new category order for this variable is computed given the (already fixed) category orders of the variables 1 to k-1. This version is well suited for hierarchical visualizations like classical mosaicplots. A slightly different implementation which is not embedded in the optile framework but uses optile as its workhorse is \link[extracat]{steptile}.
 
-CURRENTLY AVAILABLE SORTING FUNCTIONS:
+CURRENTLY AVAILABLE REORDERING FUNCTIONS:
 
 \code{"BCC"} and \code{"WBCC"}: minimize the Bertin Classification Criterion and the Weighted Bertin Classification Criterion.
 BCC is the number of observation pairs which are not fully concordant among all relevant observation pairs (pairs which differ in all variables). A pair of observations \code{a} and \code{b} is fully concordant if all entries in \code{a} are smaller than those in \code{b} or vice versa. Full concordance results in a so-called pseudo-diagonal. WBCC uses the Hamming distance between the observations as weights for the contradictions to such a diagonal form and also takes pairs within the same row or column into account.
@@ -143,10 +142,8 @@ This function is written in C which means that \code{foreign =".Call"} must be s
 Two-way tables or matrices can also be optimized by means of the distance correlation. See \link[extracat]{wdcor}.
 
 \code{"barysort"}:
-Uses the barycenter heuristic to minimize the number of crossings heuristically. The heuristic is fast and yields good results but only works for two dimensions.
-For \code{optile} one must set \code{foreign = ".Call")}.
-For a simple R implementation see \link[extracat]{barysort}.
-
+Uses the barycenter heuristic to minimize the number of crossings heuristically. The heuristic is fast and yields good results but only works for two dimensions. For multiple dimensions use either \code{"IBCC"} or \link[extracat]{steptile}.
+In \code{optile} the barysort is implemented in C and therefore requires \code{foreign = ".Call")}.
 
 }
 \value{
@@ -160,11 +157,31 @@ University of Augsburg\cr
 Germany
 }
 \note{
-This was part of the Google Summer of Code 2011.
+Some parts of the code have been developed for the Google Summer of Code 2011.
 }
 
 
 \examples{
+
+# simple simulated example
+A <- arsim(2000, c(11,13),3,0.3)
+
+fluctile(A)
+fluctile(optile(A))
+fluctile(optile(A, iter = 100))
+fluctile(optile(A, fun = "CA"))
+fluctile(optile(A, fun = "barysort", foreign = ".Call"))
+
+# simulated mv example
+A2 <- arsim(20000, c(6,7,8,9),3,0.1)
+
+scpcp(A2,sel="data[,1]")
+
+scpcp(A3 <- optile(A2,iter=20),sel="data[,1]")
+
+dev.new()
+fluctile(A3)
+
 \dontrun{
 ############ ------------ EXAMPLE I ------------ ############
 # ----- Cluster results from the Current Population Survey ----- #

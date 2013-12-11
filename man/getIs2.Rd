@@ -8,7 +8,8 @@ ME reordering for biclust objects.
 Basically this is an auxiliary function used by \link[extracat]{heattile}:
 It extracts the cluster indices from a biclust object and optimizes the order of the rows and columns in the data matrix with respect to these clusters. Uses the Measure of Effectiveness as an optimization criterion. See \link[extracat]{ME} and \link[extracat]{optME}. }
 \usage{
-getIs2(bic, dim, nstart = 20, solver = "nn", cpr = FALSE, cpc = TRUE, adjust.dist = FALSE)
+getIs2(bic, dim, nstart = 20, solver = "nn", cpr = FALSE,
+ cpc = TRUE, adjust.dist = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

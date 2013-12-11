@@ -34,7 +34,7 @@ A logical indicating whether to convert all variables into factor variables. Int
 }
 }
 \details{
-This function uses a modified version of \link[plyr]{count} in order to provide the arguments \code{keep.zero} and \code{allfactor} and to be able to handle both raw datasets and datasets with a frequency variable.
+This function uses \link[plyr]{count} as a workhorse and offers additional arguments \code{keep.zero} and \code{allfactor}. Both raw datasets, datasets with a frequency variable and tables can be handled.
 }
 \value{
 A \code{data.frame} including a \code{"Freq"} variable.
@@ -51,6 +51,11 @@ Germany
 
 
 \examples{
+require(MASS)
 hs2 = subtable(housing,c(3,1))
 summary(hs2)
+
+A <- arsim(33333,c(11,11,11,11),3)
+subtable(A, c(1,4))
+
 }

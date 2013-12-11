@@ -5,7 +5,7 @@ hexpie = function(x, y = NULL, z = NULL, n = 24,  shape = "hex",
  label.opt = list(), vp = NULL){
 
 #c("angle","radius","alpha", "sample")
-require(hexbin)
+#require(hexbin)
 
 x.name <- names(x)
 y.name <- names(y)
@@ -82,10 +82,11 @@ xy <- cbind((xy$x-min(xy$x)+xrad)/xrng2,(xy$y-min(xy$y)+yrad)/yrng2)
 
 
 
-require(reshape)
+
 data <- data.frame(cbind(dbin@cID,z))
 data <- melt(data,1)
-data <- cast(data, V1 ~ value, fun.aggregate = length)
+#data <- reshape2:::cast(data, V1 ~ value, fun.aggregate = length)
+data <- acast(data, V1 ~ value, fun.aggregate = length)
 
 if(!is.null(vp)){
 	pushViewport(vp)	
@@ -104,16 +105,23 @@ corners <-  cbind( cos(angles)*xrad/xrng2*2/sqrt(3), sin(angles)*yrad/yrng2)
 
 if(show.hex){
 	if(alpha.hex){
-		nix <- apply(cbind(xy,dbin@count/max(dbin@count)),1,function(s){
+		#nix <- apply(cbind(xy,dbin@count/max(dbin@count)),1,function(s){
+		#grid.polygon(x = (s[1]+corners[,1]), y = (s[2]+corners[,2]), gp = gpar(fill= alpha("black",sqrt(s[3]/2)), col = line.col.hex))})
+	grid.polygon(rep(xy[,1],each=6)+corners[,1],
+	rep(xy[,2],each=6)+corners[,2],
+	id = rep(1:nrow(xy),each=6),
+	gp=gpar(fill = alpha("black",sqrt(rep(xy[,31],each=6)/2)), col = line.col.hex))#'CHECK'
 
-	grid.polygon(x = (s[1]+corners[,1]), y = (s[2]+corners[,2]), gp = gpar(fill= alpha("black",sqrt(s[3]/2)), col = line.col.hex))
-	#grid.points(x=s[1],y=s[2], default.units="npc",pch=20)	
-})
 }else{
-nix <- apply(xy,1,function(s){
-	grid.polygon(x = (s[1]+corners[,1]), y = (s[2]+corners[,2]), gp = gpar(fill=bgs, col = line.col.hex))
-	#grid.points(x=s[1],y=s[2], default.units="npc",pch=20)	
-})	
+	grid.polygon(rep(xy[,1],each=6)+corners[,1],
+	rep(xy[,2],each=6)+corners[,2],
+	id = rep(1:nrow(xy),each=6),
+	gp=gpar(fill = bgs, col = line.col.hex))
+	
+#nix <- apply(xy,1,function(s){
+#	grid.polygon(x = (s[1]+corners[,1]), y = (s[2]+corners[,2]), gp = gpar(fill=bgs, col = line.col.hex))
+	
+#})	
 }
 }
 
@@ -132,7 +140,7 @@ if(!is.null(freq.trans)){
 	#base.rad<- rep(1,nrow(xy))
 	base.rad <- dbin@count/max(dbin@count)
 }
-data <- data[,-1]/dbin@count
+	 data <- data/dbin@count #data[,-1]/dbin@count #data$data
 if(!is.null(random)){
 	random <- as.integer(random)
 	data <- t(apply(data,1,function(s){
@@ -142,6 +150,10 @@ if(!is.null(random)){
 	
 }
 DM <- cbind(xy,data, base.rad)
+
+# instead: data == probs, base.rad == ntv+3 wts, xy == centers 
+
+
 
 ntv <- ncol(DM)-3
 colv <- getcolors(ntv,col,col.opt)
@@ -169,13 +181,14 @@ if( angular ){
 	
 	if(shape %in% c("c", "pie", "circular", "piechart") ){
 		
+	
 		apply(DM,1, function(s){
 			xc <- s[1]
 			yc <- s[2]
 			probs <- s[-c(1,2,ntv+3)]
 			rad <- ifelse(is.null(freq.trans),1,sqrt(s[ntv+3]))
 		if(alpha.freq){
-			colv2 <- ggplot2::alpha(colv,exp(alpha.r*(s[ntv+3]-1)))	
+			colv2 <- alpha(colv,exp(alpha.r*(s[ntv+3]-1)))	
 		}else{
 			colv2 <- colv	
 		}
@@ -202,50 +215,100 @@ if( angular ){
 if( radial ){
 	if(shape %in% c("hex", "hexagonal", "hexagon", "h") ){
 
-		apply(DM,1, function(s){
-			xc <- s[1]
-			yc <- s[2]
-			probs <- s[-c(1,2,ntv+3)]
-			rad <- ifelse(is.null(freq.trans),1,sqrt(s[ntv+3]))
+		cum.probs <- #as.vector(
+			apply(data,1,function(z){
+				ord <- ofun(z)
+				return( sqrt( rev(cumsum(z[ord])) ) )
+			})#)
+		
+	
+		cum.probs <- rep(cum.probs,each=6*2)
+		
 		if(alpha.freq){
-			colv2 <- ggplot2::alpha(colv,exp(alpha.r*(s[ntv+3]-1)))	
+			colv2 <- as.vector(
+				sapply(base.rad,function(z){
+					return( alpha(colv,exp(alpha.r*(z-1))) )
+				}))
 		}else{
-			colv2 <- colv	
+			colv2 <- rep(colv,nrow(xy))
 		}
-			ord <- ofun(probs)
-			cum.probs <- sqrt( rev(cumsum(probs[ord])) )
-			mapply(function(s1,s2){
-				grid.polygon(x = xc + corners[,1]*rad*s1, y = yc+corners[,2]*rad*s1, gp = gpar(fill="white", col = NA))
-				grid.polygon(x = xc + corners[,1]*rad*s1, y = yc+corners[,2]*rad*s1, gp = gpar(fill=s2, col = line.col))
-				}, s1 = cum.probs, s2 = colv2[rev(ord)])	
-			return(invisible(TRUE))
-		})	
+		ord <- as.vector(
+		apply(data,1,function(z){
+				ord <- ofun(z)
+				return( rev(ord) )
+		}))
+		ord <- ord + rep( (0:(nrow(xy)-1)),each=ntv)*ntv
+
+		colv2 <- colv2[ord]
+		
+		colv2 <- rep(colv2, each = 2)
+		colv2[seq(1,length(colv2),2)] <- "white"
+		
+		colv2 <- rep(colv2, 6)
+	
+		if(is.null(freq.trans)){
+			rad <- 1
+		}else{
+			rad <- rep(sqrt(base.rad),each=ntv*6*2)
+		} 
+		
+	
+	
+		grid.polygon(x = rep(xy[,1],each=2*6*ntv) + rep(c(corners[,1],corners[,1]),ntv)*rad*cum.probs,
+			 y = rep(xy[,2],each=2*6*ntv)+rep(c(corners[,2],corners[,2]),ntv)*rad*cum.probs, 
+			 gp = gpar(fill=colv2, col = line.col), id = rep(1:(nrow(xy)*ntv*2),each=6))
+				
+
 	}
+	
 	
 	if(shape %in% c("c", "pie", "circular", "piechart") ){
+
+		cum.probs <- #as.vector(
+			apply(data,1,function(z){
+				ord <- ofun(z)
+				return( sqrt( rev(cumsum(z[ord])) ) )
+			})#)
 		
-		apply(DM,1, function(s){
-			xc <- s[1]
-			yc <- s[2]
-			probs <-   s[-c(1,2,ntv+3)]
-			rad <- ifelse(is.null(freq.trans),1,sqrt(s[ntv+3]))
+	
+		cum.probs <- rep(cum.probs,each=2)
+		
 		if(alpha.freq){
-			colv2 <- ggplot2::alpha(colv,exp(alpha.r*(s[ntv+3]-1)))	
+			colv2 <- as.vector(
+				sapply(base.rad,function(z){
+					return( alpha(colv,exp(alpha.r*(z-1))) )
+				}))
 		}else{
-			colv2 <- colv	
+			colv2 <- rep(colv,nrow(xy))
 		}
+		ord <- as.vector(
+		apply(data,1,function(z){
+				ord <- ofun(z)
+				return( rev(ord) )
+		}))
+		ord <- ord + rep( (0:(nrow(xy)-1)),each=ntv)*ntv
+
+		colv2 <- colv2[ord]
 		
-			ord <- ofun(probs)
-			cum.probs <- sqrt( rev(cumsum(probs[ord])) )
-			mapply(function(s1,s2){
-				grid.polygon(x = xc + ngon.corners[,1]*rad*s1, y = yc+ngon.corners[,2]*rad*s1, gp = gpar(fill="white", col =NA))
-				grid.polygon(x = xc + ngon.corners[,1]*rad*s1, y = yc+ngon.corners[,2]*rad*s1, gp = gpar(fill=s2, col = line.col))
-				}, s1 = cum.probs, s2 = colv2[rev(ord)])	
-			return(invisible(TRUE))
-		})
+		colv2 <- rep(colv2, each = 2)
+		colv2[seq(1,length(colv2),2)] <- "white"
+		
+		
 	
+		if(is.null(freq.trans)){
+			rad <- 1
+		}else{
+			rad <- rep(sqrt(base.rad),each=ntv*2)
+		} 
+		
+	
+	
+		grid.circle(x = rep(xy[,1],each=2*ntv) ,
+			 y = rep(xy[,2],each=2*ntv), r = rad*cum.probs*xrad/xrng2, 
+			 gp = gpar(fill=colv2, col = line.col))
+				
+
 	}
-	
 }
 
 	 if( "cex" %in% names(label.opt) ){
@@ -266,11 +329,11 @@ if( radial ){
 popViewport()
 vpx <- viewport(0.54,0.93,width=0.9,height = 0.05)
 pushViewport(vpx)
-my.grid.axis(x0=0,y0=0.1,len=1-xrad/xrng2,ticks=signif(xmarks,5), rot=0, keep = min(7,n-2), ltm=1/20 ,col.axis = col.axis, lab.cex=cex.axis)
+my.grid.axis(x0=0,y0=0.1,len=1-xrad/xrng2,ticks=signif(xmarks,5), rot=0, keep = min(7,n-2), ltm=1/20 ,col.axis = col.axis, lab.cex=cex.axis, trot = 300 )
 popViewport()
 vpy <- viewport(0.07,0.46,width=0.05,height = 0.9)
 pushViewport(vpy)
-my.grid.axis(x0=0.9,y0=0,len=1-yrad/yrng2/2,ticks=signif(ymarks,5), rot=90, keep = min(7,n-2),ltm=1/20,col.axis = col.axis, lab.cex=cex.axis)			
+my.grid.axis(x0=0.9,y0=0,len=1-yrad/yrng2/2,ticks=signif(ymarks,5), rot=90, keep = min(7,n-2),ltm=1/20,col.axis = col.axis, lab.cex=cex.axis, trot = 340)			
 
 popViewport()
 

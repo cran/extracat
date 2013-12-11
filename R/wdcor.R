@@ -38,18 +38,30 @@ dcorOld = function(x){
 	return(sqrt(dcor))
 }
 wdcor = function(x,...){
-UseMethod("wdcor")
-	
+	UseMethod("wdcor")
 }
 
-wdcor.default = function(x,y,w = NULL, ep = 1,...){
-	
+wdcor.default = function(x,y,w = NULL, ep = 1, approx = FALSE, n = 50, na.rm = TRUE, ...){
+	if(length(x) > 20000){
+	 return(approx.dcor(x,y,n,ep=ep))
+	}
 	if(is.null(w)){
 		w <- rep(1,length(x))
 	}
 	stopifnot(length(x) == length(w))
 	stopifnot(length(x) == length(y))
 	stopifnot(all(w >= 0))
+	if(na.rm){
+		na <- is.na(x) | is.na(y) | is.na(w)
+		if(any(na)){
+			ind <- which(!na)
+			x <- x[ind]
+			y <- y[ind]
+			w <- w[ind]
+		}
+		
+	}
+	
 	
 	storage.mode(w) <- "double"
 	storage.mode(x) <- "double"
@@ -63,15 +75,16 @@ ret <- .Call("dcorR",x,y,w/sum(w),ep)
 }
 wdcor.table = function(x, ep = 1, ...){
 	stopifnot( length(dim(x)) == 2) 
-	dx <- as.data.frame(x)
-	dx <- dx[dx$Freq > 0,]
+	#dx <- as.data.frame(x)
+	#dx <- dx[dx$Freq > 0,]
+	dx <- subtable(x,1:2)
 	dx <- sapply(dx,as.numeric)
-	
+
 		NextMethod("wdcor", x = dx[,1], y = dx[,2], w = dx[,3], ep = ep)
 }
 
 
-approx.dcor = function(x,y, n = 50, correct = FALSE, ep = 1){
+approx.dcor2 = function(x,y, n = 50, correct = FALSE, ep = 1){
 	stopifnot(length(x) == length(y))
 	x <- cut(x,n)
 	y <- cut(y,n)
@@ -86,9 +99,120 @@ approx.dcor = function(x,y, n = 50, correct = FALSE, ep = 1){
 }
 
 
+approx.dcor = function(x,y, n = 50, ep = 1, bin = "eq"){
+	stopifnot(length(x) == length(y))
+	
+	#s <- c()
+#s[1]<-system.time({
+		if(bin %in% c("e","eq","equ","equi")){
+		rx <- range(x,na.rm=TRUE)	
+		ry <- range(y,na.rm=TRUE)
+		xbr <- seq(rx[1],rx[2]+1e-12, (diff(rx)+1e-12)/n)
+		ybr <- seq(ry[1],ry[2]+1e-12, (diff(ry)+1e-12)/n)
+	}
+	if(bin %in% c("q","quant","quantile")){
+		#print("Quantile binning can lead to bias.")
+		xbr <- unique(quantile(x,seq(0,1,1/n)))
+		ybr <- unique(quantile(y,seq(0,1,1/n)))
+		xbr[length(xbr)]<-xbr[length(xbr)]+1e-12
+		ybr[length(xbr)]<-ybr[length(xbr)]+1e-12
+	}
+#	})[[3]]
+#	s[2]<-system.time({
+	cx <- cut(x,breaks=xbr,include.lowest=TRUE)
+	cy <- cut(y,breaks=ybr,include.lowest=TRUE)
+#	})[[3]]
+	
+#	s[3]<-system.time({
+	vx <- tapply(x,cx,mean)
+	vy <- tapply(y,cy,mean)
+#	})[[3]]
+	
+#	s[4]<-system.time({
+	if(any(is.na(vx))){
+		ii <- which(is.na(vx))
+		vx[ii] <- (xbr[-length(xbr)]+diff(xbr)/2)[ii]
+	}
+	if(any(is.na(vy))){
+		ii <- which(is.na(vy))
+		vy[ii] <- (ybr[-length(ybr)]+diff(ybr)/2)[ii]
+	}
+#	})[[3]]
+#	s[5]<-system.time({
+	#cx <- vx[cx]
+	#cy <- vy[cy]
+#	})[[3]]
+	# xx <- as.numeric(levels((dx[,1])))[dx[,1]]
+	# yy <- as.numeric(levels((dx[,2])))[dx[,2]]
+	
+	#z <- table(cx,cy)
+	z <- subtable(cbind(cx,cy),1:2)
+	
+#	s[6]<-system.time({
+	ret <- wdcor(vx[z[,1]],vy[z[,2]],w = z[,3],ep=ep)
+#	})[[3]]
+#	print(round(s/sum(s),2))
+	return(ret)
+}
+
+dcorMV <- function(dx,dy,w = NULL){
+	stopifnot(inherits(dx,"dist"))
+	stopifnot(inherits(dy,"dist"))
+	dx <- as.matrix(dx)
+	dy <- as.matrix(dy)
+	stopifnot(nrow(dx) == nrow(dy))
+	
+	if(is.null(w)){
+		w <- rep(1,length(nrow(dx)))
+	}
+	storage.mode(w) <- "double"
+	storage.mode(dx) <- "double"
+	storage.mode(dy) <- "double"
+	ret <- .Call("dcorD",dx,dy,w/sum(w))
+}
 
 
+dcorMVtable <- function(x,ind = 1, method = "euclidean"){
+	nd <- length(dim(x))
+	data <- subtable(x,1:nd,allfactor=TRUE)
+	data.matrix <- sapply(data[,-ncol(data)],as.integer)
+	dx <- dist(data.matrix[,ind],method = method)
+	dy <- dist(data.matrix[,-ind],method = method)
+	w <- data$Freq
+	ret <- dcorMV(dx,dy,w)
+	return(ret)
+}
 
+
+dcorMVdata <- function(x,ind = 1, method = "euclidean", approx = FALSE){
+	x <- as.data.frame(x)
+	if(approx != FALSE){
+		if(approx == TRUE){
+			n <- ceiling(100/ncol(x))
+			cat("approx = ",n)
+		}else{
+			n <- approx
+		}
+		nd <- ncol(x)
+		for(i in 1:nd){
+			x[,i] <- cut(x[,i],breaks = n)
+		}
+		
+	
+		data <- subtable(x,1:nd)
+		w <- data$Freq
+		data <- sapply(data[,-ncol(data)],as.integer)
+	}else{
+		data <- subtable(x,1:ncol(x))
+		w <- data$Freq
+		data <- data[,-ncol(data)]
+	}
+	dx <- dist(data[,ind],method = method)
+	dy <- dist(data[,-ind],method = method)
+	
+	ret <- dcorMV(dx,dy,w)
+	return(ret)
+}
 
 
 opt.wdcor = function(env,xi,yi){
@@ -195,3 +319,28 @@ dcov2 = function(x){
 #	if(all(is.wholenumber(x))){
 #		storage.mode(x) <- "integer"
 #	}
+
+
+wdcor.data.frame = function(x, approx = TRUE, n = 50, ...){
+	nmz <- names(x)
+	x <- data.matrix(x)
+	nd <- ncol(x)
+	ids <- combn(1:nd,2)
+	if(approx){
+	values <- apply(ids,2,function(id){
+		z <- na.omit(x[,id])
+		approx.dcor(z[,1],z[,2], n=n)
+	})
+	}else{
+		values <- apply(ids,2,function(id){
+		z <- na.omit(x[,id])
+		wdcor(z[,1],z[,2], n=n)
+	})
+	}
+	M <- matrix(0,nd,nd)
+	M[lower.tri(M)] <- values
+	M <- M + t(M)
+    diag(M) <- 1
+	colnames(M) <- rownames(M) <- nmz
+		return(M)
+}

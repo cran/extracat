@@ -30,6 +30,7 @@ Alexander Pilhoefer
 \link[extracat]{idat}, \link[extracat]{imat}
 }
 \examples{
+require(MASS)
 Burt(housing)
 th <- xtabs(Freq~Sat+Infl+Type, data = housing)
 Burt(th)

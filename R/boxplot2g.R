@@ -19,7 +19,7 @@ if(is.null(groups)){
 labs <- names(data)
 names(data) <- c("x","y","groups")
 DM <- data.matrix(data)
-require(ggplot2)
+#require(ggplot2)
 
 
 # initiate the smoother

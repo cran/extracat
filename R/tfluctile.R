@@ -62,9 +62,22 @@ tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, sha
 	}
 	
 	if( !all(is.na(tree1)) ){
+		
+		m1 <- match(tree1$label,rownames(x))
+		tree1$order <- m1[tree1$order]
+		w1 <- which(tree1$merge < 0)
+		tree1$merge[w1] <- -m1[-tree1$merge[w1]]
+		tree1$label <- rownames(x)
+		
 		x <- x[tree1$order,]
 	}
 	if( !all(is.na(tree2)) ){
+		m2 <- match(tree2$label,colnames(x))
+		tree2$order <- m2[tree2$order]
+		w2 <- which(tree2$merge < 0)
+		tree2$merge[w2] <- -m2[-tree2$merge[w2]]
+		tree2$label <- colnames(x)
+		
 		x <- x[,tree2$order]
 	}
 	
@@ -101,6 +114,7 @@ tfluctile = function(x, tree = NULL, dims = c(1,2), tw = 0.2, border = NULL, sha
 	pushViewport(vp00)
 	fluctile(x, add = TRUE, tile.col = tile.col, bg.col = bg.col, lab.opt = lab.opt, shape = shape, dir = dir, just = just, border = 2*border)
 	upViewport()
+		
 	return(invisible(TRUE))
 }
 

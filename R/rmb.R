@@ -45,18 +45,21 @@ rmb.table = function(x, col.vars = NULL, spine = FALSE, circular = FALSE, eqwidt
                 freq.trans = NULL, max.scale = 1,  use.na = FALSE, expected = NULL, residuals = NULL,
  model.opt = list(), gap.prop = 0.2, gap.mult = 1.5, col = "hcl",col.opt = list(), label = TRUE,label.opt = list(),vp = NULL,...){
 	
-	vn <- names(dimnames(x))
-	if(is.null(vn)){
-		vn <- LETTERS[1:length(dim(x))]
-	}
-	if(is.numeric(col.vars)){
-			vn <- c(vn[-col.vars],vn[col.vars])
-			col.vars <- sort(seq_along(	vn ) %in% col.vars)
-	}
+	#vn <- names(dimnames(x))
+	#if(is.null(vn)){
+	#	vn <- LETTERS[1:length(dim(x))]
+	#}
+	#if(is.numeric(col.vars)){
+	#		vn <- c(vn[-col.vars],vn[col.vars])
+	#		col.vars <- sort(seq_along(	vn ) %in% col.vars)
+	#}
 	
-	formula <- as.formula(paste("~",paste(vn,collapse="+"),sep=""))
+	#formula <- as.formula(paste("~",paste(vn,collapse="+"),sep=""))
 	
-	data <- as.data.frame(ftable(x))
+	#data <- as.data.frame(ftable(x))
+	nd <- length(dim(x))
+	data <- subtable(x,1:nd)
+	formula <- as.formula(paste("~",paste(names(data)[1:nd],collapse="+"),sep=""))
 	rmb.formula(formula, data, col.vars = col.vars, spine = spine, circular = circular,
 			 eqwidth = eqwidth, cat.ord = cat.ord, freq.trans = freq.trans, max.scale = max.scale,
 			 use.na = use.na, expected = expected, residuals = residuals, model.opt = model.opt, 
@@ -265,6 +268,11 @@ col2 <- col.opt$col2
 col2 <- alpha("grey",0.25)
 }
 
+if( "ang" %in% names(col.opt) ){
+	ang <- col.opt$ang
+}else{
+	ang <- 360
+}
 
 
 
@@ -917,152 +925,13 @@ if( is.list(freq.trans) ){
 	}
 
 # ----- preparing the color matrix ----- #	
-	
 
 			if(is.null(expected) | res.val.only ){
-				wijffelaars <- c("#5C6BF7", "#FF5959", "#5CCB5C", "#FFB111", "#AA61BB", "#FFFF5F", "#FF89EB", "#91653E", "#C1C1C1", "#5CE5D6", "#C9FF87",
- "#FFE0CC", "#AD2D5C", "#E3C4EF", "#E2D495", "#CCF1FF", "#578E52")
-				#has any color rule been defined?
 				if(any(c("hsv","hcl","rgb","seq","sequential","sqn","sqt","div","diverging","diverge",
 				"d","s","h","t","heat","ht","ter","terrain","Wijffelaars", "w", "q17") %in% col)){
-				#num.col <- ntc0^(spine | !eqwidth | (eqwidth & circular))
-				num.col <- ntc0
 				
-				if(!("sample" %in% labels(col.opt))){
-						sample <- FALSE
-					}else{
-						sample <- col.opt$sample
-					}
-				
-				if( col %in% c("hsv","rgb") ){
-					col.def <- formals(rainbow)
-					if(!("s" %in% labels(col.opt))){
-						col.opt$s <- eval(col.def$s)
-					}
-					if(!("v" %in% labels(col.opt))){
-						col.opt$v <- eval(col.def$v)
-					}
-					if(!("start" %in% labels(col.opt))){
-						col.opt$start <- eval(col.def$start)
-					}
-					if(!("end" %in% labels(col.opt))){
-						col.opt$end <- max(num.col-1,1)/num.col
-					}
-					if(!("alpha" %in% labels(col.opt))){
-						col.opt$alpha <- eval(col.def$alpha)
-					}
-					
-					
-					colv <- rainbow(num.col,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, alpha = col.opt$alpha)
-					}
-				if( col == "hcl" ){
-					col.def <- formals(rainbow_hcl)
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("start" %in% labels(col.opt))){
-						col.opt$start <- eval(col.def$start)
-					}
-					if(!("end" %in% labels(col.opt))){
-						col.opt$end <- 360 * (num.col - 1)/num.col
-					}
-				colv <- rainbow_hcl(num.col,c = col.opt$c, l = col.opt$l, start = col.opt$start, end = col.opt$end)
-				if("alpha" %in% names(col.opt)){
-					colv <- alpha(colv,col.opt$alpha)
-				}
-				}
-				if( col %in% c("seq","sqt","sqn","sequential","s") ){
-					col.def <- formals(sequential_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- rev(sequential_hcl(num.col,h = col.opt$h, c. = col.opt$c, l = col.opt$l, power = col.opt$power))
-				}
-				if( col %in% c("div","diverging","diverge","d") ){
-					col.def <- formals(diverge_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c" %in% labels(col.opt))){
-						col.opt$c <- eval(col.def$c)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- diverge_hcl(num.col,h = col.opt$h, c = col.opt$c, l = col.opt$l, power = col.opt$power)
-					if("alpha" %in% names(col.opt)){
-						colv <- alpha(colv,col.opt$alpha)
-					}
-				}
-				
-				
-				if( col %in% c("heat","ht","h") ){
-					col.def <- formals(heat_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c." %in% labels(col.opt))){
-						col.opt$c. <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- heat_hcl(num.col,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
-					if("alpha" %in% names(col.opt)){
-						colv <- alpha(colv,col.opt$alpha)
-					}
-				}
-				if( col %in% c("terrain","ter","t") ){
-					col.def <- formals(terrain_hcl)
-					if(!("h" %in% labels(col.opt))){
-						col.opt$h <- eval(col.def$h)
-					}
-					if(!("c." %in% labels(col.opt))){
-						col.opt$c. <- eval(col.def$c.)
-					}
-					if(!("l" %in% labels(col.opt))){
-						col.opt$l <- eval(col.def$l)
-					}
-					if(!("power" %in% labels(col.opt))){
-						col.opt$power <- eval(col.def$power)
-					}
-					colv <- terrain_hcl(num.col,h = col.opt$h, c. = col.opt$c., l = col.opt$l, power = col.opt$power)
-					if("alpha" %in% names(col.opt)){
-						colv <- alpha(colv,col.opt$alpha)
-					}
-				}
-				if(sample){
-					colv <- sample(colv)
-				}
-			
-				if( col %in% c("Wijffelaars","w", "q17") ){
-					colv <- wijffelaars[1:num.col]
-					if("alpha" %in% names(col.opt)){
-						colv <- alpha(colv,col.opt$alpha)
-					}
-				}
-				if(sample){
-					colv <- sample(colv)
-				}
-			
+					num.col <- ntc0
+					colv <- getcolors(num.col,col,col.opt)			
 			
 				}else{
 					if( length(col < ntc0) ){
@@ -1158,6 +1027,7 @@ if( is.list(freq.trans) ){
 					col.Mat3[resid.mat > 0] <- hsv(0,0,0,alpha=0) # grey for nonblues remains
 				}else{
 					col.Mat2 <- col.Mat	
+					# col.Mat2[H==0] <- NA
 				}
 				
 			}
@@ -1182,6 +1052,13 @@ if( circular ){
 		arat <- ncol(W3)/nrow(W3)
 	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = rect)
 	
+	
+	if(prod(dim(H2)) > 1000){
+		ang <- 	ang/2
+	}
+	if(prod(dim(H2)) > 10000){
+		ang <- 	ang/2
+	}
 	
 	if( disp.res ){ 
 		H0 <- apply(H0,1:2, function(z) max(0.001,z))
@@ -1222,40 +1099,58 @@ if( circular ){
 				P2 = P1 + H0[,xind]
 
 			#exp
-			mapply( function(p1,p2,rad,bg,x,y){
-				cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
+			#gL1 <-
+			 mapply( function(p1,p2,rad,bg,x,y){
+				cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*ang ))
 					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),#ncol, nrow
-					gp=gpar(fill=bg, lwd=1.5, col = line.col)
-					)}, p1 = P1, p2=P2, rad = R1[,xind], bg = col.Mat[,xind], x = X3, y = Y3 )
-				
+					gp=gpar(fill=bg, lwd=1.5, col = line.col))
+					}, p1 = P1, p2=P2, rad = R1[,xind], bg = col.Mat[,xind], x = X3, y = Y3 )
 			# obs
+			#gL2<-
 			mapply( function(p1,p2,rad,bg,x,y){
-					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
+					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*ang ))
 					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
 						gp=gpar(fill=bg, col = line.col)
-					)}, p1 = P1, p2=P2, rad = R2[,xind], bg = col.Mat2[,xind], x = X3, y = Y3 )
-			
+				)}, p1 = P1, p2=P2, rad = R2[,xind], bg = col.Mat2[,xind], x = X3, y = Y3 )
+				
+				#class(gL1) <- "gList"
+				#class(gL2) <- "gList"
+				
+				#grid.draw(gL1)
+				#grid.draw(gL2)
+				
 			if( both ){
 			#exp	
-			mapply( function(p1,p2,rad,bg,x,y){
-					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
+			#gL3<-
+				mapply( function(p1,p2,rad,bg,x,y){
+					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*ang ))
 					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
 						gp=gpar(fill=bg, lwd=1.5, col = line.col)
 					)}, p1 = P1, p2=P2, rad = R1[,xind], bg = col.Mat3[,xind], x = X3, y = Y3 )
 				
 			# obs
-			mapply( function(p1,p2,rad,bg,x,y){
-					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
+			#gL4<-
+				mapply( function(p1,p2,rad,bg,x,y){
+					cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*ang ))
 					grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
 						gp=gpar(fill=bg,col=line.col)
 					)}, p1 = P1, p2=P2, rad = R2[,xind], bg = col.Mat4[,xind], x = X3, y = Y3 )
 				
+				#class(gL3) <- "gList"
+				#class(gL4) <- "gList"
+				#grid.draw(gL3)
+				#grid.draw(gL4)
 			}	
 				
+			
 				P1 = P2
 			}
 		}else{
 			#H0 <- apply(H0,1:2, function(z) max(0.0001,z))
+			e1<-environment()
+			wedge.id <- 0
+			wc <- list()
+				
 			for( i in 1:length(cat.ord) ){
 				xind = seq( cat.ord[i], nc*ntc0, ntc0 )
 				P2 = P1 + H0[,xind]
@@ -1267,6 +1162,7 @@ if( circular ){
 					sc <- dim(W3)
 				}
 			
+				
 				mapply( function(p1,p2,rad,bg,x,y){
 					p1 <- min(p1,1)
 					p2 <- min(p2,1)
@@ -1275,18 +1171,47 @@ if( circular ){
 					if(p1 == p2){
 						invisible(TRUE)
 					}else{
-						cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*360 ))
+						cc = seq( p1, p2, (p2-p1)/ceiling( (p2-p1)*ang ))
+						e1$wedge.id <- e1$wedge.id+1
 						if( abs(p2-p1) == 1 ){
-							grid.polygon(x = x+c(rad*cos(cc*2*pi)/sc[2]),y = y+c( rad*sin(cc*2*pi)/sc[1]),
-							gp=gpar(fill=bg, lwd=1.2,col=line.col))
+							#grid.polygon(x = x+c(rad*cos(cc*2*pi)/sc[2]),y = y+c( rad*sin(cc*2*pi)/sc[1]),
+							#gp=gpar(fill=bg, lwd=1.2,col=line.col))
+							xv <- x+c(rad*cos(cc*2*pi)/sc[2])
+							yv <- y+c( rad*sin(cc*2*pi)/sc[1])
+							sp <- length(xv)
+							idv <- rep(e1$wedge.id,sp)
+							bgv <- rep(bg,sp)[1:sp]
+							
 						}else{
-							grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
-							gp=gpar(fill=bg, lwd=1.2,col=line.col))
+							#grid.polygon(x = x+c(0,rad*cos(cc*2*pi)/sc[2]),y = y+c(0, rad*sin(cc*2*pi)/sc[1]),
+							#gp=gpar(fill=bg, lwd=1.2,col=line.col))
+							xv <- x+c(0,rad*cos(cc*2*pi)/sc[2])
+							yv <- y+c(0, rad*sin(cc*2*pi)/sc[1])
+							sp <- length(xv)
+							idv <- rep(e1$wedge.id,sp)
+							bgv <- rep(bg,sp)[1:sp]
+							
 						}	
+							e1$wc$x <- c(e1$wc$x,xv)
+							e1$wc$y <- c(e1$wc$y,yv)
+							e1$wc$bg <- c(e1$wc$bg,bgv)
+							e1$wc$id <- c(e1$wc$id,idv)
+						
+						return(invisible(TRUE))
 					}
 				}, p1 = P1, p2=P2, rad = R, bg = col.Mat[,xind], x = X3, y = Y3 )
-				P1 = P2
+				P1 <- P2
+
 			}
+			#print(summary(as.data.frame(wc)))
+			#print(table(wc$id,wc$bg))
+			ubg <- unique(wc$bg)
+			for(i in ubg){
+				ii <- which(wc$bg == i)
+				grid.polygon(wc$x[ii], wc$y[ii],id=wc$id[ii],gp=gpar(fill=wc$bg[ii], lwd=1.2,col=line.col))
+			}
+			
+				
 		}
 	
 }else{ # not circular
@@ -1313,8 +1238,10 @@ if( circular ){
 			#R2 <- R2/rscf
 			#R1 <- R1/rscf
 
-
-	draw(H2/nrow(H2)*(1-row.gap.prop),( W2trans/ncol(W2trans)*(1-col.gap.prop) + (round(W2trans,digits=7) > 0)*width.cor )/rscf,X2,Y2,alpha = 1, bg = col2, border = ifelse(eqwidth, NA, line.col))
+	col2Mat <- matrix(col2,nrow(H2),ncol(H2))
+	col2Mat[H2==0] <- NA
+	col2Mat[W2trans==0] <- NA
+	draw(H2/nrow(H2)*(1-row.gap.prop),( W2trans/ncol(W2trans)*(1-col.gap.prop) + (round(W2trans,digits=7) > 0)*width.cor )/rscf,X2,Y2,alpha = 1, bg = col2Mat, border = ifelse(eqwidth, NA, line.col))
 	draw(H2/nrow(H2)*(1-row.gap.prop),H2/ncol(H2)*(1-col.gap.prop) + width.cor,X2,Y2,alpha = 1, bg = bgs, border = rect)
 
 	if( spine ){
@@ -1327,14 +1254,18 @@ if( circular ){
 			if( nr < 2 ){
 				H <- t(H)	
 			}
-			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop)/rscf,X3,Y,alpha = 1, bg = col.Mat[,xind], border = NA)
+			CM1 <- col.Mat[,xind]
+			CM1[H==0] <- NA
+			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop)/rscf,X3,Y,alpha = 1, bg = CM1, border = NA)
 			if( disp.res ){
 				#ratMat = sqrt(H00/H0)
 				max.rat = max(ratMat)
 						
 				W3res = W3/ncol(W3)*(1-col.gap.prop)*ratMat[,xind]
 				# obs
-				draw(H/nrow(H)*(1-row.gap.prop),W3res/rscf,X3,Y,alpha = 1, bg = col.Mat2[,xind], border = NA)
+				CM2 <- col.Mat2[,xind]
+				CM2[H==0] <- NA
+				draw(H/nrow(H)*(1-row.gap.prop),W3res/rscf,X3,Y,alpha = 1, bg = CM2, border = NA)
 					
 				if( both ){
 						#exp	
@@ -1370,6 +1301,7 @@ if( circular ){
 				}
 				draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = NA, lwd =1.5, border = line.col)	
 		}else{
+			col.Mat[H==0] <- NA
 			draw(H/nrow(H)*(1-row.gap.prop),W3/ncol(W3)*(1-col.gap.prop),X3,Y,alpha = 1, bg = col.Mat, border = line.col)	
 		}#border = line.col ???
 	}
@@ -1641,7 +1573,7 @@ prettyscale = function(breaks){
 	return(breaks2)	
 }
 
-my.grid.axis = function(x0,y0,rot, ticks, len = 1, ltm = 1/30, clockwise = FALSE, lab.cex = 0.8, keep=7, col.axis = 1){
+my.grid.axis = function(x0,y0,rot, ticks, len = 1, ltm = 1/30, clockwise = FALSE, lab.cex = 0.8, keep=7, col.axis = 1, trot = 320){
 		
 	grid.lines(x=c(x0, x0+len*cos(rot/180*pi)), y = c(y0, y0+len*sin(rot/180*pi)),gp=gpar(col=col.axis))
 	n <- length(ticks)-1
@@ -1653,10 +1585,10 @@ my.grid.axis = function(x0,y0,rot, ticks, len = 1, ltm = 1/30, clockwise = FALSE
 	
 	x.ticks.2 <- x.ticks.1 + sgn*ltm*len*cos(rot/180*pi+pi/2)
 	y.ticks.2 <- y.ticks.1 + sgn*ltm*len*sin(rot/180*pi+pi/2)
-	
+	ss <- seq(1,n,n/floor(keep*4 -3))
 	mapply( function(x0,y0,x1,y1){
 		grid.lines(c(x0,x1),c(y0,y1),gp=gpar(col=col.axis))
-		},x0 = x.ticks.1, x1 = x.ticks.2, y0= y.ticks.1, y1 = y.ticks.2)
+		},x0 = x.ticks.1[ss], x1 = x.ticks.2[ss], y0= y.ticks.1[ss], y1 = y.ticks.2[ss])
 		if(rot <= 135 & rot > 45) just = ifelse(clockwise,"left","right")
 		if(rot <= 225 & rot > 135) just = ifelse(clockwise,"bottom","top")
 		if(rot <= 315 & rot > 225) just = ifelse(clockwise,"right","left")
@@ -1674,6 +1606,6 @@ if(n > keep){
 	keep <- round(seq(1,n,n/(keep-1)))
 	ticks[-c(1,n+1,keep)] = ""
 }		
-	grid.text(ticks, x.ticks.2, y.ticks.2, just = just, rot = 320, gp=gpar(fontsize=lab.cex*10,col=col.axis))
+	grid.text(ticks, x.ticks.2, y.ticks.2, just = just, rot = trot, gp=gpar(fontsize=lab.cex*10,col=col.axis))
 }
 

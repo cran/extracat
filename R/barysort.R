@@ -10,7 +10,7 @@ barysort = function(x, vs = 1){
 	co <- 1:m
 	
 	optimal <- FALSE
-	crt <- extracat:::classcrit(x)
+	crt <- classcrit(x)
 	while(!optimal){
 		
 		b0 <- ( x %*% 1:m )/rs
@@ -18,7 +18,7 @@ barysort = function(x, vs = 1){
 		x <- x[ord0,]
 		rs <- rs[ord0]
 		ro <- ro[ord0]
-		crt0 <- extracat:::classcrit(x)
+		crt0 <- classcrit(x)
 		
 		b1 <- ( t(1:n) %*% x )/cs
 		ord1 <- order(b1)
@@ -26,7 +26,7 @@ barysort = function(x, vs = 1){
 		cs <- cs[ord1]
 		co <- co[ord1]
 		
-		crt1 <- extracat:::classcrit(x)
+		crt1 <- classcrit(x)
 		
 		if(crt1 <=crt){
 			#column change not good
