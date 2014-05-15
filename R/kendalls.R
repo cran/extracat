@@ -24,3 +24,24 @@ kendalls <- function(x){
 }
 
 
+kendallsMV <- function(x){
+	
+	nd <- length(dim(x))
+	ms <- list()
+	mss <- list()
+	for(i in 1:nd){
+		ms[[i]] <- apply(x,i,sum)
+		mss[[i]] <- rev(cumsum(rev(ms[[i]])))
+	}
+	N <- sum(x)
+		storage.mode(x) <- "integer"
+	crt1 <- .Call("classcrit",x,as.integer(dim(x)),as.integer(0))
+	crt2 <- allpairs(x)-crt1
+	
+	xx <- mapply(function(y,z){
+		 max(1,sum(y*(z-y)[1:length(y)]))^(1/nd)
+	},y = ms,z=mss)
+	
+	tau <- (crt1-crt2)/prod(xx)
+	return(tau)
+}

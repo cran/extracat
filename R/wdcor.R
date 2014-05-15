@@ -79,8 +79,7 @@ wdcor.table = function(x, ep = 1, ...){
 	#dx <- dx[dx$Freq > 0,]
 	dx <- subtable(x,1:2)
 	dx <- sapply(dx,as.numeric)
-
-		NextMethod("wdcor", x = dx[,1], y = dx[,2], w = dx[,3], ep = ep)
+	NextMethod("wdcor", x = dx[,1], y = dx[,2], w = dx[,3], ep = ep)
 }
 
 
@@ -100,11 +99,13 @@ approx.dcor2 = function(x,y, n = 50, correct = FALSE, ep = 1){
 
 
 approx.dcor = function(x,y, n = 50, ep = 1, bin = "eq"){
-	stopifnot(length(x) == length(y))
+	if(length(x) != length(y)){
+		stop("Vector lengths differ.")
+	}
 	
 	#s <- c()
 #s[1]<-system.time({
-		if(bin %in% c("e","eq","equ","equi")){
+	if(bin %in% c("e","eq","equ","equi")){
 		rx <- range(x,na.rm=TRUE)	
 		ry <- range(y,na.rm=TRUE)
 		xbr <- seq(rx[1],rx[2]+1e-12, (diff(rx)+1e-12)/n)
@@ -321,26 +322,100 @@ dcov2 = function(x){
 #	}
 
 
-wdcor.data.frame = function(x, approx = TRUE, n = 50, ...){
+# wdcor.data.frame <- function(x, approx = TRUE, n = 50, ...){
+	# nmz <- names(x)
+	# x <- data.matrix(x)
+	# nd <- ncol(x)
+	# ids <- combn(1:nd,2)
+	# if(approx){
+	# values <- apply(ids,2,function(id){
+		# z <- na.omit(x[,id])
+		# approx.dcor(z[,1],z[,2], n=n)
+	# })
+	# }else{
+		# values <- apply(ids,2,function(id){
+		# z <- na.omit(x[,id])
+		# wdcor(z[,1],z[,2], n=n)
+	# })
+	# }
+	# M <- matrix(0,nd,nd)
+	# M[lower.tri(M)] <- values
+	# M <- M + t(M)
+    # diag(M) <- 1
+	# colnames(M) <- rownames(M) <- nmz
+		# return(M)
+# }
+
+
+
+wdcor.data.frame <- function(x, w = NULL, ep = 1, approx = FALSE, n = 50, ...){
 	nmz <- names(x)
+	
+	# weights is a variable in x...
+	if(length(w) == 1){
+		ii <- NULL
+		if(is.integer(w)){
+			ii <- w
+		}
+		if(is.character(w)){
+			ii <- which(names(x)==w)
+		}
+		if(!is.null(ii)){
+			w <- x[,ii]
+			x <- x[,-ii]
+		}
+	}
+	nd <- ncol(x)
+	
+	if(approx){
+		
+	cx <- lapply(x, cut, breaks=n,include.lowest=TRUE)
+	vx <- mapply( function(y,z)  tapply(y,z,mean,nr.rm=TRUE), y = x, z = cx)
+
+	M <- matrix(0,nd,nd)
+	diag(M) <- 1
+	colnames(M) <- rownames(M) <- nmz
+	
+	for(i in 1:(nd-1)){
+		for(j in (i+1):nd){
+			z <- subtable(cbind(cx[[i]],cx[[j]]),1:2)
+			M[i,j] <- M[j, i] <- wdcor(vx[,i][z[,1]],vx[,j][z[,2]],w = z[,3],ep=ep)
+		}
+	}
+	return(M)
+		
+	}#approx
+	
+	if( any(is.na(x)) ){
+		x <- na.omit(x)
+		simpleWarning("NA's found and omitted. Please check.")
+	}
 	x <- data.matrix(x)
 	nd <- ncol(x)
-	ids <- combn(1:nd,2)
-	if(approx){
-	values <- apply(ids,2,function(id){
-		z <- na.omit(x[,id])
-		approx.dcor(z[,1],z[,2], n=n)
-	})
-	}else{
-		values <- apply(ids,2,function(id){
-		z <- na.omit(x[,id])
-		wdcor(z[,1],z[,2], n=n)
-	})
+	
+	
+	if(ncol(x)*nrow(x)^2 > 1e10){
+	 	simpleWarning("What a big problem. Please use approx = TRUE.")
+	 	ret <- 42
+	 	attr(ret,"question") <- "Answer to the Ultimate Question of Life, the Universe, and Everything"
+	 return(ret)
 	}
+	if(is.null(w)){
+		w <- rep(1,nrow(x))
+	}
+	stopifnot(nrow(x) == length(w))
+	stopifnot(all(w >= 0))
+		
+	storage.mode(w) <- "double"
+	storage.mode(x) <- "double"
+	
+	storage.mode(ep) <- "double"
+	
+	ret <- .Call("dcorM",x,as.integer(nd),w/sum(w),ep)
 	M <- matrix(0,nd,nd)
-	M[lower.tri(M)] <- values
+	M[lower.tri(M)] <- ret
 	M <- M + t(M)
     diag(M) <- 1
 	colnames(M) <- rownames(M) <- nmz
-		return(M)
+	return(M)
 }

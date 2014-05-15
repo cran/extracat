@@ -162,7 +162,7 @@ qbin <- function(x,p = NULL, k = 5, d = 2){
 }
 
 
-cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqvar = NULL, diag = NULL, fun = "BCC", foreign = NULL){
+cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL, jitter = TRUE, freqvar = NULL, diag = NULL, fun = "BCC", foreign = NULL){
 
 	nd <- ncol(x)
 	
@@ -176,25 +176,33 @@ cmat <- function(x, sort = TRUE, crit = BCI, k = 5, iter = 20, p = NULL,  freqva
 	}
 	
 	factors <- sapply(x, is.factor)
-	
+	N <- nrow(x)
 	if(!all(factors)){
 			if(is.null(p)){
-				N <- nrow(x)
+				
 				p <- sqrt(k/N)
 				p <- 1/floor(1/p)
 			}
 			
 			for(i in which(!factors)){
-				qx <- quantile(x[,i],seq(0,1,p),na.rm = TRUE)
+				xx <- x[,i]
+				if(jitter){
+					md <- diff(sort(na.omit(xx)))
+					md <- min(md[md>0])
+					
+					xx <- xx + runif(N,-md/2,md/2)
+				}
+				qx <- quantile(xx,seq(0,1,p),na.rm = TRUE)
 				qx[1] <- -Inf
+				qxx <- unique(qx)
 				
-				if( length(qxx <- unique(qx)) < length(qx)){
+				if( length(qxx) < length(qx)){
 					simpleWarning(paste("non-unique quantiles detected in variable ",names(x)[i]))	
 				}
 				if(length(qxx) == 2){
 						x[,i] <- as.factor(x[,i])	
 				}else{
-					x[,i] <- cut(x[,i], unique(qxx) )
+					x[,i] <- cut(xx, unique(qxx) )
 				}
 			}
 	}

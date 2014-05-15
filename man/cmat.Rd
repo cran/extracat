@@ -9,7 +9,7 @@ Computes pairwise BCI values via \link[extracat]{qBCI}.
 }
 \usage{
 cmat(x, sort = TRUE, crit = BCI, k = 5, iter = 20, 
-p = NULL,  freqvar = NULL, diag = NULL,
+p = NULL,  jitter = TRUE, freqvar = NULL, diag = NULL,
 fun = "BCC", foreign = NULL)
 }
 
@@ -31,6 +31,9 @@ An \link[extracat]{optile} parameter.
 }
   \item{p}{
 The quantile distance. See \link[extracat]{qBCI}.
+}
+  \item{jitter}{
+Whether or not to use jittering in order to avoid ties. This is equivalent to a random assignment of ranks to observations with the same value.
 }
   \item{freqvar}{
 Optional weights, e.g. a frequency variable.

@@ -20,7 +20,7 @@ The main application for the weights is to use frequencies according to ordinal 
 wdcor(x,\dots)
 \method{wdcor}{default}(x,y,w = NULL,ep = 1, approx = FALSE, n = 50,na.rm = TRUE, \dots)
 \method{wdcor}{table}(x,ep = 1,\dots)
-\method{wdcor}{data.frame}(x,approx = TRUE, n = 50,\dots)
+\method{wdcor}{data.frame}(x, w = NULL, ep = 1, approx = FALSE, n = 50, \dots)
 }
 
 \arguments{
@@ -116,6 +116,9 @@ wdcor(xy[,1],xy[,2], w = kd$z)
 # this is the approximate distance correlation for the 2D density estimate
 }
 
+# a pairwise matrix:
+D <- wdcor(olives[,3:10])
+fluctile(D^2, shape="c")
 
 }
 

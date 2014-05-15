@@ -8,12 +8,15 @@ indicator variables
 converts a single categorical variable into indicator variables
 }
 \usage{
-imat(s)
+imat(x, allcat = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{s}{
-factor variable
+  \item{x}{
+A factor variable.
+}
+\item{allcat}{
+Whether or not to keep all categories or leave the last one out.
 }
 }
 

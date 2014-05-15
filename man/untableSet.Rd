@@ -7,7 +7,7 @@ data.frame conversion
 \description{
 Converts a frequency table into a raw data.frame.
 }
-\usage{untableSet(data, freqvar = NULL)}
+\usage{untableSet(data, freqvar = "Freq")}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{data}{
@@ -15,9 +15,7 @@ The \code{data.frame} including a frequency variable "Freq".
 }
 
 \item{freqvar}{
-    Optional name of a frequency variable in \code{V}. 
-    If \code{dset} contains a variable called \code{"Freq"} (see \link[stats]{ftable}) 
-    it will be defined as frequency variable if \code{freqvar} is unspecified.
+    The name of the frequency/weights variable which is used to expand \code{V}.
 }
 }
 

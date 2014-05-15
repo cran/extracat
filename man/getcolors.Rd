@@ -8,7 +8,7 @@ Create a color vector
 Creates a color vector using different palettes, e.g. from the colorspace package.
 }
 \usage{
-getcolors(N, palette, col.opt = list())
+getcolors(N, palette, col.opt = list(), revert = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,6 +30,9 @@ Palette shortcut:\cr
 }
   \item{col.opt}{
 Options for the palette. See help pages for the specific palettes.
+}
+  \item{revert}{
+Logical. The color vector is returned in reverse order.
 }
 }
 

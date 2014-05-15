@@ -123,7 +123,7 @@ int getindex(int dims[], int ind[], int nd){
 
 
 void diagprod(int *mv1, int *mv0, float *cv, int *IM, int dims[], int index[], int step, int nd){
-	int i,j,k, s;
+	int i,j, s;
 	
 	//int nd = sizeof(dims)/2;
 	int val1, val2;
@@ -205,7 +205,7 @@ void diagprod(int *mv1, int *mv0, float *cv, int *IM, int dims[], int index[], i
 float mvclasscrit2(int *m0, int *IM, int dims[], int nd){
 	
 	
-	int i,ix,j, j1,j2,s, s1, s2, k, rind ,lind;
+	int i, j1,j2, s1, s2, k, rind ,lind;
 	//int nd = sizeof(dims)/2;
 	//Rprintf("welcome to classcrit\n");
 	//Rprintf("dim = %d\n",nd);
@@ -383,8 +383,7 @@ SEXP dcorD(SEXP x, SEXP y, SEXP freq){
 	
 	int n = LENGTH(freq);
 	int s = n*(n-1)/2;
-	int i, i2;
-	int j,k;
+	int i, j,k;
 	
 	
 	double *DMY = calloc(s,sizeof(double));
@@ -397,9 +396,19 @@ SEXP dcorD(SEXP x, SEXP y, SEXP freq){
 		Edx[i] = 0;
 		Edy[i] = 0;
 	}
-	double S1 , S2 , S3 , S2a , S2b = 0;
-	double S1X , S2X , S3X = 0;
-	double S1Y , S2Y , S3Y = 0;
+    double S1 = 0;
+    double S2 = 0;
+    double S3 = 0;
+    
+    double S2a = 0;
+    double S2b = 0;
+    
+    double  S1X = 0;
+	double  S1Y = 0;
+    double  S2X = 0;
+	double  S2Y = 0;
+	double  S3X = 0;
+	double  S3Y = 0;
 	
 	k = 0;
 	for (i=0; i<(n-1); i++) {
@@ -467,12 +476,12 @@ SEXP dcorR(SEXP x, SEXP y, SEXP freq, SEXP e){
 	
 	int n = LENGTH(y);
 	int s = n*(n-1)/2;
-	int i, i2;
-	int j,k;
+	
+	int i, j,k;
 	
 		
-	float *DMY = calloc(s,sizeof(float));
-	float *DMX = calloc(s,sizeof(float));
+	double *DMY = calloc(s,sizeof(double));
+	double *DMX = calloc(s,sizeof(double));
 	double *F = calloc(s,sizeof(double));
 	
 	double Edx[n];
@@ -481,16 +490,28 @@ SEXP dcorR(SEXP x, SEXP y, SEXP freq, SEXP e){
 		Edx[i] = 0;
 		Edy[i] = 0;
 	}
-	double S1 , S2 , S3 , S2a , S2b = 0;
-	double S1X , S2X , S3X = 0;
-	double S1Y , S2Y , S3Y = 0;
+	double S1 = 0;
+    double S2 = 0;
+    double S3 = 0;
+    
+    double S2a = 0;
+    double S2b = 0;
+    
+    double  S1X = 0;
+	double  S1Y = 0;
+    double  S2X = 0;
+	double  S2Y = 0;
+	double  S3X = 0;
+	double  S3Y = 0;
 	
 	k = 0;
 		for (i=0; i<(n-1); i++) {
 			for (j = i+1; j < n; j++) {
 				DMX[k] = pow(fabs(REAL(x)[i] - REAL(x)[j]),REAL(e)[0]);
 				DMY[k] = pow(fabs(REAL(y)[i] - REAL(y)[j]),REAL(e)[0]);
+              
 				F[k] = REAL(freq)[i] * REAL(freq)[j];
+                //Rprintf("\t%f, ",F[k]);
 				S1 += DMX[k]*DMY[k]*F[k];
 				S1X += DMX[k]*DMX[k]*F[k];
 				S1Y += DMY[k]*DMY[k]*F[k];
@@ -502,6 +523,7 @@ SEXP dcorR(SEXP x, SEXP y, SEXP freq, SEXP e){
 				Edy[i] += DMY[k]*REAL(freq)[j];
 				k++;
 			}
+           // Rprintf("\n");
 		}
 	
 	//Rprintf("\nEdx = \n");
@@ -540,11 +562,136 @@ SEXP dcorR(SEXP x, SEXP y, SEXP freq, SEXP e){
 	free(DMX);
 	free(F);
 	
-	
+	//Rprintf("S1 = %f, S2 = %f, S3 = %f,S1X = %f,S2X = %f,S3X = %f\n\n",S1,S2,S3,S1X,S2X,S3X);
+
 	return ret;
 }
 
 
+
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+// --------------------------------------------------------------------------------------- //
+
+SEXP dcorM(SEXP x, SEXP dim, SEXP freq, SEXP e){
+	
+	int m = INTEGER(dim)[0];
+	int n = LENGTH(x)/m;
+	int s = n*(n-1)/2;
+	int sm = s*m;
+	int nm = n*m;
+	int i, j;
+	int k = 0;
+	int vi, vj;
+	
+	//Rprintf("m = %d, n = %d , s = %d, e = %f\n\n---",n,m,s,REAL(e)[0]);
+	
+	double *Edx = calloc(nm,sizeof(double));
+	
+	// distances
+	double *DMX = calloc(sm,sizeof(double));
+	
+	// frequencies/weights, 1 per pair
+	double *F = calloc(s,sizeof(double));
+
+
+    
+	//for (i=0; i<n; i++) {
+	//	for (vi = 0 ; vi < m; vi++) {
+	//		MAT_ELT(Edx,i,vi,nm) = 0;
+	//	}
+	//}
+	
+	
+	double *S1 = calloc(m*m,sizeof(double));
+	double *S2 = calloc(m*m,sizeof(double));
+	double *S3 = calloc(m*m,sizeof(double));
+	
+	double *S1X = calloc(m,sizeof(double));
+	double *S2X = calloc(m,sizeof(double));
+	double *S3X = calloc(m,sizeof(double));
+	
+	double *S2ab = calloc(m,sizeof(double));
+	
+	
+		
+	
+	for (i=0; i<(n-1); i++) {
+				for (j = i+1; j < n; j++) {//k
+		
+					
+					F[k] = REAL(freq)[i] * REAL(freq)[j];
+					
+					for (vi = 0; vi < m; vi++) {
+                        // WRITING to lower.tri
+                        
+					
+						MAT_ELT(DMX,k,vi,s) = pow(fabs(REAL(x)[i + vi*n] - REAL(x)[j+vi*n]),REAL(e)[0]);
+						
+						S1X[vi] += MAT_ELT(DMX,k,vi,s)*MAT_ELT(DMX,k,vi,s)*F[k];
+						
+                        MAT_ELT(Edx,i,vi,n) += MAT_ELT(DMX,k,vi,s)*REAL(freq)[j];
+						MAT_ELT(Edx,j,vi,n) += MAT_ELT(DMX,k,vi,s)*REAL(freq)[i];
+                        
+                       if(vi > 0){
+                            for (vj = 0; vj < vi; vj++) {
+                                S1[vi + vj*m] += MAT_ELT(DMX,k,vi,s)*MAT_ELT(DMX,k,vj,s)*F[k];
+                            }
+                        }
+                        
+					}
+					
+                    k++;
+                }
+                
+			}
+    
+    for (vi = 0; vi < m; vi++) {
+        for (i = 0; i < n; i++) {
+            S2ab[vi] += MAT_ELT(Edx,i,vi,n) * REAL(freq)[i];
+            S3X[vi] += MAT_ELT(Edx,i,vi,n)*MAT_ELT(Edx,i,vi,n) * REAL(freq)[i];
+        }
+        S1X[vi] = 2*S1X[vi];
+        S2X[vi] = S2ab[vi]*S2ab[vi];
+        
+    }
+    
+    SEXP ret = allocVector(REALSXP,m*(m-1)/2);
+	
+    k = 0;
+    for (vj = 0; vj < m-1; vj++) {
+        for (vi = vj+1; vi < m; vi++) {
+            for (i = 0; i < n; i++) {
+				S3[vi+vj*m] += MAT_ELT(Edx,i,vi,n)*MAT_ELT(Edx,i,vj,n) * REAL(freq)[i];
+            }
+           
+            S2[vi+vj*m] = S2ab[vi]*S2ab[vj];
+            S1[vi+vj*m] = 2*S1[vi+vj*m];
+            
+			REAL(ret)[k] = pow( (S1[vi+vj*m]+S2[vi+vj*m]-2*S3[vi+vj*m])/pow( (S1X[vi]+S2X[vi]-2*S3X[vi])*(S1X[vj]+S2X[vj]-2*S3X[vj]) ,0.5) , 0.5) ;
+            k++;
+        }
+    }
+    
+    
+			//REAL(ret)[0] = pow( (S1+S2-2*S3)/pow( (S1X+S2X-2*S3X)*(S1Y+S2Y-2*S3Y) ,0.5) , 0.5) ;
+		
+    free(F);
+    free(DMX);
+	
+	free(Edx);
+	free(S1);
+    free(S2);
+    free(S3);
+    
+    free(S1X);
+    free(S2X);
+    free(S3X);
+    
+    free(S2ab);
+	
+	return ret;
+}
 
 
 
@@ -576,7 +723,7 @@ SEXP MEsimple(SEXP M, SEXP dims){
 	int n = INTEGER(dims)[0];
 	int m = INTEGER(dims)[1];
 	
-	int i,j,k;
+	int i,j;
 	
 	 
 	
@@ -697,7 +844,7 @@ SEXP simplecrit(SEXP M, SEXP dims){
 
 SEXP barysort(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 	
-	int i,j,i2,j2, ki, kj, rd, cd;
+	int i,j;//i2, j2, ki, kj, rd, cd
 	
 	
 	int n = INTEGER(dims)[0];
@@ -719,7 +866,7 @@ SEXP barysort(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 		dimv[i] = INTEGER(dims)[i];
 	}
 	int *mv = &INTEGER(M)[0];
-    int *IXp = &IX[0][0];
+    //int *IXp = &IX[0][0];
 	int *TXp = &TX[0][0];
 	
 	int tix[n];
@@ -731,8 +878,8 @@ SEXP barysort(SEXP M, SEXP dims, SEXP pv , SEXP vs){
     // one unnecessary copy here...
 	
 	float v[nm];
-	int no[nm];
-	int no2[nm];
+	//int no[nm];
+	//int no2[nm];
 	
 	float* iv = &v[0];
 	int* ptix = &tix[0];
@@ -918,7 +1065,7 @@ SEXP barysort(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 
 SEXP barysort2(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 	
-	int i,j,i2,j2, ki, kj, rd, cd;
+	int i,j;// rd, cd;//j2, i2, ki, kj
 	
 	
 	int n = INTEGER(dims)[0];
@@ -950,7 +1097,7 @@ SEXP barysort2(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 		dimv[i] = INTEGER(dims)[i];
 	}
 	int *mv = &INTEGER(M)[0];
-    int *IXp = &IX[0][0];
+   // int *IXp = &IX[0][0];
 	int *TXp = &TX[0][0];
 	
 	//temporary row/col orders
@@ -963,8 +1110,8 @@ SEXP barysort2(SEXP M, SEXP dims, SEXP pv , SEXP vs){
     // one unnecessary copy here...
 	
 	float v[nm];
-	int no[nm];
-	int no2[nm];
+	//int no[nm];
+	//int no2[nm];
 	
 	float* iv = &v[0];
 	int* ptix = &tix[0];
@@ -1341,6 +1488,24 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method, SEXP singlesplit){
 						zz = log(2) - log(1 + exp(zz/pow(nn,0.5)/4));
 						nn = log(2);
 					}
+                    if(v == 6){
+                        //Rmin
+						nn = a+b+c+d;
+						rs1 = (a+b)/nn;
+						rs2 = (c+d)/nn;
+						cs1 = (a+c)/nn;
+						cs2 = (b+d)/nn;
+                        
+                        p0 = (a/nn - rs1*cs1)/pow(rs1*cs1,0.5);
+						
+                        p0 = mymin2( p0 , (b/nn - rs1*cs2)/pow(rs1*cs2,0.5) );
+						p0 = mymin2( p0 , (c/nn - rs2*cs1)/pow(rs2*cs1,0.5) );
+						p0 = mymin2( p0 , (d/nn - rs2*cs2)/pow(rs2*cs2,0.5) );
+						
+						
+						zz =  -p0;
+						nn = 1;
+					}
 				  // Rprintf(" zz = %f, nn = %f\n",zz,nn);
 					
 					currtau = zz/nn;
@@ -1403,6 +1568,11 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method, SEXP singlesplit){
 		REAL(out)[i+2*k] = tauval[i+1];
 		REAL(out)[i+3*k] = cutno[i+1];
 	}
+    free(NE);
+    free(NW);
+    free(SE);
+    free(SW);
+    free(MX);
 	return out;
 	
 }
@@ -1426,7 +1596,7 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method, SEXP singlesplit){
 float mvhammcrit(int *m0, int *IM, int dims[], int nd){
 	
 	
-	int i,ix,j, j1,j2,s, s1, s2, k, d, rind ,lind;
+	int i, j1,j2, s1, s2, k, d, rind ,lind;//s, j
 
 	int (*IX)[nd] = (int (*)[nd])IM;
 	
@@ -1527,7 +1697,7 @@ float mvhammcrit(int *m0, int *IM, int dims[], int nd){
 // --------------------------------------------------------------------------------------- //
 
 SEXP classcrit(SEXP M, SEXP dims, SEXP vs){
-	int i,j,k;
+	int i,k;
 	int nd = LENGTH(dims);
 	int dimv[nd];
 	for (i=0; i<nd; i++) {
@@ -1574,7 +1744,7 @@ SEXP classcrit(SEXP M, SEXP dims, SEXP vs){
 SEXP mvclass(SEXP M, SEXP dims, SEXP pv , SEXP vs){
 	
 	
-	int r,s,t,i,j,k,ii,jj,kk, tmp;
+	int s,i,j,k,ii,jj,kk, tmp;//r, t
 	int nd = LENGTH(dims);
 	int dimv[nd];
 	for (i=0; i<nd; i++) {
@@ -1744,7 +1914,7 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP sym){
 	
 	//Rprintf("SYM = %d\n",INTEGER(sym)[0]);
 	
-	int r,s,t,i,j,k,ii,jj,kk, tmp, d;
+	int s,i,j,k, d;//r, tmp, t, kk, ii, jj
 	int nd = LENGTH(dims);
 	int dimv[nd];
 	for (i=0; i<nd; i++) {
@@ -1830,7 +2000,7 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP sym){
 		ndt = 1;
 	}
 	
-	int ds, s1, s2, s1t, s2t, j1, j2, rind, lind;
+	int ds, s1, s2, j1, j2, rind, lind;//s1t, s2t
 	int tmpdimv[nd];
 	int iweight;
 	int ord[ml];
@@ -2003,7 +2173,9 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP sym){
 		}
 	}
 	REAL(out)[biglen] = bestcrit;
-	
+	free(m1);
+    free(m0);
+    free(m1i);
 	return out;
 }
 
@@ -2033,7 +2205,7 @@ SEXP preclass(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP sym){
 
 SEXP cumsum(SEXP M, SEXP dimv){
 	
-		int i,ix,j, j1,j2,s, s1, s2, k, rind ,lind, d, ind1, ind2, ind3, tmp, tmp2;
+		int i, j1,j2,s, s1, s2, k,lind, d, ind1, ind2;//ind3, tmp, tmp2, j, rind, ix
 	
 	int nd = LENGTH(dimv);
 	
@@ -2164,7 +2336,7 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
 	// > minc (eps) is the minimal improvement which is required for a movement as a ratio of the total criterion value at the beginning of a major step.
 	//  i.e. if eps = 0.01 only movements with an improvement of at least 1 percent are possible.
 	
-	int r,s,t,i,j,k,tmp, tmp2, d, g0, g1, g2, i1, i2, g;
+	int s,t,i,j,k,tmp, tmp2, d, g0, g1, g2, i1, i2, g;//r
 	int nd = LENGTH(dims);
     
     tmp = INTEGER(treelengths)[0];
@@ -2186,7 +2358,9 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
         }
         tmp = 3*tmp;
     }
-    int TM[tmp][nd];
+    //int TM[tmp][nd];
+    int *TM = calloc(tmp*nd,sizeof(int));
+    
     //int *tl = &INTEGER(treelengths)[0];
 	// TM is equivalent to trees, but easier to read in the code later
 	// it contains the indices of the node children: min.left, min.right = max.left +1, max.right
@@ -2196,14 +2370,14 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
         k = 0;
         for (i = 0; i < tmp; i++) {
             for (j = 0; j < nd; j++) {
-                TM[i][j] = 0;
+                MAT_ELT(TM,i,j,tmp) = 0;//TM[i][j] = 0;
             }
         }
         for (d = 0; d < nd; d++) {
             for (i = 0; i < tl[d]; i++) {
-                TM[3*i][d] = INTEGER(treevec)[k + 3*i]-1;
-                TM[3*i+1][d] = INTEGER(treevec)[k + 3*i+1]-1;
-                TM[3*i+2][d] = INTEGER(treevec)[k + 3*i+2]-1;
+                MAT_ELT(TM,3*i,d,tmp) = INTEGER(treevec)[k + 3*i]-1;
+                MAT_ELT(TM,3*i+1,d,tmp) = INTEGER(treevec)[k + 3*i+1]-1;
+                MAT_ELT(TM,3*i+2,d,tmp) = INTEGER(treevec)[k + 3*i+2]-1;
             }
             k += 3*tl[d];
         }
@@ -2281,13 +2455,13 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
 	
 	float bestcrit = 0;//FLT_MAX;
 	float newcrit = 0;
-	float startcrit = 0;
+	//float startcrit = 0;
 	newcrit = mvclasscrit2(mv, IXp, dimv, nd);
     //Rprintf("initial crit = %f",newcrit);
 	
 	int opt = 0;
 	
-	int ds, s1, s2, s1t, s2t, j1, j2, rind, lind;
+	int  s1, s2,  j1, j2, rind, lind;//ds, s1t, s2t,
     
 	// DM contains the pairwise delta values
 	// (i.e. the difference between the criterion when cat. 1 is before or after cat. 2)
@@ -2303,7 +2477,7 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
     // eps should be either 0 or decrease with every major step
     
     float best;
-    int ii, jj, gg, ll, lr;
+    int ii, jj,  ll, lr;//gg
     float eps = 0;
 	float imp;
     
@@ -2481,9 +2655,9 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
                 // save the differences in DMC[0][ 0..tl[d]-1 ]
                 for (g = 0; g < tl[d]; g++) {
 					DMC[ 0 ][ g ] = 0;
-					g0 = TM[ g*3 + 0][d];
-					g1 = TM[ g*3 + 1][d];
-					g2 = TM[ g*3 + 2][d];
+					g0 = MAT_ELT(TM,3*g,d,tmp);//TM[ g*3 + 0][d];
+					g1 = MAT_ELT(TM,3*g+1,d,tmp);//TM[ g*3 + 1][d];
+					g2 = MAT_ELT(TM,3*g+2,d,tmp);//TM[ g*3 + 2][d];
 					//Rprintf("check node (%d, %d, %d):\t",PX[g0][d],PX[g1][d],PX[g2][d]);
                     for (i = g0; i < g1; i++) {
                         for (j = g1; j < g2+1; j++) {
@@ -2505,9 +2679,9 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
                         // ll and lr are the numbers of items in the two branches
                         // both are negative iff PX[g1][d] < PX[g0][d]
                         
-                        g0 = TM[ g*3 + 0][d];
-                        g1 = TM[ g*3 + 1][d];
-                        g2 = TM[ g*3 + 2][d];
+                        g0 = MAT_ELT(TM,3*g,d,tmp);//TM[ g*3 + 0][d];
+                        g1 = MAT_ELT(TM,3*g+1,d,tmp);//TM[ g*3 + 1][d];
+                        g2 = MAT_ELT(TM,3*g+2,d,tmp);//TM[ g*3 + 2][d];
                         
                         ll = g1-g0; //PX[g1][d]-PX[g0][d];
                         lr = g2-g1+1; //PX[g2][d]-PX[g1][d]+1;
@@ -2595,7 +2769,7 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
                 //Rprintf("\n\n");
 				//}  
 			}else{
-                // ---------------- FREE STEP ---------------- //
+                // ---------------- free STEP ---------------- //
 				best = 0;
 		//		Rprintf("GO!\n\n");
 				for (i = 0; i < dimv[d]-1; i++) {
@@ -2832,7 +3006,7 @@ SEXP quickhamm(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SE
 		
 	}
 	/// ''''' END MAIN STEP ''''' ///
-	
+	free(TM);
 	
 	SEXP out = allocVector(REALSXP, biglen + 1);
 	
@@ -2865,8 +3039,8 @@ SEXP quickfechner(SEXP M, SEXP dims, SEXP vs, SEXP exz){
     
 	
 	int ex = INTEGER(exz)[0];
-	int i,j,k, d, dr, dc;
-	float dv, dvr, dvc;
+	int i,j,k;//, d, dr, dc;
+	float  dvr, dvc;//dv
 	//int nd = LENGTH(dims);
 	int n = INTEGER(dims)[0];
 	int m = INTEGER(dims)[1];
@@ -3084,8 +3258,8 @@ SEXP quickfechner2(SEXP M, SEXP dims, SEXP vs, SEXP exz){
     
 	
 	int ex = INTEGER(exz)[0];
-	int i,j,k, d, dr, dc;
-	float dv, dvr, dvc;
+	int i,j,k, d;// dr, dc;
+	float  dvr, dvc;//dv
 	//int nd = LENGTH(dims);
 	int n = INTEGER(dims)[0];
 	int m = INTEGER(dims)[1];
@@ -3612,7 +3786,7 @@ SEXP quicktileMR(SEXP M, SEXP dims, SEXP pv, SEXP brks, SEXP iter){
 	}
 	int idv[m];
 	
-	int ii,ii2,jj,jj2;
+	int ii,ii2;//,jj,jj2;
 	
 	// Delta matrices for rows and columns
 	// crit( i -> i2 ) - crit( i2 -> i ) if i < i2 and -(...) else
@@ -4496,7 +4670,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 	// > minc (eps) is the minimal improvement which is required for a movement as a ratio of the total criterion value at the beginning of a major step.
 	//  i.e. if eps = 0.01 only movements with an improvement of at least 1 percent are possible.
 	
-	int r,s,t,i,j,k,tmp, tmp2, d, g0, g1, g2, i1, i2, g;
+	int s,i,j,k,tmp, tmp2, d, g0, g1, g2, i1, i2, g;//r, t
 	int nd = LENGTH(dims);
 	
     tmp = INTEGER(treelengths)[0];
@@ -4517,7 +4691,8 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
         }
         tmp = 3*tmp;
     }
-    int TM[tmp][nd];
+    float *TM = calloc(tmp*nd,sizeof(int));
+    //int TM[tmp][nd];
     //int *tl = &INTEGER(treelengths)[0];
 	// TM is equivalent to trees, but easier to read in the code later
 	// it contains the indices of the node children: min.left, min.right = max.left +1, max.right
@@ -4527,14 +4702,14 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
         k = 0;
         for (i = 0; i < tmp; i++) {
             for (j = 0; j < nd; j++) {
-                TM[i][j] = 0;
+                MAT_ELT(TM,i,j,tmp)=0;//TM[i][j] = 0;
             }
         }
         for (d = 0; d < nd; d++) {
             for (i = 0; i < tl[d]; i++) {
-                TM[3*i][d] = INTEGER(treevec)[k + 3*i]-1;
-                TM[3*i+1][d] = INTEGER(treevec)[k + 3*i+1]-1;
-                TM[3*i+2][d] = INTEGER(treevec)[k + 3*i+2]-1;
+                MAT_ELT(TM,3*i,d,tmp)  = INTEGER(treevec)[k + 3*i]-1;//TM[3*i][d]
+                MAT_ELT(TM,3*i+1,d,tmp) = INTEGER(treevec)[k + 3*i+1]-1;//TM[3*i+1][d]
+                MAT_ELT(TM,3*i+2,d,tmp) = INTEGER(treevec)[k + 3*i+2]-1;//TM[3*i+2][d]
             }
             k += 3*tl[d];
         }
@@ -4610,7 +4785,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 	//  Rprintf("initial crit = %f",newcrit);
 	int opt = 0;
 	
-	int ds, s1, s2, s1t, s2t, j1, j2, rind, lind;
+	int  s1, s2,  j1, j2, rind, lind;//ds, s1t, s2t
 	
 	// DM contains the pairwise delta values
 	// (i.e. the difference between the criterion when cat. 1 is before or after cat. 2)
@@ -4625,7 +4800,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
     // eps should be either 0 or decrease with every major step
 	
     float best;
-    int ii, jj, gg, ll, lr;
+    int ii, jj,  ll, lr;//gg
     float eps = 0;
 	float imp;
 	
@@ -4774,7 +4949,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 			// note that DM is in the original order, DMC is in IX order
 			
 			// improvement must be better than eps to proceed
-			int stepcount = 0;
+			//int stepcount = 0;
 			imp = eps + 1;
 			while( imp > eps ){
 				
@@ -4798,9 +4973,9 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 					// save the differences in DMC[0][ 0..tl[d]-1 ]
 					for (g = 0; g < tl[d]; g++) {
 						MAT_ELT(DMC,0,g,ml) = 0;
-						g0 = TM[ g*3 + 0][d];
-						g1 = TM[ g*3 + 1][d];
-						g2 = TM[ g*3 + 2][d];
+						g0 = MAT_ELT(TM,3*g+0,d,tmp);//TM[ g*3 + 0][d];
+						g1 = MAT_ELT(TM,3*g+1,d,tmp);//TM[ g*3 + 1][d];
+						g2 = MAT_ELT(TM,3*g+2,d,tmp);//TM[ g*3 + 2][d];
 						//Rprintf("check node (%d, %d, %d):\t",PX[g0][d],PX[g1][d],PX[g2][d]);
 						for (i = g0; i < g1; i++) {
 							for (j = g1; j < g2+1; j++) {
@@ -4824,9 +4999,9 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 							// ll and lr are the numbers of items in the two branches
 							// both are negative iff PX[g1][d] < PX[g0][d]
 							
-							g0 = TM[ g*3 + 0][d];
-							g1 = TM[ g*3 + 1][d];
-							g2 = TM[ g*3 + 2][d];
+							g0 = MAT_ELT(TM,3*g+0,d,tmp);//TM[ g*3 + 0][d];
+							g1 = MAT_ELT(TM,3*g+1,d,tmp);//TM[ g*3 + 1][d];
+							g2 = MAT_ELT(TM,3*g+2,d,tmp);//TM[ g*3 + 2][d];
 						//	Rprintf("turning branch %d with imp = %f",g,MAT_ELT(DMC,0,g,ml));
 							ll = g1-g0; //PX[g1][d]-PX[g0][d];
 							lr = g2-g1+1; //PX[g2][d]-PX[g1][d]+1;
@@ -4886,7 +5061,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 					
 										imp = 0;
 				}else{
-					// ---------------- FREE STEP ---------------- //
+					// ---------------- free STEP ---------------- //
 					best = 0;
 					for (i = 0; i < dimv[d]-1; i++) {
 						for (j = i+1; j < dimv[d]; j++) {
@@ -4986,6 +5161,7 @@ SEXP quickmv(SEXP M, SEXP dims, SEXP pv , SEXP vs, SEXP minc, SEXP treevec, SEXP
 	free(m2);
 	free(DM);
 	free(DMC);
+    free(TM);
 	return out;
 }
 
@@ -5042,13 +5218,8 @@ SEXP symmtile(SEXP M, SEXP dims, SEXP pv){
 	
 	
 	float *DC2 = calloc(m*m,sizeof(float));
-	
-	//float *DR2 = calloc(n*n,sizeof(float));
 	float *DC = calloc(m*m,sizeof(float));
-	
-	//float *DR = calloc(n*n,sizeof(float));
-	
-	int *MS = calloc(n*m,sizeof(int));	
+	int *MS = calloc(n*m,sizeof(int));
 	int *MT = calloc(n*m,sizeof(int));	
 	
 	

@@ -1,7 +1,16 @@
 
-subtable <- function(data, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FALSE, return.type = class(data)){
+subtable <- function(data, cols, freqvar = "Freq", keep.zero=FALSE, allfactor =FALSE, return.type = class(data)){
 	data=as.data.frame(data)
-	names(data)[which(names(data)==freqvar)] = "Freq"
+	
+	
+	if(!is.null(freqvar)){
+		if(! (freqvar %in% names(data)) ){
+			freqvar <- NULL
+		} 
+	}
+	
+	
+	names(data)[which(names(data)==freqvar)] <- "Freq"
 	
 	if(allfactor){
 		int = which(sapply(data[,cols], function(v) is.integer(v)|is.numeric(v)))
@@ -66,13 +75,74 @@ subtable <- function(data, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FAL
 # }
 # }
 
-subtable.table = function(x,cols){
+subtable.table <- function(x,cols){
 	x <- as.table(x)
 	x2 <- apply(x,cols,sum)
 	dim(x2) <- dim(x)[cols]
 	return(as.table(x2))
-	
 }
 
-
+# subtable2 <- function(x, cols, freqvar = NULL, keep.zero=FALSE, allfactor =FALSE, return.type = class(x)){
+	# require(data.table)
+	# tab <- is.table(x)
+	# x <- as.data.table(x)
+	
+	# if(is.null(freqvar) & tab){
+		# freqvar <- "Freq"
+		# setnames(x,"N","Freq")
+	# }
+	# if(is.null(freqvar) & "Freq" %in% names(x)){
+		# freqvar <- "Freq"
+	# }
+	
+	# if(!is.null(freqvar)){
+		# setnames(x,freqvar,"Freq")
+	# }
+	
+	
+	# nv <- names(x)[cols]
+	# setkeyv(x,nv)
+	
+	
+	
+	# if(is.null(freqvar)){
+		# x <- x[,nrow(.SD),by=key(x)] 
+	# }else{
+		# if(!keep.zero){
+			# x <- x[Freq>0]
+		# }
+		# x <- x[,sum(Freq),by=key(x)]
+	# }
+	
+	# nmz <- names(x)
+	# nmz[length(nmz)] <- "Freq"
+	# setnames(x,nmz)
+	
+	# if(!keep.zero){
+		# x <- x[Freq>0]
+	# }
+	
+	# if(allfactor){
+		# inum <- function(v) is.integer(v)|is.numeric(v)
+		# int <- which(!sapply(x,inum))
+		# for( i in int ){
+			# vn <- names(x)[cols[i]]
+			# if(vn != "Freq"){
+				# x[,cols[i]] <- as.factor(x[,cols[i]])
+			# }
+		# }
+	# }
+	
+	
+	# if("table" %in% return.type ){
+		# x <- xtabs(Freq~.,data=x)
+		# return(x)
+	# }	
+	
+	# if(!is.null(freqvar)){
+		# nmz[length(nmz)] <- freqvar
+		# setnames(x,nmz)
+	# }
+	# return(x)
+# }
 

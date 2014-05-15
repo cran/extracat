@@ -12,7 +12,8 @@ cfluctile(x, tau0 = NULL, method = "Kendall", nsplit = NULL,
                  rev.y = FALSE, add = FALSE, shape = "r", just = "c",
                  dir = "b", plot = TRUE, rect.opt = list(), border =
                  NULL, label = TRUE, lab.opt = list(), tile.col =
-                 hsv(0.1, 0.1, 0.1, alpha = 0.6), bg.col = "lightgrey",\dots)
+                 hsv(0.1, 0.1, 0.1, alpha = 0.6),
+                 tile.border = NA, bg.col = "lightgrey", \dots)
 }
 \arguments{
   \item{x}{
@@ -22,7 +23,7 @@ A 2-way table or matrix.
 The minimum acceptable value of Kendall's tau, Cohen's Kappa or WBCI. Defaults to the criterion of the input matrix \code{x}.
 }
 \item{method}{
-Either \code{"Kendall"} for Kendall's Tau, \code{"Cohen"} for Cohen's Kappa or  \code{"WBCI"} for the Weighted Bertin Classification Criterion.
+Either \code{"Kendall"} for Kendall's Tau, \code{"Cohen"} for Cohen's Kappa,  \code{"WBCI"} for the Weighted Bertin Classification Criterion and \code{"s"} for the minimum residual method.
 }
 \item{nsplit}{
 The number of splits to make. \code{tau0} is ignored.
@@ -81,7 +82,9 @@ Label options, see \link[extracat]{fluctile}.
   \item{tile.col}{
 Color(s) for the tiles, see \link[extracat]{fluctile}.
 }
-
+  \item{tile.border}{
+Border color for the tiles. Can also be a matrix.
+}
   \item{bg.col}{
 Color for the background of the cells, see \link[extracat]{fluctile}.
 }

@@ -8,7 +8,7 @@ data.frame reduction
 Reduces a \code{data.frame} into a frequency table with prespecified entries. Uses a modified version of the \link[plyr]{count} function which also accepts weights.
 Zero-entries can be included or excluded and the variables can be coerced into factors if necessary.
 }
-\usage{subtable(data, cols, freqvar = NULL, 
+\usage{subtable(data, cols, freqvar = "Freq", 
 		keep.zero = FALSE, allfactor = FALSE, return.type = class(data))}
 
 \arguments{
@@ -19,9 +19,7 @@ The \code{data.frame} to reduce.
 An ordered integer vector containing the indices of the colums to keep.
 }
 \item{freqvar}{
-    Optional name of a frequency variable in \code{V}. 
-    If \code{dset} contains a variable called \code{"Freq"} (see \link[stats]{ftable}) 
-    it will be defined as frequency variable if \code{freqvar} is unspecified.
+    Optional name of a frequency variable in \code{V}.
 }
   \item{keep.zero}{
 A logical indicating whether to include zero-cases in the output.

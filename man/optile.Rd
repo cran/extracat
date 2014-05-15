@@ -43,7 +43,8 @@ E.g. \code{barysort} needs \code{foreign = ".Call"}.
 further arguments which will be passed to \code{fun}.
 }
   \item{perm.cat}{
-A logical vector indicating which variables are considered for optimization and which will remain untouched. Has no effect if \code{fun = "casort"}.
+A logical vector indicating which variables are reordered and which will remain untouched. 
+For example \code{perm.cat = c(FALSE, TRUE)} means that only the second variable is reordered. Has no effect if \code{fun = "casort"}.
 }
   \item{method}{
 Either \code{NULL, "joint"} or \code{"stepwise"}. 

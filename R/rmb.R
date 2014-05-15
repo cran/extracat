@@ -199,10 +199,17 @@ if(!is.null(vp)){
 	if(!inherits(vp,"viewport")){
 		stopifnot(length(vp)>1)
 		
+		if(is.null(current.viewport()$layout)){
+					print("No layout specified. Try:")
+					print("mat.layout <- grid.layout(nrow, ncol); grid.newpage(); vp.mat <- viewport(layout = mat.layout);pushViewport(vp.mat)")
+				}
+		
 		vp=viewport(layout.pos.row = vp[1], layout.pos.col = vp[2])
 	}
 	
 	pushViewport(vp)
+}else{
+	grid.newpage()
 }
 
 
@@ -340,6 +347,19 @@ if( "lab.cex" %in% names(label.opt) ){
 }else{
 	lab.cex <- 1.2
 }
+
+
+if( "s0" %in% names(label.opt) ){
+	s0 <- label.opt$s0
+	#s1 <- label.opt$s[2]
+	#s2 <- label.opt$s[3]
+	#s4 <- label.opt$s[4]
+}else{
+	s0 <- 0.02 # border
+}
+	s1 <- 0.04 # yaxis
+	s2 <- 0.06 # labs
+	s3 <- 0.1  # expected scale
 
 
 tmp <- which(cut == FALSE)
@@ -889,12 +909,15 @@ if( is.list(freq.trans) ){
 
 # ----- opening the basic viewport ----- #	
 	
-	s0 <- 0.02 # border
-	s1 <- 0.04 # yaxis
-	s2 <- 0.06 # labs
-	s3 <- 0.1  # expected scale
+	#s0 <- 0.02 # border
+	#s1 <- 0.04 # yaxis
+	#s2 <- 0.06 # labs
+	#s3 <- 0.1  # expected scale
 	#dev.new()
-	grid.rect(gp=gpar(fill="white",col="white"))
+	
+	
+	#grid.rect(gp=gpar(fill="white",col="white"))
+	
 	#if(exists("rmb.id",.GlobalEnv)){
 		#popViewport()
 		#grid.rect(gp=gpar(fill="white"))

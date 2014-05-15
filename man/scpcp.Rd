@@ -9,10 +9,11 @@ This function creates a static CPCP plot using base R graphics.
 The function offers color brush / highlighting and several options for the labels and colors.
 Efficiency is improved by replacing sets of parallel lines by polygons.
 \cr\cr
-A grid-based version is under construction. For an interactive version without labeling see \link[extracat]{cpcp}.
+A grid-based version is under construction. For an interactive version without labeling see \link[extracat]{cpcp}.\cr\cr
+For reordering of category orders in CPCP plots see \link[extracat]{steptile}.
 }
 \usage{
-scpcp(data, gap = 0.2, sort.individual = TRUE, level.width = 0.2,
+scpcp(data, freqvar = "Freq", gap = 0.2, sort.individual = TRUE, level.width = 0.2,
  polygon = TRUE, base.colour = alpha("black", 0.7), 
  lab.opt = list(rot = 0, col = 1, bg = TRUE, abbr = FALSE,
   abbr.var=12,hide.sel=TRUE), 
@@ -23,6 +24,9 @@ scpcp(data, gap = 0.2, sort.individual = TRUE, level.width = 0.2,
 \arguments{
   \item{data}{
 The \code{data.frame} which can contain a variable called \code{"Freq"}.
+}
+  \item{freqvar}{
+Optional specification of a frequency variable.
 }
   \item{gap}{
 The size of the gaps between the categories as a total proportion.
@@ -80,12 +84,13 @@ Karin Maria Gehweiler and Alexander Pilhoefer.
 }
 \note{
 A grid-based version is still under construction.
+In polygon mode single cases are still shown as a line rather than a ribbon of width \code{1/n}.
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\link[extracat]{cpcp}
+\link[extracat]{cpcp}, \link[extracat]{steptile}
 }
 \examples{
 

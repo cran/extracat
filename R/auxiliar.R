@@ -1,13 +1,13 @@
-imat <- function(s)
-		{
-			s <- as.factor(s)
-			n <- length(s)
-			s <- as.factor(s)
-			x <- matrix(0, n, length(levels( s )) )
-			x[(1:n) + n*(unclass(s)-1)] <- 1
-			dimnames(x) <- list(names(s), levels(s))
-			return(x)
-		}
+# imat <- function(s)
+		# {
+			# s <- as.factor(s)
+			# n <- length(s)
+			# s <- as.factor(s)
+			# x <- matrix(0, n, length(levels( s )) )
+			# x[(1:n) + n*(unclass(s)-1)] <- 1
+			# dimnames(x) <- list(names(s), levels(s))
+			# return(x)
+		# }
 		
 		
 		
@@ -33,29 +33,36 @@ return(Z)
 }
 
 
-idat = function(x, allcat = FALSE){
-	if("Freq" %in% names(x)){
-		fi <- which(names(x) =="Freq")
-		s <- x[,fi]
-		x <- x[,-fi]	
-	}else{
-		s <- NULL	
-	}
-	if(allcat){
-		ret<-lapply(x,imat)
-	}else{
-		ret<-lapply(x,function(z){
-			y<-imat(z)
-			y <- y[,-ncol(y),drop=FALSE]
-		})
-	}
-	ret <- as.data.frame(do.call(cbind,ret))
+ # idat = function(x, allcat = FALSE, freqvar = NULL){
+	# if("Freq" %in% names(x)) freqvar <- "Freq"
 	
-	if(!is.null(s)){
-		ret$Freq <- s	
-	}
-	return(ret)
-}
+	# if(!is.null(freqvar)){
+		# fi <- which(names(x) ==freqvar)
+		# s <- x[,fi]
+		# x <- x[,-fi]	
+	# }else{
+		# s <- NULL	
+	# }
+	# if(allcat){
+		# ret<-lapply(x,imat)
+	# }else{
+		# ret<-lapply(x,function(z){
+			# y<-imat(z)
+			# y <- y[,-ncol(y),drop=FALSE]
+		# })
+	# }
+	# nlvl <- sapply(ret,ncol)
+	
+	# ret <- as.data.frame(do.call(cbind,ret))
+	
+	# names(ret) <- paste(  rep(names(x),nlvl), names(ret),sep = ":")
+	# attr(ret,"var.ids") <- rep(1:ncol(x),nlvl)
+	
+	# if(!is.null(s)){
+		# ret[freqvar] <- s	
+	# }
+	# return(ret)
+# }
 Burt.table <- function(x){
 	stopifnot(inherits(x,"table"))
 	nd <- length(dim(x))

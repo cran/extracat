@@ -1,6 +1,6 @@
 
 
-getcolors <- function(N, palette, col.opt=list()){
+getcolors <- function(N, palette, col.opt=list(), revert = FALSE){
 #require(colorspace)
 	
 	colv <- NULL
@@ -28,9 +28,9 @@ getcolors <- function(N, palette, col.opt=list()){
 					if(!("end" %in% labels(col.opt))){
 						col.opt$end <- max(N-1,1)/N
 					}
-					if(!("alpha" %in% labels(col.opt))){
-						col.opt$alpha <- eval(col.def$alpha)
-					}
+					##if(!("alpha" %in% labels(col.opt))){
+					##	col.opt$alpha <- eval(col.def$alpha)
+					##}
 					colv <- rainbow(N,s = col.opt$s, v = col.opt$v, start = col.opt$start, end = col.opt$end, alpha = col.opt$alpha)
 					}
 				if( palette[1] == "hcl" ){
@@ -121,16 +121,18 @@ getcolors <- function(N, palette, col.opt=list()){
 
 				if( palette[1] %in% c("Wijffelaars","w","wijf", "q17") ){
 						colv <- wijffelaars[1:N]
-					if("alpha" %in% labels(col.opt)){
-						colv <- alpha(colv, col.opt$alpha)
-					}
 				}
 				if(is.null(colv)){
 					colv <- rep(palette,N)[1:N]
 				}
+				if("alpha" %in% labels(col.opt)){
+						colv <- alpha(colv, col.opt$alpha)
+				}
 				
 if(sample) colv <- sample(colv)
-
+	if(revert){
+		return(rev(colv))
+	}
 	return(colv)
 	
 }

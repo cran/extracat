@@ -10,9 +10,9 @@ Draws a heatmap using \link[extracat]{fluctile} as the workhorse and offers the 
 \usage{
 heattile(x, biclust = NULL, Is = NULL,  shape = "r", fluct = FALSE, gap.prop = 0,
  border = c(0.05, 0.03, 0.03, 0.05), label = c(TRUE,FALSE) ,
- lab.opt = list(abbrev = 24, lab.cex = 1, rot = 0), bg.col = "lightgrey",
- breaks = 20, clust.col = NULL, clust.palette = "rgb", hm.palette = "div",
- clust.col.opt = list(), hm.col.opt = list())
+ lab.opt = list(abbrev = 24, lab.cex = 1, rot = 0), bg.col = "lightgrey", sym = FALSE,
+ breaks = 20+ 10*sym, clust.col = NULL, clust.palette = "rgb", hm.palette = "div",
+ clust.col.opt = list(), hm.col.opt = list(revert = TRUE))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -46,6 +46,9 @@ Label options, see \link[extracat]{fluctile}.
 }
   \item{bg.col}{
 A background color, see \link[extracat]{fluctile}.
+}
+  \item{sym}{
+Whether or not the colors should be on a symmetric scale around zero.
 }
   \item{breaks}{
 The matrix entries are cut into intervals via \link[extracat]{fluctile}. see \link[extracat]{fluctile}.

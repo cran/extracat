@@ -10,7 +10,7 @@
 #	crit = sum(as.numeric(M[2:n,1:(m-1)])*R2)
 #	return(crit)
 #}
-classcrit = function(x, concordant = TRUE){
+classcrit <- function(x, concordant = TRUE){
 
 	if(!concordant){
 		if(length(dim(x)) > 2){
@@ -139,9 +139,9 @@ sccrit = function(x, concordant = FALSE){
 }
 
 
-itab = function(x){
-    
-    dims <- dim(x)
+
+itab <- function(x){
+   	dims <- dim(x)
     nd <- length(dims)
     N <- sum(x)
     
@@ -157,14 +157,14 @@ itab = function(x){
     dim(IM) <- dim(x)
     return(IM)
 }
+indep.table <- ind.table <- itab
 
 
 
 
 
 
-
-neg3t = function(x){
+neg3t <- function(x){
 	
 	n <- dim(x)[1]
 	m <- dim(x)[2]
@@ -179,7 +179,7 @@ neg3t = function(x){
 
 
 
-neg3j = function(x,r = 1){
+neg3j <- function(x,r = 1){
 	
 	n <- dim(x)[1]
 	m <- dim(x)[2]
@@ -195,7 +195,7 @@ neg3j = function(x,r = 1){
 }
 
 
-neg3jb = function(x,r = 1){
+neg3jb <- function(x,r = 1){
 	
 	n <- dim(x)[1]
 	m <- dim(x)[2]
@@ -209,7 +209,7 @@ neg3jb = function(x,r = 1){
 }
 
 
-neg3c = function(x,r = 1){
+neg3c <- function(x,r = 1){
 	
 	n <- dim(x)[1]
 	m <- dim(x)[2]
@@ -234,7 +234,7 @@ neg3c = function(x,r = 1){
 	
 }
 
-allpairs = function(x){
+allpairs <- function(x){
 	
 	
 	N <- sum(x)
@@ -284,7 +284,7 @@ BCI <- function(x){
 
 
 
-BCC = function(x){
+BCC <- function(x){
 	nd <- length(dim(x))
 	ret <- (allpairs(x)-classcrit(x))
 	return(ret)
@@ -368,7 +368,7 @@ function (x, dims = NULL,nstart = 1, solver = "nearest_insertion", return.table 
     })
   
 
-   # require(TSP)
+# require(TSP)
     ords <- lapply(D, function(d) {
     	if(!inherits(d, "TSP")){
     		return(d)

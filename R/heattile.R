@@ -100,7 +100,7 @@ getIs2 <- function(bic, dim, nstart=20, solver = "nn", cpr = FALSE, cpc = TRUE, 
 
 heattile <- function(x, biclust = NULL, Is = NULL, shape = "r", fluct = FALSE,
     gap.prop = 0.0, border = c(0.05,0.03,0.03,0.05), label = c(TRUE, FALSE), lab.opt = list(abbrev = 24, 
-        lab.cex = 1, rot = 0), bg.col = "lightgrey",breaks = 20, clust.col = NULL, clust.palette = "rgb", hm.palette = "div", clust.col.opt = list(), hm.col.opt = list()){
+        lab.cex = 1, rot = 0), bg.col = "lightgrey", sym = FALSE, breaks = 20+10*sym, clust.col = NULL, clust.palette = "rgb", hm.palette = "div", clust.col.opt = list(), hm.col.opt = list(revert=TRUE)){
       
       # if biclust is NULL then check Is.
         
@@ -136,10 +136,25 @@ heattile <- function(x, biclust = NULL, Is = NULL, shape = "r", fluct = FALSE,
  		}
  	}
  }	
+ 
+ 	if(length(breaks) == 1){
+ 		if(sym){
+ 			maxv <- max(abs(x))
+ 			a <- -maxv
+ 			b <- maxv
+ 		}else{
+ 			a <- min(x)
+ 			b <- max(x)
+ 		}
+ 		breaks <- seq(a-1e-12,b+1e-12, (b-a+3e-12)/breaks)
+ 	}
+ 	nbreaks <- length(breaks)
+ 
  	# heatmap colors
- 	hm.col <- getcolors(breaks,hm.palette,col.opt = hm.col.opt) 
+ 	hm.col <- getcolors(nbreaks,hm.palette,col.opt = hm.col.opt) 
  	
  	# color ids	
+ 
  	its <- as.integer(cut(x,breaks=breaks))
 	
 	#color matrix
@@ -153,14 +168,14 @@ heattile <- function(x, biclust = NULL, Is = NULL, shape = "r", fluct = FALSE,
 	
 	# reorder x
 	if(!is.null(attr(Is,"orders"))){
-			o1 <- rev(attr(Is,"orders")[[1]])
+			o1 <- attr(Is,"orders")[[1]]#rev(attr(Is,"orders")[[1]])
 			o2 <- attr(Is,"orders")[[2]]
 	}else{
-		o1 <- nrow(x):1 
+		o1 <- 1:nrow(x) #o1 <- nrow(x):1 
 		o2 <- 1:ncol(x)
 	} 
 	if( fluct ){
-		o1 <- rev(o1) # why??? CHECK!
+		#o1 <- rev(o1) # why??? CHECK!
 	}
 	x <- x[o1, o2]
 	CM <- CM[o1, o2]

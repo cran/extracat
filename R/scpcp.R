@@ -1,33 +1,47 @@
 
-#####################################################
-##                    FUNKTION                     ##
-#####################################################
-scpcp<-function(data, 
+
+
+scpcp<-function(data, freqvar = "Freq",
                 gap = 0.2,
                 sort.individual=TRUE,
                 level.width=0.2,
                 polygon = TRUE,
                 base.colour = alpha("black",0.7), # Farbe für Polygone oder Linien falls kein doodle
                 lab.opt = list(rot = 0, col = 1, bg = TRUE, abbr = FALSE, abbr.var = 12, hide.sel = TRUE),
-                sel =  NULL, # Vektor oder alternativ Beschreibung Ã¡ la "Cont=='Low'&Infl=='Low'"
+                sel =  NULL, 
                 sel.hide = TRUE,
                 sel.palette = NULL,
                 col.opt = list(),
                 plot = TRUE,
 	            return.coords = !plot)
 {
- # alternative fÃ¼r shadowtext?
+ if(inherits(data,"table")){
+ 	# convert to data.frame
+ 	numeric <- NULL
+ 	data <- subtable(data,1:length(dim(data)),allfactor=TRUE)
+    data <- untableSet(data)
+ }
+
+   ##################### FORMATIERUNG  #####################
+
+  # Expansion, if freqvar specified
+  if(!is.null(freqvar)){
+  	if(freqvar %in% names(data)){
+  		data <- untableSet(data, freqvar = freqvar)
+  	}
+  }
+for(i in 1:ncol(data)){
+	data[,i] <- as.factor(data[,i])
+}
+
+
+ orig.nm <- names(data)
+ 
+  
+
   
   
-  s.old <- Sys.time()
-  sv <- 0
-  sv.names <- c("init")
-  
-#####
-				#text.background = TRUE,
-               # text.rotation = 0, # in Grad
-	           # text.abbreviation = TRUE,
-               # text.colour = "black", # Text-Hintergrund-Farbe!!!
+################# PARAM INITIALIZATIONS #####################
 
 
 if( "rot" %in% names(lab.opt) ){
@@ -41,6 +55,16 @@ if( "las" %in% names(lab.opt) ){
 	las <- 1
 }
 
+if( "lab.cex" %in% names(lab.opt) ){
+	lab.cex <- lab.opt$lab.cex
+}else{
+	lab.cex <- 1
+}
+if( "cex.axis" %in% names(lab.opt) ){
+	cex.axis <- lab.opt$cex.axis
+}else{
+	cex.axis <- 1
+}
 if( "hide.sel" %in% names(lab.opt) ){
 	hide.sel <- as.logical(lab.opt$hide.sel)
 }else{
@@ -68,92 +92,70 @@ if( "col" %in% names(lab.opt) ){
 }else{
 	text.colour  <- "black"
 }
-if( "alpha" %in% names(col.opt) ){
-	colour.alpha <- col.opt$alpha
-	col.opt$alpha <- 1
-}else{
-	if(!polygon){
-		colour.alpha <- min(0.7,700/nrow(data))
-	}else{
-		colour.alpha <- 1
-	}
+
+if( !("alpha" %in% names(col.opt)) ){
+	col.opt$alpha <- min(0.7,1000/nrow(data))
 }
 
-  ##################### FORMATIERUNG  #####################
-
-  # Formatierung, falls die Daten eine Variable "Freq" enth?lt
-  if("Freq" %in% names(data)){  
-    data <- untableSet(data)
-  } else {
-  	if(inherits(data,"table")){
-  		data <- subtable(data,1:length(dim(data)),allfactor=TRUE)
-  		data <- untableSet(data)
-  	}else{
-  		for(i in 1:ncol(data)){
-			data[[i]] <- as.factor(data[[i]])
-		}
-  	}
-     #data <- data.frame(lapply(as.data.frame(data), as.factor)) # Sicherstellen, dass alle Variablen vom Typ Factor sind
-  }
-
-  ##################### DOODLE  #####################
+  
+  
+  
+   ##################### SELECTION for COLORBRUSH #####################
   
 
   # doodle kann entweder durch einen externen Vektor (sel), oder durch direkte ?bergabe der zu highlightenden F?lle im Funktionsaufruf initiiert werden
   # zb bei sel="Cont=='Low'&Infl=='Low'" 
   
   if(!is.null(sel)){
-    doodle<-TRUE
-    
+    doodle <- TRUE
     if(is.character(sel)){
-      #attach(data)
-      doodle.v <- with(data, as.factor(eval(parse(text=sel))) ) # direkte Evaluierung der zu highlightenden F?lle
-      #detach(data) # attach/detach notwendig, damit die ?bergebenen Variablennamen (zB. Cont) verstanden werden
-      
-    } else { 
-      doodle.v<-as.factor(sel)
+      selection <- with(data, as.factor(eval(parse(text=sel))) ) 
+    }else{ 
+      selection <- as.factor(sel)
     }
+    ndv <- length(levels(selection)) 
     
-    s.now <- Sys.time()
-    sv <- c(sv,s.now-s.old)
-    s.old <- s.now
-    sv.names <- c(sv.names,"doodle")  
+    #[ord<-order(selection,decreasing = TRUE),]
+    #if(!is.null(numeric)){
+    #	orig.data <- orig.data[ord,]
+    #	num.data <- num.data[ord,]
+    #}
   } else {
     doodle <- FALSE
+    ndv <- 1
   }
+  if(doodle){
+  		data <- cbind(selection,data)
+  }
+
+# if !sel.hide then the selection variable is accepted as a new additional column of data
+# otherwise it is removed later on, after itw as used for the reorderings/polygons by color
 
   sel.hide <- doodle & sel.hide # hide nur erlauben, falls Ã¼berhaupt gedoodled wird
 
+############## PARAM 2 #############
 
-  ##################### FORMATIERUNG 2  #####################
-  
-  if(doodle){
-    data <- cbind(doodle.v,data)
-  }
-
-  # should be the case after untableSet(x) anyway, but in general...
-  # untableset() sortiert die Daten von erster zu letzter Variabe, wir brauchen es andersrum
-  base.order <- do.call(order,c(data, decreasing = FALSE))
-  data <- data[base.order,]
-  
-  s.now <- Sys.time()
-  sv <- c(sv,s.now-s.old)
-  s.old <- s.now
-  sv.names <- c(sv.names,"format")
-  
-  ##### NUE?TZLICHES  
-  
+	# these are using only the factor variables!
   N <- nrow(data)
   m <- ncol(data)
   nm <- names(data)
   labels <- lapply(data, levels)
+
   
   if(text.abbreviation != FALSE){
   	labels.abbr <- lapply(labels, abbreviate, minlength=text.abbreviation)
   }else{
   	labels.abbr <- labels
   }
+ 
+
+
+ ############## FUNDAMENTAL REORDERING ##################
   
+ # reordering the dataset (including selection variable):
+ base.order <- do.call( order, c(data, decreasing = FALSE))
+ data <- data[base.order,,drop = FALSE] 
+
 
 
   ##################### BERECHNUNGEN  #####################
@@ -171,7 +173,8 @@ if( "alpha" %in% names(col.opt) ){
     gap.proportion <- gap/(k-1) # H?he jedes gap-Bereichs
     seqs <- list()
     for(i in 1:k){
-      seqs[[i]] <- seq(p[i],p[i+1], (p[i+1]-p[i])/(z[i]-1)) + (i-1)*gap.proportion 
+      tmp <- seq(p[i],p[i+1], (p[i+1]-p[i])/max(1,(z[i]-1))) + (i-1)*gap.proportion 
+      seqs[[i]] <- tmp[1:z[i]]
     }
     return(seqs)
   })
@@ -183,14 +186,15 @@ if( "alpha" %in% names(col.opt) ){
     lapply(y, function(w){
       which(z == w)
     })
-  },y = labels, z = data, SIMPLIFY=F)
- 
-
-  s.now <- Sys.time()
-  sv <- c(sv,s.now-s.old)
-  s.old <- s.now
-  sv.names <- c(sv.names,"seq/id")
-  
+  },y = labels, z = data, SIMPLIFY=FALSE)
+#print(str(id.list))
+#print(factors)
+#print(m)
+#print(numeric)
+#print(head(data))
+#print(length(id.list))
+#print(length(seq.list))
+#return(list(seq.list,id.list))
 
   ##### LINIEN
 
@@ -202,11 +206,7 @@ if( "alpha" %in% names(col.opt) ){
     return(ret)  
   }, y = seq.list, z = id.list )
   
-  s.now <- Sys.time()
-  sv <- c(sv,s.now-s.old)
-  s.old <- s.now
-  sv.names <- c(sv.names,"lines")
-  
+
 
   ##################### SORTIERUNG  ##################### 
   
@@ -214,38 +214,38 @@ if( "alpha" %in% names(col.opt) ){
     lines <- lines.unsorted
     e1 <- environment()
     for(i in 2:m){
-      sapply(id.list[[i]], function(z){
-        e1$lines[z,i]  <- lines[z,i][rank(lines[z,i-1])] 
-        return(invisible(TRUE))
-      })
+    		# the left variable is a factor (included in lines)
+    		sapply(id.list[[i]], function(z){
+      			rr <- rank(lines[z,i-1])
+        		e1$lines[z,i]  <- lines[z,i][rr] 
+        		return(invisible(TRUE))
+      		})      
     }  
   } else if(sort.individual & doodle){ #Sortiert nach der jeweils linken Variable UND dem doodle
     lines <- lines.unsorted
     e1 <- environment()
     for(i in 2:m){
-      sapply(id.list[[i]], function(z){
-        tapply(z,e1$data[z,1],function(y){
-        e1$lines[y,i]  <- lines[y,i][rank(e1$lines[y,i-1])]
-        })
-      return(invisible(TRUE))
-      })     
+    	# the left variable is a factor (included in lines)
+    		sapply(id.list[[i]], function(z){
+        		tapply(z,e1$data[z,1],function(y){
+        			e1$lines[y,i]  <- lines[y,i][rank(e1$lines[y,i-1])]
+        		})
+        		return(invisible(TRUE))
+        	})
     }
   }  else {
     lines<-lines.unsorted
   }
     
-  s.now <- Sys.time()
-  sv <- c(sv,s.now-s.old)
-  s.old <- s.now
-  sv.names <- c(sv.names,"sort")
   
   ##################### PLOT-VORBEREITNG ###################### 
   
     
   # Abschneiden des ergaenzten Datensatzes auf den Usprungsdatensatz zur Darstellung
 
-  if(sel.hide){ # falls gehighlighted oder gefÃ¤rbt wird (und versteckt!)
-    doodle.v<-data[,1] # der sortierte Vektor soll weiterbenutzt werden
+  if(sel.hide){ 
+  	# the selection variable is removed after computations
+    selection<-data[,1]
     data<-data[2:m]
     lines<-lines[,2:m]
     lines.unsorted <- lines.unsorted[,2:m]
@@ -255,8 +255,10 @@ if( "alpha" %in% names(col.opt) ){
     labels.abbr <- labels.abbr[2:m]
     m <- ncol(data)
     nm <- nm[2:length(nm)]
+    
+    
   } else if(doodle){
-    doodle.v <- data[,1] # der sortierte Vektor soll weiterbenutzt werden 
+    selection <- data[,1] 
   } 
 
   
@@ -266,12 +268,6 @@ if( "alpha" %in% names(col.opt) ){
   ##### HILFSKOORDINATEN
 
   middles<- as.vector(rapply(seq.list, mean)) 
-  
-  s.now <- Sys.time()
-  sv <- c(sv,s.now-s.old)
-  s.old <- s.now
-  sv.names <- c(sv.names,"mid") 
-         
 if(plot){
 	
 	  # Anpassung der Raender fuer bessere Optik
@@ -284,30 +280,24 @@ if(plot){
   ##### Farbbestimmung 
   if(doodle){
   	if(is.null(sel.palette)){
-  		ndv <- length(levels(doodle.v))
+  		#ndv <- length(levels(selection))
   		if(ndv < 9){
   			sel.palette <- 1:ndv
   		}else{
   			sel.palette <- "rgb"
   		}
-		colour.alpha <- 0.7
 	}
   	
-  	
-    ##if(length(levels(doodle.v))==2){ # bei binärem Vektor wird von highlighting ausgegangen
-     ## doodle.colours <- alpha(1:2, colour.alpha)
-    ##} else{
-      doodle.colours <- getcolors(length(levels(doodle.v)), sel.palette ,col.opt = col.opt) 
-      doodle.colours <- alpha(doodle.colours, colour.alpha)
-   ## }
+      sel.colours <- getcolors(ndv, sel.palette ,col.opt = col.opt) 
+
   } else {
-    doodle.colours <- base.colour
+    sel.colours <- getcolors(1, base.colour ,col.opt = col.opt)
   }
   
   	if( "border" %in% names(col.opt) ){
-		rect.border <- rep(col.opt$border,length(doodle.colours))[1:length(doodle.colours)]
+		rect.border <- rep(col.opt$border,length(sel.colours))[1:length(sel.colours)]
 	}else{
-		rect.border  <- doodle.colours
+		rect.border  <- sel.colours
 	}
   
   
@@ -315,54 +305,52 @@ if(plot){
   
   if(!polygon){
     
-    lines.doubled <- lines[,rep(1:m,each=2)] # Achsen verdoppeln um Platz f?r Beschriftung zu schaffen
+    
+    
+    
+    	xcoords <- c(1,1+level.width)
+    	for (i in 2:m){
+      		xcoords <- c(xcoords, c(i,i+level.width))
+    	}
+    	lines.doubled <- lines[,rep(1:m,each=2)]     
     
     # Bestimmung der Koordinaten f?r die Achsen bei ?bergebener level.width
-    xcoords <- c(1,1+level.width)
-    for (i in 2:m){
-      xcoords <- c(xcoords, c(i,i+level.width))
-    }
+   
     
    ##  Zeichung aller Linien gruppiert (und eingef?rbt) nach highlighting oder colouring
-  #  plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=F, xlab=NA, ylab=NA, type="l")     
-   # for(j in 1:length(levels(doodle.v))){
-   #   apply(lines.doubled[which(doodle.v==levels(doodle.v)[j]),],1,function(z) lines(xcoords,z, col=doodle.colours[j]))
-   # }
- 
- 
-         plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first ={
-         	for(j in 1:length(levels(doodle.v))){
-      			apply(lines.doubled[which(doodle.v==levels(doodle.v)[j]),],1,function(z){
-      				lines(xcoords,z,col=doodle.colours[j])
-      			}) 
-    		}
+   plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first ={
+         	for(j in 1:ndv){# ndv = length(levels(selection))
+         		if(ndv > 1){ # length(levels(selection))
+         			apply(lines.doubled[which(selection==levels(selection)[j]),],1,function(z){
+      					lines(xcoords,z,col=sel.colours[j])
+      				})
+         		}else{
+         			apply(lines.doubled,1,function(z){
+      					lines(xcoords,z,col=sel.colours)
+      				})
+         		}
+      		}
          } , type="l") 
-        # plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first ={
-        # 	by(cbind(doodle.colours[as.integer(doodle.v)],lines.doubled),doodle.v,function(y){
-        # 		apply(y,1,function(z){
-      	#			lines(xcoords,z[-1],col=alpha(z[1],min(0.7,700/nrow(data))))
-      	#		}) 
-        # 	})
-        # } , type="l") 
-       
   } else {
     
     ##################### POLYGON-PLOT ######################
     
     if(polygon){     
       
+      
+          
       ##### POLYGONE
       
       # immer gleicher Aufbau:
       # Ausgangspunkt finden
       # Matrix mit allen Eckpunkten der Polygone erstellen
       # per apply fÃ¼r jedes Eckpunkte-Quadrupel ein Polygon zeichnen
-      
-      as.pol<- function(color = 1){
+    
+     as.pol<- function(color = 1){
         cc<-as.factor(paste(data[,1])) # Polygone fÃ¼r die erste Achse
         M2 <- cbind(tapply(lines[,1],cc,min),tapply(lines[,1],cc,max),tapply(lines[,1],cc,max),tapply(lines[,1],cc,min)) 
         apply(M2,1,function(z){
-          polygon(x= c(1,1,1+level.width,1+level.width), y = z, col = doodle.colours,border=rect.border) 
+          polygon(x= c(1,1,1+level.width,1+level.width), y = z, col = sel.colours,border=rect.border) 
           return(invisible(TRUE))
         })
 
@@ -375,13 +363,13 @@ if(plot){
           		tapply(lines[,i],cc,min))
           		
           apply(M,1,function(z){
-            polygon(x= c(i-1+level.width,i-1+level.width,i,i), y = z, col = doodle.colours,border=rect.border)  
+            polygon(x= c(i-1+level.width,i-1+level.width,i,i), y = z, col = sel.colours,border=rect.border)  
             return(invisible(TRUE))
           })
           
           M1<-M[,c(3,4,4,3), drop = FALSE] # Polygone fÃ¼r alle weiteren Achsen
           apply(M1,1,function(z){
-            polygon(x= c(i,i,i+level.width,i+level.width), y = z, col = doodle.colours ,border=rect.border)
+            polygon(x= c(i,i,i+level.width,i+level.width), y = z, col = sel.colours ,border=rect.border)
             return(invisible(TRUE))
           })
         }       
@@ -397,31 +385,31 @@ if(plot){
         
         # fÃ¼r jedes Level des zu betrachtenden Vektors extra
         
-        for(j in 1:length(levels(doodle.v))){
-          cc<-as.factor(paste(data[which(doodle.v==levels(doodle.v)[j]),1]))
-          M2 <- cbind(tapply(lines[which(doodle.v==levels(doodle.v)[j]),1],cc,min),
-          tapply(lines[which(doodle.v==levels(doodle.v)[j]),1],cc,max),
-          tapply(lines[which(doodle.v==levels(doodle.v)[j]),1],cc,max),
-          tapply(lines[which(doodle.v==levels(doodle.v)[j]),1],cc,min))
+        for(j in 1:ndv){
+          cc<-as.factor(paste(data[which(selection==levels(selection)[j]),1]))
+          M2 <- cbind(tapply(lines[which(selection==levels(selection)[j]),1],cc,min),
+          tapply(lines[which(selection==levels(selection)[j]),1],cc,max),
+          tapply(lines[which(selection==levels(selection)[j]),1],cc,max),
+          tapply(lines[which(selection==levels(selection)[j]),1],cc,min))
           apply(M2,1,function(z){
-            polygon(x= c(1,1,1+level.width,1+level.width), y = z, col = doodle.colours[j],border=rect.border[j])
+            polygon(x= c(1,1,1+level.width,1+level.width), y = z, col = sel.colours[j],border=rect.border[j])
             return(invisible(TRUE))
           })
           for(i in 2:m){
-            cc<-as.factor(paste(cc,data[which(doodle.v==levels(doodle.v)[j]),i]))
-            M <- cbind(tapply(lines[which(doodle.v==levels(doodle.v)[j]),i-1],cc,min),
-            tapply(lines[which(doodle.v==levels(doodle.v)[j]),i-1],cc,max),
-            tapply(lines[which(doodle.v==levels(doodle.v)[j]),i],cc,max),
-            tapply(lines[which(doodle.v==levels(doodle.v)[j]),i],cc,min))
+            cc<-as.factor(paste(cc,data[which(selection==levels(selection)[j]),i]))
+            M <- cbind(tapply(lines[which(selection==levels(selection)[j]),i-1],cc,min),
+            tapply(lines[which(selection==levels(selection)[j]),i-1],cc,max),
+            tapply(lines[which(selection==levels(selection)[j]),i],cc,max),
+            tapply(lines[which(selection==levels(selection)[j]),i],cc,min))
             
             apply(M,1,function(z){
-              polygon(x= c(i-1+level.width,i-1+level.width,i,i), y = z, col = doodle.colours[j],border=rect.border[j])  
+              polygon(x= c(i-1+level.width,i-1+level.width,i,i), y = z, col = sel.colours[j],border=rect.border[j])  
               return(invisible(TRUE))
             })
             
             M1<-M[,c(3,4,4,3), drop = FALSE]
             apply(M1,1,function(z){
-              polygon(x= c(i,i,i+level.width,i+level.width), y = z, col = doodle.colours[j],border=rect.border[j])
+              polygon(x= c(i,i,i+level.width,i+level.width), y = z, col = sel.colours[j],border=rect.border[j])
               return(invisible(TRUE))
             })
           }
@@ -439,12 +427,6 @@ if(plot){
     }
   }  
   
-  s.now <- Sys.time()
-  sv <- c(sv,s.now-s.old)
-  s.old <- s.now
-  sv.names <- c(sv.names,"plot")
-  
-
   ##################### LEVELS & LABELS ##################### 
   
   middlesX <- list()
@@ -457,43 +439,29 @@ if(plot){
   } else {
     ll <- labels
   }
-
-  #xx <- as.list( 0.5*level.width + seq_along(middlesX))
- # mapply(function(x,y,z){
- #     if(text.background){
- #       shadowtext(rep(x,length(y)), y, z, col="gray90", font=1, bg=text.colour, srt=text.rotation)
- #     } else {
- #       text(x, y, z, col=1, font=2, srt = text.rotation)
- #       text(x, y, z, col="gray90", font=1, srt = text.rotation)
- #     } 
- #     return(invisible(TRUE)) 
- #   }, x = xx, y = middlesX, z = l, SIMPLIFY=F)  
+ 
 xx <- 0.5*level.width + seq_along(middlesX)
+
+
 xx <- rep(xx,sapply(middlesX,length))
 yy <- unlist(middlesX)
 zz <- unlist(ll)
- 
+
 
    if(text.background){
-        bgtext(xx, yy, zz, col="gray90", font=1, bg=text.colour, srt=text.rotation)
+        bgtext(xx, yy, zz, col="gray90", font=1, bg=text.colour, srt=text.rotation, cex = lab.cex)
      } else {
-        text(xx, yy, zz, col=1, font=2, srt = text.rotation)
-        text(xx, yy, zz, col="gray90", font=1, srt = text.rotation)
+        text(xx, yy, zz, col=1, font=2, srt = text.rotation, cex = lab.cex)
+        text(xx, yy, zz, col="gray90", font=1, srt = text.rotation, cex = lab.cex)
      } 
     
-    s.now <- Sys.time()
-    sv <- c(sv,s.now-s.old)
-    s.old <- s.now
-    sv.names <- c(sv.names,"writelvl")
-
-  
   ##### PLOT-UNTERSCHRIFTEN
+  
+
   if(abbr.var != FALSE){
   	nm <- sapply(nm, abbreviate, minlength=as.integer(abbr.var))
   }
-  
-  
-  mtext(nm, side=1, line=0, at=(1:m)+0.5*level.width, font=2, las = las) # Variablennamen unter die jeweiligen Achsen
+  mtext(nm, side=1, line=0, at=(1:m)+0.5*level.width, font=2, las = las, cex = cex.axis) # Variablennamen unter die jeweiligen Achsen
   if(is.character(sel) & !hide.sel){ # falls vorhanden, Beschreibung des Highlightings
     mtext(paste("Highlight:",sel), side=1, line=1, at=((m+1+level.width)/2), font=1, cex=0.8, col= "red")  
   }  
@@ -509,15 +477,6 @@ zz <- unlist(ll)
   }else{
   	return(invisible(TRUE))
   }
-  
-
-  ##################### LAUFZEITEN ##################### 
-  
-  sv<-c(sv,sum(sv))
-  sv.names<- c(sv.names,"sum")
-  names(sv) <- sv.names
-  print(round(sv,3))
-
 }
 
 bgtext <- function(x, y, labels, col='white', bg='black',

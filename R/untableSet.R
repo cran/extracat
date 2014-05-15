@@ -1,9 +1,14 @@
 untableSet2 <-
-function(data, freqvar = NULL){
+function(data, freqvar = "Freq"){
 	
 	data = as.data.frame(data)
-	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar = "Freq" }
-	stopifnot(freqvar %in% names(data))
+	
+	#if("Freq" %in% names(data) & is.null(freqvar)){ freqvar = "Freq" }
+	if(!(freqvar %in% names(data)) ){
+		simpleWarning("Frequency/weight variable not found.")
+		return(data)
+	}
+	
 	data <- data[data[freqvar]>0,]
 	ind = which(names(data) != freqvar)
 	fi = which(names(data) == freqvar)
@@ -22,22 +27,31 @@ function(data, freqvar = NULL){
 	X = rbind(X,as.matrix(data[c(1:m)[-c(zero,zind)],ind]))
 	return(suppressWarnings(data.frame(X)))
 }
-untableSet <- function(data, freqvar = NULL){
+untableSet <- function(data, freqvar = "Freq"){
 	data <- as.data.frame(data)
-	if("Freq" %in% names(data) & is.null(freqvar)){ freqvar <- "Freq" }
 	
-	stopifnot(freqvar %in% names(data))
-	ind = which(names(data) != freqvar)
-	fi = which(names(data) == freqvar)
+	#if("Freq" %in% names(data) & is.null(freqvar)){ freqvar <- "Freq" }
+	#stopifnot(freqvar %in% names(data))
+	
+	if(!(freqvar %in% names(data)) ){
+		simpleWarning("Frequency/weight variable not found.")
+		return(data)
+	}
+	
+	ind <- which(names(data) != freqvar)
+	fi <- which(names(data) == freqvar)
 	names(data)[fi] <- "Freq"
 	
 		data <- data[which(data[,fi] > 0),]
+		if(!any(data[,fi] > 1)){
+			return(data[,-fi])
+		}
 	n <- ncol(data)
 	m <- nrow(data)
 	lvls <- lapply(data[,-fi],function(z) levels(as.factor(z)))
 	
 	lol <- apply(data,1,function(z){
-		 matrix(rep(z[-fi],z[fi]),nrow = as.integer(z[fi]),byrow=T)	
+		 matrix(rep(z[-fi],z[fi]),nrow = as.integer(z[fi]),byrow=TRUE)	
 	})
 	X <- as.data.frame(do.call(rbind,lol))
 	names(X) <- names(data)[-fi]
