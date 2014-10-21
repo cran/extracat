@@ -8,7 +8,7 @@ stepwise reordering
 Starts with the first \code{k+1} variables and applies \link[extracat]{optile} to the corresponding subtable. Then one additional variable at a time is reordered using the subtable defined by this variable and the last \code{k} variables. Only the current variable is reordered and the others are fixed since they have been reordered in the previous steps.
 }
 \usage{
-steptile(x, k = 1, cpcp = FALSE, fun = "BCC", foreign = NULL, iter = 20)
+steptile(x, k = 1, cpcp = FALSE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -21,14 +21,8 @@ The number of preceding variables used for the reordering. E.g. if \code{k = 3} 
 \item{cpcp}{
 If \code{TRUE} a special version of the algorithm which minimizes crossings in CPCP plots (e.g. \link[extracat]{scpcp} ) is used. This modification works with aggregations of the last \code{k} variables and is much faster than the standard procedure if \code{k > 1}.
 }
-  \item{fun}{
-The reordering function using within \link[extracat]{optile}.
-}
-  \item{foreign}{
-See \link[extracat]{optile}.
-}
-  \item{iter}{
-See \link[extracat]{optile}.
+\item{\dots}{
+Arguments passed to \link[extracat]{optile}.
 }
 }
 \details{

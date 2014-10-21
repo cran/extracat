@@ -693,13 +693,13 @@ casort <- function(data, dims, perm.cat, ...){
 	if(! "ca" %in% .packages(all.available = TRUE) ){
 		install.packages("ca")	
 	}
-	require(ca)
-	
-	nd <- length(dims)
+	#require(ca)
+	if (requireNamespace("ca", quietly = TRUE)) {
+		nd <- length(dims)
 
 		# simple ca for 2 dimensions
 		# multiple ca (on burt matrix) for 3 or more dimensions
-		ca1 <- ca(data)
+		ca1 <- ca::ca(data)
 		
 		cd2 <- cumsum(dims)
 		cd1 <- c(1,cd2[-nd]+1)
@@ -712,6 +712,9 @@ casort <- function(data, dims, perm.cat, ...){
 	
 		
 	return(c( unlist(orders),crit ))
+	}else{
+		stop("Please install package 'ca' to use this reordering function.")
+	}
 }
 
 
@@ -1079,18 +1082,13 @@ treeclass <- function( data, dims, perm.cat, vs, treelist = "hc", hcargs = list(
 							(s/sum(s))
 							}), ncol= dims[i])
 						
-						if( "amap" %in% .packages(all.available = TRUE) ){
-							require(amap)
-							stree <- hcluster(t(M), method = dist.mth, link = mth)
-						}else{
-							DM <- dist(t(M))
-#if( "flashClust" %in% .packages(all.available = TRUE) ){
-#require(flashClust)
-#	stree <- flashClust(DM, method = mth)
-#}else{
-								stree <- hclust(DM, method = mth)
-#}
-						}
+						
+							if (requireNamespace("amap", quietly = TRUE)) {
+								stree <- amap::hcluster(t(M), method = dist.mth, link = mth)
+							}else{
+									DM <- dist(t(M))
+									stree <- hclust(DM, method = mth)
+							}
 						treevec <- c(treevec,untree(stree$merge,stree$order))
 						orders[[i]] <- stree$order
 						treelist[[i]] <- stree

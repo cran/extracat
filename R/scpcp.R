@@ -1,13 +1,13 @@
 
 
 
-scpcp<-function(data, freqvar = "Freq",
+scpcp<-function(data, freqvar = "Freq", max.N = 1e6,
                 gap = 0.2,
                 sort.individual=TRUE,
                 level.width=0.2,
                 polygon = TRUE,
                 base.colour = alpha("black",0.7), # Farbe für Polygone oder Linien falls kein doodle
-                lab.opt = list(rot = 0, col = 1, bg = TRUE, abbr = FALSE, abbr.var = 12, hide.sel = TRUE),
+                label = TRUE, lab.opt = list(rot = 0, col = 1, bg = TRUE, abbr = FALSE, abbr.var = 12, hide.sel = TRUE, var.labels = TRUE),
                 sel =  NULL, 
                 sel.hide = TRUE,
                 sel.palette = NULL,
@@ -15,18 +15,25 @@ scpcp<-function(data, freqvar = "Freq",
                 plot = TRUE,
 	            return.coords = !plot)
 {
- if(inherits(data,"table")){
- 	# convert to data.frame
- 	numeric <- NULL
- 	data <- subtable(data,1:length(dim(data)),allfactor=TRUE)
-    data <- untableSet(data)
- }
 
-   ##################### FORMATIERUNG  #####################
+data <- as.data.frame(data)
+
+ #if(inherits(data,"table")){
+ 	# convert to data.frame
+ #	data <- subtable(data,1:length(dim(data)),allfactor=TRUE)
+  #  freqvar <-  'Freq'
+ #}
+
+
+
+   ##################### FORMAT #####################
 
   # Expansion, if freqvar specified
   if(!is.null(freqvar)){
   	if(freqvar %in% names(data)){
+  		if( (N <- sum(data[freqvar])) > max.N){
+  			data[freqvar] <- round(data[freqvar]/N*max.N, 0) 
+  		}
   		data <- untableSet(data, freqvar = freqvar)
   	}
   }
@@ -42,7 +49,11 @@ for(i in 1:ncol(data)){
   
   
 ################# PARAM INITIALIZATIONS #####################
-
+if( "var.labels" %in% names(lab.opt) ){
+	var.labels <- lab.opt$var.labels
+}else{
+	var.labels <- TRUE
+}
 
 if( "rot" %in% names(lab.opt) ){
 	text.rotation <- lab.opt$rot
@@ -94,7 +105,11 @@ if( "col" %in% names(lab.opt) ){
 }
 
 if( !("alpha" %in% names(col.opt)) ){
-	col.opt$alpha <- min(0.7,1000/nrow(data))
+	if(polygon){
+		col.opt$alpha <- min(0.7,log(1000)/(log(1000)+log(nrow(data)/10)))
+	}else{
+		col.opt$alpha <- min(0.7,1000/nrow(data))
+	}
 }
 
   
@@ -158,14 +173,14 @@ if( !("alpha" %in% names(col.opt)) ){
 
 
 
-  ##################### BERECHNUNGEN  #####################
+  ##################### COMPUTATIONS  #####################
   
-  # get the sequences ...
+  # point sequences
   
   sequences <- lapply(data, table)
   
 
-  ##### LINIEN KOORDINATEN
+  ##### line coordinates
 
   seq.list <- lapply(sequences, function(z){ # Berechnung aller Koordinaten f?r alle Linien (nicht nicht zusammenh?ngend)
     p <- c(0,cumsum(z/N))*(1-gap) # Proportionen der Kategorien in nicht-gap-Bereich
@@ -180,23 +195,16 @@ if( !("alpha" %in% names(col.opt)) ){
   })
   
 
-  ##### LINIEN IDs
+  ##### polyline ids
 
   id.list <- mapply( function(y, z){ # Durchnummerierung
     lapply(y, function(w){
       which(z == w)
     })
   },y = labels, z = data, SIMPLIFY=FALSE)
-#print(str(id.list))
-#print(factors)
-#print(m)
-#print(numeric)
-#print(head(data))
-#print(length(id.list))
-#print(length(seq.list))
-#return(list(seq.list,id.list))
 
-  ##### LINIEN
+
+  ##### line coordinates
 
   lines.unsorted <- mapply(function(y,z){ # Kombinieren von seq.list und id.list um komplette Linien zu erzeugen
     ret <- rep(0,N) 
@@ -208,7 +216,7 @@ if( !("alpha" %in% names(col.opt)) ){
   
 
 
-  ##################### SORTIERUNG  ##################### 
+  ##################### additional recursive sort  ##################### 
   
   if(sort.individual & !doodle){  # Sortiert jede Sequenz nach den R?ngen der jeweils linken Variable
     lines <- lines.unsorted
@@ -238,10 +246,10 @@ if( !("alpha" %in% names(col.opt)) ){
   }
     
   
-  ##################### PLOT-VORBEREITNG ###################### 
+  ##################### PREPARATIONS ###################### 
   
     
-  # Abschneiden des ergaenzten Datensatzes auf den Usprungsdatensatz zur Darstellung
+  # separate selection variable
 
   if(sel.hide){ 
   	# the selection variable is removed after computations
@@ -265,19 +273,19 @@ if( !("alpha" %in% names(col.opt)) ){
 
     
 
-  ##### HILFSKOORDINATEN
+  ##### additional coordinates
 
   middles<- as.vector(rapply(seq.list, mean)) 
 if(plot){
 	
-	  # Anpassung der Raender fuer bessere Optik
+	  # set margins
   if(is.character(sel)){
-    par(mar=c(3,0,0,0)) # um nicht zu groÃŸe Margins zu bekommen, mit Platz fÃ¼r Vektor-Beschreibung
+    par(mar=c(3,0,0,0)) 
   } else {
-    par(mar=c(2,0,0,0)) # nicht zu groÃŸe Margins 
+    par(mar=c(2,0,0,0)) 
   }  
   
-  ##### Farbbestimmung 
+  ##### color palette
   if(doodle){
   	if(is.null(sel.palette)){
   		#ndv <- length(levels(selection))
@@ -304,21 +312,17 @@ if(plot){
   ##################### LINE-PLOT ###################### 
   
   if(!polygon){
-    
-    
-    
-    
     	xcoords <- c(1,1+level.width)
     	for (i in 2:m){
       		xcoords <- c(xcoords, c(i,i+level.width))
     	}
     	lines.doubled <- lines[,rep(1:m,each=2)]     
     
-    # Bestimmung der Koordinaten f?r die Achsen bei ?bergebener level.width
+   # coordinate computation given level.width
    
     
-   ##  Zeichung aller Linien gruppiert (und eingef?rbt) nach highlighting oder colouring
-   plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first ={
+   ## draw colored lines hrouped by highlighting
+      plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first ={
          	for(j in 1:ndv){# ndv = length(levels(selection))
          		if(ndv > 1){ # length(levels(selection))
          			apply(lines.doubled[which(selection==levels(selection)[j]),],1,function(z){
@@ -339,12 +343,7 @@ if(plot){
       
       
           
-      ##### POLYGONE
-      
-      # immer gleicher Aufbau:
-      # Ausgangspunkt finden
-      # Matrix mit allen Eckpunkten der Polygone erstellen
-      # per apply fÃ¼r jedes Eckpunkte-Quadrupel ein Polygon zeichnen
+      ##### POLYGONS
     
      as.pol<- function(color = 1){
         cc<-as.factor(paste(data[,1])) # Polygone fÃ¼r die erste Achse
@@ -378,13 +377,7 @@ if(plot){
       doodling <- function(){
         
         ##### POLYGONE        
-        # immer gleicher Aufbau:
-        # Ausgangspunkt finden
-        # Matrix mit allen Eckpunkten der Polygone erstellen
-        # per apply fÃ¼r jedes Eckpunkte-Quadrupel ein Polygon zeichnen
-        
-        # fÃ¼r jedes Level des zu betrachtenden Vektors extra
-        
+
         for(j in 1:ndv){
           cc<-as.factor(paste(data[which(selection==levels(selection)[j]),1]))
           M2 <- cbind(tapply(lines[which(selection==levels(selection)[j]),1],cc,min),
@@ -417,18 +410,18 @@ if(plot){
       }
       
       
-      ##### Eigentiches Zeichnen des Plots
+##### draw
       
       if(!doodle){
-        plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=F, xlab=NA, ylab=NA,panel.first = as.pol(), type="l")
+        plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first = as.pol(), type="l")
       } else {
-        plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=F, xlab=NA, ylab=NA,panel.first = doodling(), type="l")
+        plot(1, xlim=c(1,m+level.width),ylim=c(0,1), axes=FALSE, xlab=NA, ylab=NA,panel.first = doodling(), type="l")
       }
     }
   }  
   
   ##################### LEVELS & LABELS ##################### 
-  
+if(label){
   middlesX <- list()
   for(i in 1:ncol(lines.unsorted)){
     middlesX[[i]] <-  tapply(lines.unsorted[,i],data[,i],mean)
@@ -454,10 +447,10 @@ zz <- unlist(ll)
         text(xx, yy, zz, col=1, font=2, srt = text.rotation, cex = lab.cex)
         text(xx, yy, zz, col="gray90", font=1, srt = text.rotation, cex = lab.cex)
      } 
-    
+}   
   ##### PLOT-UNTERSCHRIFTEN
   
-
+if(var.labels){
   if(abbr.var != FALSE){
   	nm <- sapply(nm, abbreviate, minlength=as.integer(abbr.var))
   }
@@ -465,7 +458,7 @@ zz <- unlist(ll)
   if(is.character(sel) & !hide.sel){ # falls vorhanden, Beschreibung des Highlightings
     mtext(paste("Highlight:",sel), side=1, line=1, at=((m+1+level.width)/2), font=1, cex=0.8, col= "red")  
   }  
-
+}
 }#end if plot
 
   ##################### RETURN #####################  

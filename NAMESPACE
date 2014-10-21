@@ -1,12 +1,13 @@
 useDynLib(extracat, .registration = TRUE)
 
-export(tfluctile, rmb, cpcp,subtable, spread, untableSet, dendro,  resort, listen, optile, fluctile, cfluctile, subtree, tfluctile, arsim, rmbmat, 
+export(tfluctile, rmb, subtable, untableSet, dendro,   optile, fluctile, cfluctile, subtree, tfluctile, arsim, rmbmat, 
 innerval, quickfechner, hexpie, regmax, regmin, boxplot2g, wdcor,approx.dcor, kendalls, imat, idat, Burt, barysort,BCC,BCI,WBCI, cmat, qBCI, combcl,cfcl, cohen, ME, optME,
  sortandcut, heattile, getIs, getIs2, getcolors,getpath, scpcp, steptile,dcorMVtable,dcorMVdata, getbw, cutbw, ahist,JBCI,CBCI,itab, facetshade, visid, visna, visdf, gsac, setcover)
 import(plyr, reshape2, grid, colorspace, ggplot2, TSP, hexbin, scales)
 
-#fluctile3d
 
+
+#S3method("*",gg)
 S3method(rmb,formula)
 S3method(rmb,table)
 S3method(rmb,ftable)
@@ -19,10 +20,6 @@ S3method(wdcor,data.frame)
 S3method(qBCI,default)
 S3method(qBCI,data.frame)
 S3method(qBCI,data.matrix)
-
-S3method(cpcp,default)
-S3method(cpcp,table)
-S3method(cpcp,array)
 
 S3method(optile,list)
 S3method(optile,matrix)

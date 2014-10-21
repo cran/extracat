@@ -2,8 +2,12 @@ caclust <- function(x, data = NULL, k = 3, d = NULL, link = c("complete","averag
 	if(!inherits(x, "ca")){
 		stopifnot(length(dim(x)) == 2)
 		data <- as.data.frame(as.table(x))
-		require(ca)
-		x <- ca(x)
+		#require(ca)
+		if (requireNamespace("ca", quietly = TRUE)) {
+			x <- ca::ca(x)
+		}else{
+			stop("Please install package 'ca' to use this reordering function.")
+		}
 	}
 	link <- match.arg(link)
 	nr <- nrow(x$rowcoord)

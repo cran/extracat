@@ -190,7 +190,7 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 	}
 	if(fr > 1){
 		fr <- round(fr,0)
-		keep <- which(rank(w,ties.method="random") > n-fr)
+		keep <- which(rank(w,ties.method="first") > n-fr)
 		xs <- xs[keep,,drop=FALSE]
 		w <- w[keep,,drop=FALSE]
 	}
@@ -200,7 +200,7 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 	}
 	if(fc > 1){
 		fc <- round(fc,0)
-		keep <- which(rank(w2,ties.method="random") > m-fc)
+		keep <- which(rank(w2,ties.method="first") > m-fc)
 		xs <- xs[,keep,drop=FALSE]
 		w2 <- w2[,keep,drop=FALSE]
 	}
@@ -208,14 +208,6 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 	if( is.null(gap.prop)){
 		gap.prop <- c(0.1,0)[1 + (dim(xs) > 40)]
 	}
-
-	#if( any(dim(xs) > 50) & is.null(gap.prop) ){
-	#	gap.prop <- 0
-	#}
-	#if( is.null(gap.prop) ){
-	#	gap.prop <- 0.1 #log(max(dim(xs)))/log(2)/32
-	#}
-
 
 if(sort.method == "ME"){
 		dims <- NULL
@@ -273,6 +265,7 @@ if(!is.null(var.col)){
 }else{
 	colv <- c("lightgrey",getcolors(nc-1,col))
 	tile.col <- colv[xs+1]
+	dim(tile.col) <- dim(xs)
 }
 	
 	

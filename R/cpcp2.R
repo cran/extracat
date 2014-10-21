@@ -28,21 +28,13 @@ spread=0.3,gap.space = 0.2
 plot = TRUE, return.df = !plot, ... ){
 	ieXt = FALSE
 	scr.res=c(1280,1024)
-	
+
 			
 	#if(plot & !( "iplots" %in% .packages(all.available = TRUE) ) ){
         #	cat("Installing required package 'iplots'...")
         #	install.packages('iplots')   
         #	}
 	if(plot){ 
-        if("Acinonyx" %in% .packages(all.available = TRUE)){
-			if(!("JGR" %in% .packages(all.available=FALSE))){
-				#require(Acinonyx)
-				simpleWarning("Cannot run iplots without JGR. Please use the JGR console")
-			}else{
-				require("iplots")
-			}
-        }else{
 		if(  .Platform$OS.type == "unix" ){
 			if(!("JGR" %in% .packages(all.available=FALSE))){
 				cat("Please use the 'JGR' GUI for iplots. To download the application visit\n 'http://www.rosuda.org/software/'")
@@ -53,9 +45,12 @@ plot = TRUE, return.df = !plot, ... ){
                 cat("Installing required package 'iplots'...")
                 install.packages('iplots')   
             }
-            require(iplots)
-        }
-	}
+            #require(iplots)
+            if (!requireNamespace("iplots", quietly = TRUE)) {
+					stop("Please install package iplots to use this function.")	
+			}
+
+    }
 	
 	
 	V = data.frame(x)
@@ -249,23 +244,20 @@ plot = TRUE, return.df = !plot, ... ){
 			
 			
 			
-			vn = names(V)[1:n]
-			cpcp=data.frame(V,V2,V3,V4)
+			vn <-  names(V)[1:n]
+			cpcp <- data.frame(V,V2,V3,V4)
 
 			names(cpcp)=c(names(V),paste("C",vn,sep="."),paste("S",vn,sep="."),paste("I",vn,sep="."))	
 		if(plot){
-			if(!"package:Acinonyx" %in% search()){
-				s = iset.new("icpcp",cpcp)
-			}else{
-				s = cpcp
-			}
-			ipcp(s[,(1:n) + ncol(V) ])
+		if (requireNamespace("iplots", quietly = TRUE)) {
+			s <-  iplots::iset.new("icpcp",cpcp)
+			iplots::ipcp(s[,(1:n) + ncol(V) ])
 			if(!"package:Acinonyx" %in% search()){
 			# setting the size and location as the upper half of the screen
-			iplot.location(x=10, y=10, relative=FALSE, plot=iplot.cur())
-			iplot.size(width=(scr.res[1])*(n-1)/n, height=scr.res[2]/2.2, plot=iplot.cur())
+			iplots::iplot.location(x=10, y=10, relative=FALSE, plot=iplots::iplot.cur())
+			iplots::iplot.size(width=(scr.res[1])*(n-1)/n, height=scr.res[2]/2.2, plot=iplots::iplot.cur())
 			}
-			
+		}
 		}
 		#itext <- function(x, y=NULL, labels=seq(along=x), ax=NULL, ay=NULL, ..., plot=iplot.cur())
 			

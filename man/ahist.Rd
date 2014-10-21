@@ -62,7 +62,7 @@ ahist(rexp(1000))
 ahist(rexp(10000))
 
 
-
+\dontrun{
 ahist(rcauchy(1000))
 ahist(rcauchy(1000), ival = 0.95)
 
@@ -75,5 +75,6 @@ ahist(x)
 
 x <- c(rnorm(400),rnorm(200, mean=32))
 ahist(x)
+}
 }
 

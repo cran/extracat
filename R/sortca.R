@@ -4,12 +4,12 @@ tspsort = function(x, dims, perm.cat, vs = 1, comp = 2, iter = Inf, tsp.method =
 	if(! "ca" %in% .packages(all.available = TRUE) ){
 		install.packages("ca")	
 	}
-	require(ca)
-	
+	#require(ca)
+	if (requireNamespace("ca", quietly = TRUE)) {
 	dx <- as.data.frame(as.table(x))
 	dx2 <- dx
 	B <- Burt(dx)
-	c1 <- ca(B)
+	c1 <- ca::ca(B)
 	nlvl <- dim(x)
 	
 	stopifnot(any(perm.cat))
@@ -127,4 +127,7 @@ attr(x,"criterion") <- BCI(x)
 
 	#return(x)
 	return(c( unlist(attr(x,"orders"))-1,attr(x,"criterion")))
+	}else{
+		stop("Please install package 'ca' to use this function.")
+	}
 }

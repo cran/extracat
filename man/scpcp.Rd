@@ -9,14 +9,15 @@ This function creates a static CPCP plot using base R graphics.
 The function offers color brush / highlighting and several options for the labels and colors.
 Efficiency is improved by replacing sets of parallel lines by polygons.
 \cr\cr
-A grid-based version is under construction. For an interactive version without labeling see \link[extracat]{cpcp}.\cr\cr
+A ggplot version is under construction. A deprecated interactive version based on \code{iplots} (without labeling) is still available as \code{extracat:::cpcp}.\cr\cr
 For reordering of category orders in CPCP plots see \link[extracat]{steptile}.
 }
 \usage{
-scpcp(data, freqvar = "Freq", gap = 0.2, sort.individual = TRUE, level.width = 0.2,
- polygon = TRUE, base.colour = alpha("black", 0.7), 
+scpcp(data, freqvar = "Freq", max.N = 1e6, gap = 0.2,
+ sort.individual = TRUE, level.width = 0.2,
+ polygon = TRUE, base.colour = alpha("black", 0.7), label = TRUE,
  lab.opt = list(rot = 0, col = 1, bg = TRUE, abbr = FALSE,
-  abbr.var=12,hide.sel=TRUE), 
+  abbr.var=12,hide.sel=TRUE, var.labels = TRUE), 
  sel = NULL, sel.hide = TRUE, sel.palette = NULL,
  col.opt = list(), plot = TRUE, return.coords = !plot)
 }
@@ -27,6 +28,10 @@ The \code{data.frame} which can contain a variable called \code{"Freq"}.
 }
   \item{freqvar}{
 Optional specification of a frequency variable.
+}
+  \item{max.N}{
+The plot handles each case as a separate polyline, similar to conventional pcps.
+This option limits the number of observations.
 }
   \item{gap}{
 The size of the gaps between the categories as a total proportion.
@@ -42,6 +47,9 @@ Whether or not to replace parallel lines by polygons. This improves both efficie
 }
   \item{base.colour}{
 The standard color used for the cases which are not highlighted via \code{sel}.
+}
+  \item{label}{
+Whether or not to draw category labels.
 }
   \item{lab.opt}{
 A list with options for the labels. See e.g. \link[extracat]{rmb}
@@ -90,7 +98,7 @@ In polygon mode single cases are still shown as a line rather than a ribbon of w
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\link[extracat]{cpcp}, \link[extracat]{steptile}
+ \link[extracat]{steptile}
 }
 \examples{
 

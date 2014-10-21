@@ -1,4 +1,4 @@
-steptileOLD <- function(x,k = 1,fun ="BCC", foreign=NULL, iter = 20){
+steptileOLD <- function(x,k = 1, ... ){
 	#as.data.frame(as.table(x))
 	
 	if(!inherits(x,"data.frame")){
@@ -15,7 +15,7 @@ steptileOLD <- function(x,k = 1,fun ="BCC", foreign=NULL, iter = 20){
 
 
 	
-	ords <- optile(data[,c(1:(1+k),m+1)], fun = fun, foreign = foreign, return.data = FALSE, iter = iter)[[3]]
+	ords <- optile(data[,c(1:(1+k),m+1)], return.data = FALSE, ... )[[3]]
 	for(i in 1:(k+1)){
 		data[,i] <- factor(data[,i],levels = levels(data[,i])[ords[[i]]])
 	}
@@ -25,7 +25,7 @@ steptileOLD <- function(x,k = 1,fun ="BCC", foreign=NULL, iter = 20){
 	while(s < m+1){
 		kk <- min(s-1,k)
 		ids <- (s-kk):s
-		ord <- optile(data[,c(ids,m+1)], perm.cat = c(rep(FALSE,kk),TRUE),return.data = FALSE,  fun = fun, foreign = foreign, iter = iter)[[3]][[kk+1]]
+		ord <- optile(data[,c(ids,m+1)], perm.cat = c(rep(FALSE,kk),TRUE),return.data = FALSE, ...)[[3]][[kk+1]]
 		ords[[s]] <- ord
 		data[,s] <- factor(data[,s],levels = levels(data[,s])[ord])
 		s <- s+1
@@ -44,10 +44,10 @@ steptileOLD <- function(x,k = 1,fun ="BCC", foreign=NULL, iter = 20){
 
 
 
-steptile <- function(x,k = 1, cpcp = FALSE, fun ="BCC", foreign=NULL, iter = 20){
+steptile <- function(x,k = 1, cpcp = FALSE, ... ){
 	#as.data.frame(as.table(x))
 	if(!cpcp){
-		return( steptileOLD(x,k,fun,foreign,iter) )
+		return( steptileOLD(x,k, ... ) )
 	}
 	
 	if(!inherits(x,"data.frame")){
@@ -68,7 +68,7 @@ steptile <- function(x,k = 1, cpcp = FALSE, fun ="BCC", foreign=NULL, iter = 20)
 	#for(i in 1:(k+1)){
 	#	data[,i] <- factor(data[,i],levels = levels(data[,i])[ords[[i]]])
 	#}
-	ords <- optile(data[,c(1:2,m+1)], fun = fun, foreign = foreign, return.data = FALSE, iter = iter)[[3]]
+	ords <- optile(data[,c(1:2,m+1)], return.data = FALSE, ... )[[3]]
 	for(i in 1:2){
 		data[,i] <- factor(data[,i],levels = levels(data[,i])[ords[[i]]])
 	}
@@ -94,7 +94,7 @@ steptile <- function(x,k = 1, cpcp = FALSE, fun ="BCC", foreign=NULL, iter = 20)
 			#print(cbind(data$pastry,data[,1:s]))
 			#print(xtabs(Freq~data[,s]+pastry,data=data))
 			ord <- optile(data[,c(m+2,s,m+1)], perm.cat = c(FALSE,TRUE),
-				return.data = FALSE, fun = fun, foreign = foreign, iter = iter)[[3]][[2]]
+				return.data = FALSE, ... )[[3]][[2]]
 			#print(ord)
 			data[,s] <- factor(data[,s],levels = levels(data[,s])[ord])
 			ords[[s]] <- ord
@@ -109,7 +109,7 @@ steptile <- function(x,k = 1, cpcp = FALSE, fun ="BCC", foreign=NULL, iter = 20)
 		while(s < m+1){
 			kk <- min(s-1,k)
 			ids <- (s-1):s
-			ord <- optile(data[,c(ids,m+1)], perm.cat = c(FALSE,TRUE),return.data = FALSE,  fun = fun, foreign = 				foreign, iter = iter)[[3]][[2]]
+			ord <- optile(data[,c(ids,m+1)], perm.cat = c(FALSE,TRUE),return.data = FALSE,  ... )[[3]][[2]]
 			ords[[s]] <- ord
 			data[,s] <- factor(data[,s],levels = levels(data[,s])[ord])
 			s <- s+1

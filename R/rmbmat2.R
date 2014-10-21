@@ -381,7 +381,7 @@ nix <- apply(factor.ids, 1, function(z){
 rm(nix)
 }
 if("mosaic" %in% names(factor.opt)){
-	require(vcd)
+    #require(vcd)
 	print("mosaics from vcd not yet implemented")
 	mosaic <- matrix(FALSE, ncol= nv, nrow = nv)
 	nix <- apply(factor.ids, 1, function(z){

@@ -13,8 +13,6 @@ Among the most interesting features are
 \link[extracat]{rmb} \tab RMB plots visualize contingency tables.\cr
  \tab The function offers different visualizations of conditional distributions and their corresponding weights (frequencies)\cr
  \tab including multiple barcharts, spineplots and piecharts.  There are different ways of displaying the residuals from statistical models.\cr
-\link[extracat]{cpcp} \tab CPCP plots visualize a contingency table or a data frame with categorical variables\cr
- \tab via interactive parallel coordinates plots. This function uses the iplots package.\cr
  \link[extracat]{scpcp} \tab  A static version of CPCP plots with labeling and color options.\cr
 \link[extracat]{optile} \tab The OPTILE interface was developed for the Google Summer of Code 2011.\cr
 \tab It offers a variety of reordering techniques for contingency tables. \cr

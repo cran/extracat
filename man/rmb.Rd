@@ -121,7 +121,7 @@ Germany
 }
 
 \seealso{
-  \code{\link[vcd]{mosaic}} for an implementation of mosaicplots.
+  \code{\link[graphics]{mosaicplot}} 
 }
 \examples{
   require(MASS)

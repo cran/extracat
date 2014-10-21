@@ -91,11 +91,19 @@ groupbox2d = function( x, env, prbs, past, smooth){
 	xs <-  data.matrix(xs) - rep(mm,each=nrow(xs))
 	
 	S <- cov(xs)
-	Sinv <- ginv(S)
-	SSinv <- svd(Sinv)
-	SSinv <- SSinv$u %*% diag(sqrt(SSinv$d))
-	SS <- ginv(SSinv)
 	
+	if (requireNamespace("MASS", quietly = TRUE)) {
+		Sinv <- MASS::ginv(S)
+		SSinv <- svd(Sinv)
+		SSinv <- SSinv$u %*% diag(sqrt(SSinv$d))
+		SS <- MASS::ginv(SSinv)
+	}else{
+		Sinv <- solve(S)
+		SSinv <- svd(Sinv)
+		SSinv <- SSinv$u %*% diag(sqrt(SSinv$d))
+		SS <- solve(SSinv)	
+	}
+
 	xs <- xs %*% SSinv
 	
 	

@@ -79,7 +79,7 @@ This was part of the Google Summer of Code 2011.
 
 
 \seealso{
-\link[vcd]{mosaic}
+\link[graphics]{mosaicplot}
 }
 
 \examples{

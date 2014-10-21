@@ -6,9 +6,10 @@ facetshade
 }
 \description{
 This function makes it possible to create ggplots using \link[ggplot2]{facet_grid} with a plot of the complete data in the background of each facet.
+There are two options: If \code{geom} is specified then the background data is put into a separate layer. The original \code{data} is stored in the main object. The other option is to not specify a \code{geom}. In this case the modified data is stored in the main body. See examples.
 }
 \usage{
-facetshade( data, mapping, f, bg.all = TRUE, keep.orig = FALSE, ...)
+facetshade( data, mapping, f, geom, geom.mapping, bg.all = TRUE, keep.orig = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -20,7 +21,13 @@ The aesthetic mapping conctructed via \link[ggplot2]{aes}.
 }
 
  \item{f}{
-The formula specifying the grid for \link[ggplot2]{facet_grid}.
+The formula specifying the grid for \link[ggplot2]{facet_grid} or a facet/wrap.
+}
+ \item{geom}{
+The  geom used for the shade.
+}
+ \item{geom.mapping}{
+Aesthetics for the shade.
 }
 % \item{body}{
 %The function used to create the basic object. Alternatives to \code{ggplot} can for instance %be found in the \code{GGally} package.
@@ -31,10 +38,10 @@ Whether or not to use all data points for each background plot. If \code{FALSE} 
 }
 \item{keep.orig}{
 	Logical. Whether to keep the original faceting variables defined by \code{f}.
-	Those are renamed by adding \code{orig.} as a prefix. For example \code{f = .~variable}will work fine with \code{group = orig.variable}. See FinCal example.
+	Those are renamed by adding \code{orig.} as a prefix. For example \code{f = .~variable} will work fine with \code{group = orig.variable}. See FinCal example.
 }
   \item{\dots}{
-Further arguments for the \link[ggplot2]{ggplot} object.
+Further arguments for the background layer or the main \link[ggplot2]{ggplot} object.
 }
 }
 
@@ -63,8 +70,6 @@ require(ggplot2)
 fs1 <- facetshade( data = olives, aes(x = palmitoleic, y = oleic),
 	f = .~Region )
 
-
-
 # only the background-data
 fs1 + geom_point( colour = alpha(1, 0.2) )
 
@@ -79,6 +84,12 @@ geom_point( data = olives, aes(colour = Area) )
 # a different geom for the background-plot:
 fs1 + geom_density2d(colour=alpha(1,0.1)) +
 geom_point( data = olives, aes(colour = Area) )
+\dontrun{
+# OPTION 2: specify geom in facetshade call:
+fs1b <- facetshade( data = olives, aes(x = palmitoleic, y = oleic),
+	f = .~Region , geom = geom_point)
+fs1b + geom_point(aes(colour = Area))
+}
 
 
 # compare with complement:
@@ -87,6 +98,12 @@ fs2 <- facetshade( data = olives, aes(x = palmitoleic, y = oleic),
 
 fs2 + geom_density2d(colour=alpha(1,0.1)) +
 geom_point( data = olives, aes(colour = Area) )
+\dontrun{
+# OPTION 2: specify geom in facetshade call:
+fs2b <- facetshade( data = olives, aes(x = palmitoleic, y = oleic),
+	f = .~Region , geom = geom_density2d, bg.all = FALSE)
+fs2b + geom_point(aes(colour = Area))
+}
 
 
 # a second dataset:
@@ -186,6 +203,35 @@ geom_line(data=msc,aes(colour=Area),alpha=0.2)+
 facet_wrap(f=~Area,nrow=3)
 
 }
+\dontrun{
+	# TESTCODE: instead of creating a new object
+	# a shade layer is added to an existing ggplot
+	# NOTE: function CHANGES the object!
+	
+# highlighting + alpha
+pp0 <- ggplot()+geom_point(data = olives,
+ aes(x = palmitoleic, y = palmitic), colour = 2) + facet_wrap(~Area, ncol = 3)
+	extracat:::facetshade2(pp0, alpha = 0.1, colour = 1)	
+
+# colours for both, alpha for shade	
+pp1 <- ggplot()+geom_point(data = olives,
+ aes(x = palmitoleic, y = oleic, colour = Area)) + facet_grid(.~Region)
+	extracat:::facetshade2(pp1, alpha = 0.1)
+	
+# different geom and colour for shade	
+pp2 <- ggplot()+geom_point(data = olives,
+ aes(x = palmitoleic, y = oleic, colour = Area)) + facet_grid(.~Region)
+	extracat:::facetshade2(pp2, geom = geom_density2d,
+	 mapping = aes(colour = NULL), colour = 7)
+
+# smooth over points shade with matching colours
+pp3 <- ggplot()+geom_smooth(data = olives,
+ aes(x = palmitoleic, y = oleic, colour = Region)) + facet_grid(.~Region)
+	extracat:::facetshade2(pp3, geom = geom_point,
+	 mapping = aes(colour = orig.Region), keep.orig = TRUE)
+			
+}
+
 
 
 }
