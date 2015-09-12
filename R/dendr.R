@@ -56,11 +56,11 @@ cs <- sapply(k.vec, function(i){#
 })
 	cs <- as.data.frame(cs)
 	names(cs) <- paste("V",2:k,sep="")
-	ss <- cpcp(cs,sort.individual=TRUE, plot = FALSE)
+	ss <- scpcp(cs,sort.individual=TRUE, plot = FALSE)
 	
 	
 	
-	ycoords <- data.matrix(ss[,k:(2*k-2)])
+	ycoords <- data.matrix(ss[,1:k])
 	ycoords <- apply(ycoords,2,function(s){
 		y <- s - min(s)
 		y <- y/max(y)

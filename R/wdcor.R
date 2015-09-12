@@ -14,9 +14,6 @@ dcorOld = function(x){
 		v1 <- DMY %*% pv
 		v2 <- DMX %*% pv
 	S3 <- t(v1*v2) %*% pv
-	print(S1)
-	print(S2)
-	print(S3)
 	S1X <- pv %*% (DMX*DMX) %*% pv
 	S2X <- (pv %*% DMX %*% pv)^2
 	S3X <- t(v2^2) %*% pv
@@ -25,16 +22,7 @@ dcorOld = function(x){
 	S2Y <- (pv %*% DMY %*% pv)^2
 	S3Y <- t(v1^2) %*% pv
 	
-	print(S1X)
-	print(S2X)
-	print(S3X)
-	print(S1Y)
-	print(S2Y)
-	print(S3Y)
-	
 	dcor <- (S1+S2-2*S3)/sqrt(  (S1X+S2X-2*S3X) * (S1Y+S2Y-2*S3Y) )
-	#scl <- sqrt(  (S1X+S2X-2*S3X)* (S1Y+S2Y-2*S3Y) )
-	#return(c(dcor,S1,S2,S3,S1X,S1Y,scl))
 	return(sqrt(dcor))
 }
 wdcor = function(x,...){
@@ -91,9 +79,6 @@ approx.dcor2 = function(x,y, n = 50, correct = FALSE, ep = 1){
 	
 	ret <- wdcor(z, ep = ep)
 	if(correct) ret <- ret*(1 + 2*sqrt(8)/n^2)
-#if(correct) ret <- ret*(1 + 1/n/sqrt(12)/2)
-#if(correct) ret <- ret+1.74/n^(15/8)
-#if(correct) ret <- ret*(1+3/n^(1.84))
 	return(ret)
 }
 
@@ -103,8 +88,6 @@ approx.dcor = function(x,y, n = 50, ep = 1, bin = "eq"){
 		stop("Vector lengths differ.")
 	}
 	
-	#s <- c()
-#s[1]<-system.time({
 	if(bin %in% c("e","eq","equ","equi")){
 		rx <- range(x,na.rm=TRUE)	
 		ry <- range(y,na.rm=TRUE)
@@ -112,24 +95,18 @@ approx.dcor = function(x,y, n = 50, ep = 1, bin = "eq"){
 		ybr <- seq(ry[1],ry[2]+1e-12, (diff(ry)+1e-12)/n)
 	}
 	if(bin %in% c("q","quant","quantile")){
-		#print("Quantile binning can lead to bias.")
 		xbr <- unique(quantile(x,seq(0,1,1/n)))
 		ybr <- unique(quantile(y,seq(0,1,1/n)))
 		xbr[length(xbr)]<-xbr[length(xbr)]+1e-12
 		ybr[length(xbr)]<-ybr[length(xbr)]+1e-12
 	}
-#	})[[3]]
-#	s[2]<-system.time({
+
 	cx <- cut(x,breaks=xbr,include.lowest=TRUE)
 	cy <- cut(y,breaks=ybr,include.lowest=TRUE)
-#	})[[3]]
-	
-#	s[3]<-system.time({
+
 	vx <- tapply(x,cx,mean)
 	vy <- tapply(y,cy,mean)
-#	})[[3]]
-	
-#	s[4]<-system.time({
+
 	if(any(is.na(vx))){
 		ii <- which(is.na(vx))
 		vx[ii] <- (xbr[-length(xbr)]+diff(xbr)/2)[ii]
@@ -138,21 +115,10 @@ approx.dcor = function(x,y, n = 50, ep = 1, bin = "eq"){
 		ii <- which(is.na(vy))
 		vy[ii] <- (ybr[-length(ybr)]+diff(ybr)/2)[ii]
 	}
-#	})[[3]]
-#	s[5]<-system.time({
-	#cx <- vx[cx]
-	#cy <- vy[cy]
-#	})[[3]]
-	# xx <- as.numeric(levels((dx[,1])))[dx[,1]]
-	# yy <- as.numeric(levels((dx[,2])))[dx[,2]]
-	
-	#z <- table(cx,cy)
+
 	z <- subtable(cbind(cx,cy),1:2)
-	
-#	s[6]<-system.time({
+
 	ret <- wdcor(vx[z[,1]],vy[z[,2]],w = z[,3],ep=ep)
-#	})[[3]]
-#	print(round(s/sum(s),2))
 	return(ret)
 }
 
@@ -283,13 +249,10 @@ distcor = function(data, dims, perm.cat, ... ){
 		}else{
 			globalbest <- bestcrit	
 		}
-		#print(e1$mat[ri,ci])
-		#print(globalbest)
 	}
     if(kendalls(e1$mat[ri,ci])< 0){
         ri <- rev(ri)
     }
-	#print(c(ri-1,ci-1,globalbest))	
 	return(c(ri-1,ci-1,globalbest))
 }
 
@@ -348,74 +311,162 @@ dcov2 = function(x){
 
 
 
-wdcor.data.frame <- function(x, w = NULL, ep = 1, approx = FALSE, n = 50, ...){
-	nmz <- names(x)
-	
-	# weights is a variable in x...
-	if(length(w) == 1){
-		ii <- NULL
-		if(is.integer(w)){
-			ii <- w
-		}
-		if(is.character(w)){
-			ii <- which(names(x)==w)
-		}
-		if(!is.null(ii)){
-			w <- x[,ii]
-			x <- x[,-ii]
-		}
-	}
-	nd <- ncol(x)
-	
-	if(approx){
-		
-	cx <- lapply(x, cut, breaks=n,include.lowest=TRUE)
-	vx <- mapply( function(y,z)  tapply(y,z,mean,nr.rm=TRUE), y = x, z = cx)
+# wdcor.data.frame <- function(x, w = NULL, ep = 1, approx = FALSE, n = 50, ...){
+# 	nmz <- names(x)
+# 	
+# 	# weights is a variable in x...
+# 	if(length(w) == 1){
+# 		ii <- NULL
+# 		if(is.integer(w)){
+# 			ii <- w
+# 		}
+# 		if(is.character(w)){
+# 			ii <- which(names(x)==w)
+# 		}
+# 		if(!is.null(ii)){
+# 			w <- x[,ii]
+# 			x <- x[,-ii]
+# 		}
+# 	}
+# 	nd <- ncol(x)
+# 	
+# 	if(approx){
+# 		
+# 	cx <- lapply(x, cut, breaks=n,include.lowest=TRUE)
+# 	vx <- mapply( function(y,z)  tapply(y,z,mean,nr.rm=TRUE), y = x, z = cx)
+# 
+# 	M <- matrix(0,nd,nd)
+# 	diag(M) <- 1
+# 	colnames(M) <- rownames(M) <- nmz
+# 	
+# 	for(i in 1:(nd-1)){
+# 		for(j in (i+1):nd){
+# 			z <- subtable(cbind(cx[[i]],cx[[j]]),1:2)
+# 			M[i,j] <- M[j, i] <- wdcor(vx[,i][z[,1]],vx[,j][z[,2]],w = z[,3],ep=ep)
+# 		}
+# 	}
+# 	return(M)
+# 		
+# 	}#approx
+# 	
+# 	if( any(is.na(x)) ){
+# 		x <- na.omit(x)
+# 		simpleWarning("NA's found and omitted. Please check.")
+# 	}
+# 	x <- data.matrix(x)
+# 	nd <- ncol(x)
+# 	
+# 	
+# 	if(ncol(x)*nrow(x)^2 > 1e10){
+# 	 	simpleWarning("What a big problem. Please use approx = TRUE.")
+# 	 	ret <- 42
+# 	 	attr(ret,"question") <- "Answer to the Ultimate Question of Life, the Universe, and Everything"
+# 	 return(ret)
+# 	}
+# 	if(is.null(w)){
+# 		w <- rep(1,nrow(x))
+# 	}
+# 	stopifnot(nrow(x) == length(w))
+# 	stopifnot(all(w >= 0))
+# 		
+# 	storage.mode(w) <- "double"
+# 	storage.mode(x) <- "double"
+# 	
+# 	storage.mode(ep) <- "double"
+# 	
+# 	ret <- .Call("dcorM",x,as.integer(nd),w/sum(w),ep)
+# 	M <- matrix(0,nd,nd)
+# 	M[lower.tri(M)] <- ret
+# 	M <- M + t(M)
+#     diag(M) <- 1
+# 	colnames(M) <- rownames(M) <- nmz
+# 	return(M)
+# }
 
-	M <- matrix(0,nd,nd)
-	diag(M) <- 1
-	colnames(M) <- rownames(M) <- nmz
-	
-	for(i in 1:(nd-1)){
-		for(j in (i+1):nd){
-			z <- subtable(cbind(cx[[i]],cx[[j]]),1:2)
-			M[i,j] <- M[j, i] <- wdcor(vx[,i][z[,1]],vx[,j][z[,2]],w = z[,3],ep=ep)
-		}
-	}
-	return(M)
-		
-	}#approx
-	
-	if( any(is.na(x)) ){
-		x <- na.omit(x)
-		simpleWarning("NA's found and omitted. Please check.")
-	}
-	x <- data.matrix(x)
-	nd <- ncol(x)
-	
-	
-	if(ncol(x)*nrow(x)^2 > 1e10){
-	 	simpleWarning("What a big problem. Please use approx = TRUE.")
-	 	ret <- 42
-	 	attr(ret,"question") <- "Answer to the Ultimate Question of Life, the Universe, and Everything"
-	 return(ret)
-	}
-	if(is.null(w)){
-		w <- rep(1,nrow(x))
-	}
-	stopifnot(nrow(x) == length(w))
-	stopifnot(all(w >= 0))
-		
-	storage.mode(w) <- "double"
-	storage.mode(x) <- "double"
-	
-	storage.mode(ep) <- "double"
-	
-	ret <- .Call("dcorM",x,as.integer(nd),w/sum(w),ep)
-	M <- matrix(0,nd,nd)
-	M[lower.tri(M)] <- ret
-	M <- M + t(M)
-    diag(M) <- 1
-	colnames(M) <- rownames(M) <- nmz
-	return(M)
+
+wdcor.data.frame <- function(x, w = NULL, ep = 1, approx = FALSE, n = 50, ...){
+  nmz <- names(x)
+  # weights is a variable in x...
+  if(length(w) == 1){
+    ii <- NULL
+    if(is.integer(w)){
+      ii <- w
+    }
+    if(is.character(w)){
+      ii <- which(names(x)==w)
+    }
+    if(!is.null(ii)){
+      w <- x[,ii]
+      x <- x[,-ii]
+    }
+  }
+  nd <- ncol(x)
+  
+  if(approx){
+    cx <- data.table(sapply(x, cut, breaks=n,include.lowest=TRUE, labels = FALSE))
+    vx <-
+     as.data.frame( mapply(
+        function(y,z){ 
+          mm <- tapply(y,z,mean,nr.rm=TRUE)
+   ret <- rep(0,n)
+          ret[as.integer(names(mm))] <- mm
+          return(ret)
+          },
+        y = x, z = cx))
+    setkeyv(cx,vars <- names(cx))                 
+    if(!is.null(w)){
+      cx$w  <- w
+      cx <- cx[,list(Freq = sum(w)),by = key(cx)]
+    }else{
+      cx <- cx[,list(Freq = .N),by = key(cx)]
+    }
+    M <- diag(1/2,nd)
+    dimnames(M) <- list(vars,vars)
+    # This to pass the visible binding test... how ugly.
+    Freq <- NULL
+    M[lower.tri(M)] <- 
+      apply(combn(vars,2),2,function(z){
+        setkeyv(cx,z)
+        cxx <- cx[,list(weight = sum(Freq)),by = key(cx)]
+        return(wdcor(
+          x = vx[z[1]][cxx[,1,with=FALSE][[1]],],
+          y = vx[z[2]][cxx[,2,with=FALSE][[1]],],
+          w = cxx[,3,with=FALSE][[1]]))
+      })
+    M <- M + t(M)
+    return(M)
+  }#approx
+  
+  if( any(is.na(x)) ){
+    x <- na.omit(x)
+    simpleWarning("NA's found and omitted. Please check.")
+  }
+  x <- data.matrix(x)
+  nd <- ncol(x)
+  
+  
+  if(ncol(x)*nrow(x)^2 > 1e10){
+    simpleWarning("What a big problem. Please use approx = TRUE.")
+    ret <- 42
+    attr(ret,"question") <- "Answer to the Ultimate Question of Life, the Universe, and Everything"
+    return(ret)
+  }
+  if(is.null(w)){
+    w <- rep(1,nrow(x))
+  }
+  stopifnot(nrow(x) == length(w))
+  stopifnot(all(w >= 0))
+  
+  storage.mode(w) <- "double"
+  storage.mode(x) <- "double"
+  
+  storage.mode(ep) <- "double"
+  
+  ret <- .Call("dcorM",x,as.integer(nd),w/sum(w),ep)
+  M <- matrix(0,nd,nd)
+  M[lower.tri(M)] <- ret
+  M <- M + t(M)
+  diag(M) <- 1
+  colnames(M) <- rownames(M) <- nmz
+  return(M)
 }

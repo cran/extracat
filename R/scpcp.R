@@ -1,12 +1,12 @@
 
 
 
-scpcp<-function(data, freqvar = "Freq", max.N = 1e6,
+scpcp <- function(data, freqvar = "Freq", max.N = 1e6,
                 gap = 0.2,
                 sort.individual=TRUE,
                 level.width=0.2,
                 polygon = TRUE,
-                base.colour = alpha("black",0.7), # Farbe für Polygone oder Linien falls kein doodle
+                base.colour = alpha("black",0.7),
                 label = TRUE, lab.opt = list(rot = 0, col = 1, bg = TRUE, abbr = FALSE, abbr.var = 12, hide.sel = TRUE, var.labels = TRUE),
                 sel =  NULL, 
                 sel.hide = TRUE,
@@ -146,7 +146,7 @@ if( !("alpha" %in% names(col.opt)) ){
 # if !sel.hide then the selection variable is accepted as a new additional column of data
 # otherwise it is removed later on, after itw as used for the reorderings/polygons by color
 
-  sel.hide <- doodle & sel.hide # hide nur erlauben, falls Ã¼berhaupt gedoodled wird
+  sel.hide <- doodle & sel.hide
 
 ############## PARAM 2 #############
 
@@ -346,7 +346,7 @@ if(plot){
       ##### POLYGONS
     
      as.pol<- function(color = 1){
-        cc<-as.factor(paste(data[,1])) # Polygone fÃ¼r die erste Achse
+        cc<-as.factor(paste(data[,1])) # polygons for first axis
         M2 <- cbind(tapply(lines[,1],cc,min),tapply(lines[,1],cc,max),tapply(lines[,1],cc,max),tapply(lines[,1],cc,min)) 
         apply(M2,1,function(z){
           polygon(x= c(1,1,1+level.width,1+level.width), y = z, col = sel.colours,border=rect.border) 
@@ -366,7 +366,7 @@ if(plot){
             return(invisible(TRUE))
           })
           
-          M1<-M[,c(3,4,4,3), drop = FALSE] # Polygone fÃ¼r alle weiteren Achsen
+          M1<-M[,c(3,4,4,3), drop = FALSE] # polygons for all other axes
           apply(M1,1,function(z){
             polygon(x= c(i,i,i+level.width,i+level.width), y = z, col = sel.colours ,border=rect.border)
             return(invisible(TRUE))

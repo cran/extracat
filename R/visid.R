@@ -167,16 +167,20 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 	if(sort %in% c("n","none",FALSE)){
 		sort.method <- "n"
 	}
+	or <- 1:nrow(xs)
+	oc <- 1:ncol(xs)
 	
 	if(sort.method %in%c( "c", "count")){
 		if(rs){
 			xs <- xs[ow,,drop=FALSE]
 			w <- w[ow,,drop=FALSE]
+			or <- ow
 		}
 		if(cs){
 			xs <- xs[,ow2,drop=FALSE]
 			w2 <- w2[,ow2,drop=FALSE]
 			grps <- grps[ow2]
+			oc <- ow2
 		}
 	}
 
@@ -193,6 +197,7 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 		keep <- which(rank(w,ties.method="first") > n-fr)
 		xs <- xs[keep,,drop=FALSE]
 		w <- w[keep,,drop=FALSE]
+		or <- or[keep]
 	}
 	
 	if(fc < 1){
@@ -203,11 +208,14 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 		keep <- which(rank(w2,ties.method="first") > m-fc)
 		xs <- xs[,keep,drop=FALSE]
 		w2 <- w2[,keep,drop=FALSE]
+		oc <- oc[keep]
 	}
 	
 	if( is.null(gap.prop)){
 		gap.prop <- c(0.1,0)[1 + (dim(xs) > 40)]
 	}
+	
+
 
 if(sort.method == "ME"){
 		dims <- NULL
