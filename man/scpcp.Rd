@@ -125,8 +125,8 @@ scpcp(data=titanic,sel="Sex=='Male' & Survived=='Yes'", sel.palette = "w",
 \dontrun{
 
 # mushroom data from the UCI machine learning repository
-MR <- read.table("http://rosuda.org/mitarbeiter/pilhoefer/agaricus.dat",
-	sep="\t",quote="",header=TRUE)
+data(agaricus)
+MR <- agaricus
 
 levels(MR$stalk_root) <- c(levels(MR$stalk_root),"N/A")
 MR$stalk_root[which(is.na(MR$stalk_root))] <- "N/A"
@@ -139,8 +139,7 @@ scpcp(op, sel = "odor",sel.palette="w",
 
 
 # ADAC ecotest data with four clusterings (k-means, mclust, hc Ward, hc complete)
-eco <- read.table("http://rosuda.org/mitarbeiter/pilhoefer/eco2plus.dat",
-	sep="\t",quote="",header=TRUE)
+data(eco)
 
 # illustrate reordering success using coloring
 scpcp(eco[,13:16], sel = "data[,1]", sel.palette="d")

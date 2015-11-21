@@ -140,11 +140,12 @@ tt <- xtabs(mm[,1]~variable+value,data=mm)
 	grps <- attr(x,"var.ids")
 	if(is.null(grps)){
 		#require(amap)
-		cc <- suppressWarnings(cor(xs))
-		cc[is.na(cc)] <- 0
+		# cc <- suppressWarnings(cor(xs))
+		#cc[is.na(cc)] <- 0
 		
-		hc <- hclust(as.dist(1+cc))
-		grps <- subtree(hc,h=1-1e-12)$data
+		#hc <- hclust(as.dist(1+cc))
+		#grps <- subtree(hc,h=1-1e-12)$data
+	  grps <- 1
 	}
 	ngrp <- length(table(grps))
 	

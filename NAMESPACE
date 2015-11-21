@@ -3,7 +3,7 @@ useDynLib(extracat, .registration = TRUE)
 export(tfluctile, rmb, subtable, untableSet, dendro,   optile, fluctile, cfluctile, subtree, tfluctile, arsim, rmbmat, 
 innerval, quickfechner, hexpie, regmax, regmin, wdcor,approx.dcor, kendalls, imat, idat, Burt, barysort,BCC,BCI,WBCI, cmat, qBCI, combcl,cfcl, cohen, ME, optME,
  sortandcut, heattile, getIs, getIs2, getcolors,getpath, scpcp, steptile,dcorMVtable,dcorMVdata, getbw, cutbw, ahist,JBCI,CBCI,itab, facetshade, visid, visna, visdf, gsac, setcover)
-import(plyr, reshape2, grid, colorspace, ggplot2, TSP, hexbin, scales, data.table)
+import(plyr, grid, colorspace, ggplot2, TSP, hexbin, scales, data.table)
 
 
   importFrom("grDevices", "col2rgb", "grey", "hsv", "rainbow", "rgb")
@@ -16,6 +16,7 @@ import(plyr, reshape2, grid, colorspace, ggplot2, TSP, hexbin, scales, data.tabl
              "quantile", "rmultinom", "runif", "terms", "update",
              "weighted.mean", "xtabs")
   importFrom("utils", "combn", "install.packages", "tail")
+  importFrom("reshape2", "acast","colsplit")
 
 
 #S3method("*",gg)
