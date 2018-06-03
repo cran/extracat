@@ -342,7 +342,7 @@ SEXP hammdist(SEXP dset){
 	SEXP sDim = getAttrib(dset, R_DimSymbol);
 	Rprintf("test");
 	
-	if (isInteger(sDim) && LENGTH(sDim) == 2) {
+	if (isInteger(sDim) && (LENGTH(sDim) == 2)) {
 		int *dim = INTEGER(sDim);
 		Rprintf("%d x %d matrix\n", dim[0], dim[1]);
 		n = dim[0];
@@ -1441,7 +1441,7 @@ SEXP getclust(SEXP M, SEXP dims, SEXP tau0, SEXP method, SEXP singlesplit){
 						c = c - MAT_ELT(SW, rowcuts[k+1] ,j2-1,n); 
 						b = b - MAT_ELT(NE, i2-1 , colcuts[k+1] ,n);
 					}
-					if(k > 0 && k+1 < ncl){//if (colcuts[k+1] < m-1 && colcuts[k] > 0) { //all
+					if((k > 0) && (k+1 < ncl)){//if (colcuts[k+1] < m-1 && colcuts[k] > 0) { //all
 						c = c + MAT_ELT(SW, rowcuts[k+1] , colcuts[k]-1 ,n);
 						b = b + MAT_ELT(NE, rowcuts[k]-1 , colcuts[k+1] ,n);
 					}
@@ -3119,12 +3119,12 @@ SEXP quickfechner(SEXP M, SEXP dims, SEXP vs, SEXP exz){
 					
 					
 					// do not consider zero-entries (i.e. nodes are not connected)
-					if( X[i][k]*X[j][i] == 0 & ex == 1){
+					if( (X[i][k]*X[j][i] == 0) & (ex == 1)){
 						dvr = X[j][k]+1;
 					}else{
 						dvr = X[i][k] +  X[j][i];
 					}	
-					if( X[i][k]*X[k][j] == 0 & ex == 1){
+					if( (X[i][k]*X[k][j] == 0) & (ex == 1)){
 						dvc = X[i][j]+1;
 					}else{
 						dvc = X[i][k] +  X[k][j];
@@ -3186,10 +3186,10 @@ SEXP quickfechner(SEXP M, SEXP dims, SEXP vs, SEXP exz){
 							dvr = X[i][k] *  X[j][i];
 							dvc = X[i][k] *  X[k][j];
 							
-							if( dvr == 0 & ex == 1){
+							if( (dvr == 0) & (ex == 1)){
 								dvr = X[j][k]-1;
 							}	
-							if( dvc == 0 & ex == 1){
+							if( (dvc == 0) & (ex == 1)){
 								dvc = X[i][j]-1;
 							}
 							
@@ -3215,7 +3215,7 @@ SEXP quickfechner(SEXP M, SEXP dims, SEXP vs, SEXP exz){
     
     }
 	SEXP out = allocVector(REALSXP, 2*n*m);
-	k= 0;
+	k = 0;
 	for (j = 0; j < m; j++) {
 	for(i = 0; i < n; i++){
 		
@@ -3337,7 +3337,7 @@ SEXP quickfechner2(SEXP M, SEXP dims, SEXP vs, SEXP exz){
 							// i j is either X[i][k] or X[k][j] from above
 							// do not consider zero-entries (i.e. nodes are not connected)
 								
-							if( X[i][k]*X[k][j] == 0 & ex == 1){
+							if( (X[i][k]*X[k][j] == 0) & (ex == 1)){
 								dvc = X[i][j]+1;
 							}else{
 								dvc = X[i][k] +  X[k][j];
@@ -3350,7 +3350,7 @@ SEXP quickfechner2(SEXP M, SEXP dims, SEXP vs, SEXP exz){
 							}
 						}
 						for (j = mymax2(k-d,0); j < mymin2(k+d,n); j++) {	
-							if( X[i][k]*X[j][i] == 0 & ex == 1){
+							if( (X[i][k]*X[j][i] == 0) & (ex == 1)){
 								dvr = X[j][k]+1;
 							}else{
 								dvr = X[i][k] +  X[j][i];
@@ -3405,10 +3405,10 @@ SEXP quickfechner2(SEXP M, SEXP dims, SEXP vs, SEXP exz){
 							dvr = X[i][k] *  X[j][i];
 							dvc = X[i][k] *  X[k][j];
 							
-							if( dvr == 0 & ex == 1){
+							if( (dvr == 0) & (ex == 1)){
 								dvr = X[j][k]-1;
 							}	
-							if( dvc == 0 & ex == 1){
+							if( (dvc == 0) & (ex == 1)){
 								dvc = X[i][j]-1;
 							}
 							

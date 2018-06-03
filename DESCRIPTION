@@ -1,8 +1,8 @@
 Package: extracat
 Type: Package
 Title: Categorical Data Analysis and Visualization
-Version: 1.7-4
-Date: 2015-11-21
+Version: 1.7-5
+Date: 2018-06-02
 Author: Alexander Pilhoefer <alexander.pilhoefer@gmail.com>
 Maintainer: Alexander Pilhoefer <alexander.pilhoefer@gmail.com>
 Description: Categorical Data Analysis and Visualization.
@@ -14,6 +14,6 @@ LazyLoad: yes
 LazyData: yes
 License: GPL (>= 2)
 NeedsCompilation: yes
-Packaged: 2015-11-21 15:40:57 UTC; Alexander
+Packaged: 2018-06-03 08:05:40 UTC; alexanderpilhofer
 Repository: CRAN
-Date/Publication: 2015-11-21 16:49:01
+Date/Publication: 2018-06-03 08:22:55 UTC

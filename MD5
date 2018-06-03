@@ -1,4 +1,4 @@
-d4d582cbe7064d1ded94a3e1904c5f83 *DESCRIPTION
+de3f209ad5eedf5be4dce2922f9a025a *DESCRIPTION
 7f3268d7dc4d6c038f87802d0af15a24 *NAMESPACE
 5cb8c63753deb9d11d304fe78db56b4d *R/GSAC.R
 2efb8a4f062e213266a22e15b5cd7a1a *R/JCBCI.R
@@ -114,4 +114,5 @@ a2fcdc8b7c043f2b3b78d0f7fb3f8ec7 *man/setcover.Rd
 b1db2855643d535d36250e46fb8b6481 *man/tfluctile.Rd
 18b9b9752632dcec478cb1f8fd319296 *man/untableSet.Rd
 5002640784c8fcb1823ba0f7aafc2b18 *man/visid.Rd
-cd2566ef65205cd0fd39d560936b4fe4 *src/optile.c
+81d9dc2ea44d72e54508879bfe60c360 *src/optile.c
+7c22b1b500cab25872924e218f1645f5 *src/registerDynamicSymbol.c
