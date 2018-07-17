@@ -1,4 +1,4 @@
-de3f209ad5eedf5be4dce2922f9a025a *DESCRIPTION
+ff5173d66533019205b6acbe78711329 *DESCRIPTION
 7f3268d7dc4d6c038f87802d0af15a24 *NAMESPACE
 5cb8c63753deb9d11d304fe78db56b4d *R/GSAC.R
 2efb8a4f062e213266a22e15b5cd7a1a *R/JCBCI.R
@@ -11,7 +11,7 @@ fa78e97067dbe9f124713a44472dde6f *R/barysort.R
 8d5374e264041b9573d3b129a39fb5f2 *R/chidist.R
 9e9976bd89aa9b8a05c195d170173f87 *R/circutile.R
 5a2d0f82c8e09f014337da1cc1ad44a6 *R/dendr.R
-05765a98495dad7abf69dac8e631b5bc *R/facetshade.R
+b1439c89cf26fedf6015745cabe5201c *R/facetshade.R
 5ad0edd5a838595520fd8942008f0a47 *R/fastRcrit.R
 0fa617ca573cb8c013a05e05a97ec368 *R/fechner.R
 6dc9fc21b91f41792a47936817c183db *R/fluctuations.R
@@ -99,7 +99,7 @@ affd81a378de8d470aadce68d60f35e5 *man/itab.Rd
 ada4908330c323e3a70ee1e9f85ac3bc *man/olives.Rd
 3438639356ee54f9b044f14ebbdf9602 *man/optME.Rd
 a7d6a6c6cbb2e735ce7670ab90172269 *man/optile.Rd
-cf549ca194c5ba928f695406369b0d2b *man/plants.Rd
+743ebbf607d657c7298330749039d225 *man/plants.Rd
 af1d476b2ae890ef63f14ff721f22956 *man/qBCI.Rd
 0e871db53248bc1a64732a7330af1f07 *man/quickfechner.Rd
 141dd0bbdf1eb1d9cfda2afcabfb42e3 *man/regmax.Rd

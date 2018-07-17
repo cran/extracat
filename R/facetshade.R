@@ -31,15 +31,18 @@ gnames <- gnames[which(gnames %in% names(data))]
 	mdata <- mdata[rep(1:ng, each=nrow(data)),]
 	
 	
-	xn <- toString(mapping$x)
-	yn <- toString(mapping$y)
+	xn <- toString(mapping$x[[2]])
+	yn <- toString(mapping$y[[2]])
 	
 	mdata[xn] <- data[xn]
 	
 	if(yn != ""){
 		mdata[yn] <- data[yn]
 	}	
-vars <- sapply(mapping, toString)
+tsf <- function(x){
+  toString(x[[2]])
+}	
+vars <- sapply(mapping, tsf)
 	for(v in vars){
 		if(!v %in% names(mdata)){
 			mdata[v] <- rep(unlist(data[v]),ng)
@@ -115,8 +118,8 @@ if(missing(mapping)){
 	mapping <- mapping[!duplicated(names(mapping))]
 	class(mapping) <- 'uneval'
 
-	xn <- toString(mapping$x)
-	yn <- toString(mapping$y)
+	xn <- toString(mapping$x[[2]])
+	yn <- toString(mapping$y[[2]])
 	stopifnot(xn != '')
 
 # get facet variables

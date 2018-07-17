@@ -84,6 +84,6 @@ Binary state variables indicating which of more than 30000 plants grow in that s
   }
 }
 \source{
-\url{http://archive.ics.uci.edu/ml/datasets/Plants}
+formerly: archive.ics.uci.edu/ml/datasets/Plants
 }
 \keyword{datasets}
